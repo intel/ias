@@ -94,6 +94,9 @@ int
 module_init(struct weston_compositor *compositor,
 	    int *argc, char *argv[]);
 
+char *
+wet_get_binary_path(const char *name);
+
 int
 wet_load_xwayland(struct weston_compositor *comp);
 
