@@ -211,6 +211,7 @@ struct ias_plugin;
  */
 struct weston_head {
 	struct weston_output *output;	/**< the output driving this head */
+	struct wl_list output_link;	/**< in weston_output::head_list */
 
 	struct wl_list resource_list;	/**< wl_output protocol objects */
 	struct wl_global *global;	/**< wl_output global */
@@ -283,7 +284,8 @@ struct weston_output {
 	struct weston_mode *original_mode;
 	struct wl_list mode_list;
 
-	struct weston_head head;
+	struct weston_head head; /**< head for unconverted backends */
+	struct wl_list head_list; /**< List of driven weston_heads */
 
 	void (*start_repaint_loop)(struct weston_output *output);
 	int (*repaint)(struct weston_output *output,
