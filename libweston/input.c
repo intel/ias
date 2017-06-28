@@ -2146,9 +2146,11 @@ update_modifier_state(struct weston_seat *seat, uint32_t serial, uint32_t key,
 	notify_modifiers(seat, serial);
 }
 
-static void
-send_keymap(struct wl_resource *resource, struct weston_xkb_info *xkb_info)
+WL_EXPORT void
+weston_keyboard_send_keymap(struct weston_keyboard *kbd, struct wl_resource *resource)
 {
+	struct weston_xkb_info *xkb_info = kbd->xkb_info;
+
 	wl_keyboard_send_keymap(resource,
 				WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1,
 				xkb_info->keymap_fd,
@@ -2212,9 +2214,9 @@ update_keymap(struct weston_seat *seat)
 	keyboard->xkb_state.state = state;
 
 	wl_resource_for_each(resource, &keyboard->resource_list)
-		send_keymap(resource, xkb_info);
+		weston_keyboard_send_keymap(keyboard, resource);
 	wl_resource_for_each(resource, &keyboard->focus_resource_list)
-		send_keymap(resource, xkb_info);
+		weston_keyboard_send_keymap(keyboard, resource);
 
 	notify_modifiers(seat, wl_display_next_serial(seat->compositor->wl_display));
 
@@ -2976,28 +2978,9 @@ seat_get_keyboard(struct wl_client *client, struct wl_resource *resource,
 					     seat->compositor->kb_repeat_rate,
 					     seat->compositor->kb_repeat_delay);
 	}
-
-	if (seat->compositor->use_xkbcommon) {
 #ifdef ENABLE_XKBCOMMON
-		wl_keyboard_send_keymap(cr, WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1,
-					keyboard->xkb_info->keymap_fd,
-					keyboard->xkb_info->keymap_size);
+	weston_keyboard_send_keymap(keyboard, cr);
 #endif
-	} else {
-		int null_fd = open("/dev/null", O_RDONLY);
-		/*
-		 * Don't send a keymap if there was an error opening this devnode.
-		 * Sending a -1 fd will cause an abort in libwayland-server as it
-		 * tries to duplicate that fd and checks if it is >= 0 and if not
-		 * aborts. This abort will take the compositor down with it.
-		 */
-		if(null_fd != -1) {
-			wl_keyboard_send_keymap(cr, WL_KEYBOARD_KEYMAP_FORMAT_NO_KEYMAP,
-						null_fd,
-						0);
-			close(null_fd);
-		}
-	}
 
 	if (should_send_modifiers_to_client(seat, client)) {
 		send_modifiers_to_resource(keyboard,
