@@ -229,6 +229,8 @@ struct weston_head {
 
 	char *name;			/**< head name, e.g. connector name */
 	bool connected;			/**< is physically connected */
+
+	struct weston_output *allocator_output;	/**< XXX: to be removed */
 };
 
 struct weston_output {
@@ -320,6 +322,33 @@ struct weston_output {
 
 	int (*enable)(struct weston_output *output);
 	int (*disable)(struct weston_output *output);
+
+	/** Attach a head in the backend
+	 *
+	 * @param output The output to attach to.
+	 * @param head The head to attach.
+	 * @return 0 on success, -1 on failure.
+	 *
+	 * Do anything necessary to account for a new head being attached to
+	 * the output, and check any conditions possible. On failure, both
+	 * the head and the output must be left as before the call.
+	 *
+	 * Libweston core will add the head to the head_list after a successful
+	 * call.
+	 */
+	int (*attach_head)(struct weston_output *output,
+			   struct weston_head *head);
+
+	/** Detach a head in the backend
+	 *
+	 * @param output The output to detach from.
+	 * @param head The head to detach.
+	 *
+	 * Do any clean-up necessary to detach this head from the output.
+	 * The head has already been removed from the output's head_list.
+	 */
+	void (*detach_head)(struct weston_output *output,
+			    struct weston_head *head);
 
 	/***
 	 *** IAS-specific additions
@@ -1005,6 +1034,21 @@ struct weston_backend {
 	 */
 	void (*repaint_flush)(struct weston_compositor *compositor,
 			      void *repaint_data);
+
+	/** Allocate a new output
+	 *
+	 * @param compositor The compositor.
+	 * @param name Name for the new output.
+	 *
+	 * Allocates a new output structure that embeds a weston_output,
+	 * initializes it, and returns the pointer to the weston_output
+	 * member.
+	 *
+	 * Must set weston_output members @c destroy, @c enable and @c disable.
+	 */
+	struct weston_output *
+	(*create_output)(struct weston_compositor *compositor,
+			 const char *name);
 };
 
 struct weston_desktop_xwayland;
@@ -2113,6 +2157,16 @@ int
 weston_compositor_load_xwayland(struct weston_compositor *compositor);
 
 void
+weston_head_init(struct weston_head *head, const char *name);
+
+void
+weston_head_release(struct weston_head *head);
+
+void
+weston_compositor_add_head(struct weston_compositor *compositor,
+			   struct weston_head *head);
+
+void
 weston_head_set_monitor_strings(struct weston_head *head,
 				const char *make,
 				const char *model,
@@ -2138,6 +2192,15 @@ weston_head_is_connected(struct weston_head *head);
 bool
 weston_head_is_enabled(struct weston_head *head);
 
+const char *
+weston_head_get_name(struct weston_head *head);
+
+struct weston_output *
+weston_head_get_output(struct weston_head *head);
+
+void
+weston_head_detach(struct weston_head *head);
+
 struct weston_head *
 weston_compositor_iterate_heads(struct weston_compositor *compositor,
 				struct weston_head *iter);
@@ -2145,6 +2208,21 @@ weston_compositor_iterate_heads(struct weston_compositor *compositor,
 void
 weston_compositor_add_heads_changed_listener(struct weston_compositor *compositor,
 					     struct wl_listener *listener);
+
+struct weston_output *
+weston_compositor_create_output_with_head(struct weston_compositor *compositor,
+					  struct weston_head *head);
+
+void
+weston_output_destroy(struct weston_output *output);
+
+int
+weston_output_attach_head(struct weston_output *output,
+			  struct weston_head *head);
+
+struct weston_head *
+weston_output_iterate_heads(struct weston_output *output,
+			    struct weston_head *iter);
 
 void
 weston_output_set_scale(struct weston_output *output,
