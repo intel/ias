@@ -1170,6 +1170,7 @@ struct weston_touch_calibrator;
 
 struct weston_desktop_xwayland;
 struct weston_desktop_xwayland_interface;
+struct weston_debug_compositor;
 
 struct weston_compositor {
 	struct wl_signal destroy_signal;
@@ -1287,6 +1288,8 @@ struct weston_compositor {
 	weston_touch_calibration_save_func touch_calibration_save;
 	struct weston_layer calibrator_layer;
 	struct weston_touch_calibrator *touch_calibrator;
+
+	struct weston_debug_compositor *weston_debug;
 
 	/***
 	 *** IAS-specific additions
@@ -2467,6 +2470,12 @@ weston_output_get_first_head(struct weston_output *output);
 int
 weston_compositor_enable_touch_calibrator(struct weston_compositor *compositor,
 				weston_touch_calibration_save_func save);
+
+int
+weston_debug_compositor_create(struct weston_compositor *compositor);
+
+void
+weston_debug_compositor_destroy(struct weston_compositor *compositor);
 
 #ifdef  __cplusplus
 }
