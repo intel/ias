@@ -711,10 +711,14 @@ wet_shell_init(struct weston_compositor *compositor,
 	shell->wake_listener.notify = wake_handler;
 	wl_signal_add(&compositor->wake_signal, &shell->wake_listener);
 
+	shell->desktop = weston_desktop_create(compositor, &shell_desktop_api, shell);
+	if (!shell->desktop)
+		goto err_shell;
+
 	if (wl_global_create(compositor->wl_display,
 			     &ivi_application_interface, 1,
 			     shell, bind_ivi_application) == NULL)
-		goto err_shell;
+		goto err_desktop;
 
 	ivi_layout_init_with_compositor(compositor);
 	shell_add_bindings(compositor, shell);
@@ -725,6 +729,9 @@ wet_shell_init(struct weston_compositor *compositor,
 	compositor->renderer->get_surf_id = get_surf_id;
 	compositor->renderer->get_surf_rotation = get_surf_rotation;
 	compositor->renderer->get_shareable_flag = get_shareable_flag;
+
+err_desktop:
+	weston_desktop_destroy(shell->desktop);
 
 err_shell:
 	free(shell);
