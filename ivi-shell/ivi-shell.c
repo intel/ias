@@ -140,6 +140,10 @@ layout_surface_cleanup(struct ivi_shell_surface *ivisurf)
 {
 	assert(ivisurf->layout_surface != NULL);
 
+	/* destroy weston_surface destroy signal. */
+	if (!ivisurf->layout_surface->weston_desktop_surface)
+		wl_list_remove(&ivisurf->surface_destroy_listener.link);
+
 	ivi_layout_surface_destroy(ivisurf->layout_surface);
 	ivisurf->layout_surface = NULL;
 
@@ -147,9 +151,6 @@ layout_surface_cleanup(struct ivi_shell_surface *ivisurf)
 	ivisurf->surface->committed_private = NULL;
 	weston_surface_set_label_func(ivisurf->surface, NULL);
 	ivisurf->surface = NULL;
-
-	// destroy weston_surface destroy signal.
-	wl_list_remove(&ivisurf->surface_destroy_listener.link);
 }
 
 /*
