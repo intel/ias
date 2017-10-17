@@ -46,8 +46,6 @@
 
 #include <sys/types.h>
 #include <unistd.h>
-#include "ivi-application-client-protocol.h"
-#define IVI_SURFACE_ID 9000
 
 #include "shared/helpers.h"
 #include "shared/platform.h"
@@ -82,7 +80,6 @@ struct display {
 		EGLConfig conf;
 	} egl;
 	struct window *window;
-	struct ivi_application *ivi_application;
 	struct wl_list output_list;
 
 	PFNEGLSWAPBUFFERSWITHDAMAGEEXTPROC swap_buffers_with_damage;
@@ -107,7 +104,6 @@ struct window {
 	struct ias_surface *shell_surface;
 	struct zxdg_surface_v6 *xdg_surface;
 	struct zxdg_toplevel_v6 *xdg_toplevel;
-	struct ivi_surface *ivi_surface;
 	EGLSurface egl_surface;
 	struct wl_callback *callback;
 	int fullscreen, maximized, opaque, buffer_size, frame_sync, output, delay;
@@ -412,25 +408,6 @@ static struct ias_surface_listener ias_surface_listener = {
 };
 
 static void
-handle_ivi_surface_configure(void *data, struct ivi_surface *ivi_surface,
-                             int32_t width, int32_t height)
-{
-	struct window *window = data;
-
-	wl_egl_window_resize(window->native, width, height, 0, 0);
-
-	window->geometry.width = width;
-	window->geometry.height = height;
-
-	if (!window->fullscreen)
-		window->window_size = window->geometry;
-}
-
-static const struct ivi_surface_listener ivi_surface_listener = {
-	handle_ivi_surface_configure,
-};
-
-static void
 create_xdg_surface(struct window *window, struct display *display)
 {
 	window->xdg_surface = zxdg_shell_v6_get_xdg_surface(display->shell,
@@ -447,23 +424,6 @@ create_xdg_surface(struct window *window, struct display *display)
 
 	window->wait_for_configure = true;
 	wl_surface_commit(window->surface);
-}
-
-static void
-create_ivi_surface(struct window *window, struct display *display)
-{
-	uint32_t id_ivisurf = IVI_SURFACE_ID + (uint32_t)getpid();
-	window->ivi_surface =
-		ivi_application_surface_create(display->ivi_application,
-					       id_ivisurf, window->surface);
-
-	if (window->ivi_surface == NULL) {
-		fprintf(stderr, "Failed to create ivi_client_surface\n");
-		abort();
-	}
-
-	ivi_surface_add_listener(window->ivi_surface,
-				 &ivi_surface_listener, window);
 }
 
 static void
@@ -504,8 +464,6 @@ create_surface(struct window *window)
 
 	if (display->shell) {
 		create_xdg_surface(window, display);
-	} else if (display->ivi_application ) {
-		create_ivi_surface(window, display);
 	} else if (display->ias_shell) {
 		create_ias_surface(window, display);
 	} else {
@@ -542,8 +500,6 @@ destroy_surface(struct window *window)
 		zxdg_toplevel_v6_destroy(window->xdg_toplevel);
 	if (window->xdg_surface)
 		zxdg_surface_v6_destroy(window->xdg_surface);
-	if (window->display->ivi_application)
-		ivi_surface_destroy(window->ivi_surface);
 	if (window->display->ias_shell) {
 		ias_surface_destroy(window->shell_surface);
 	}
@@ -938,10 +894,6 @@ registry_handle_global(void *data, struct wl_registry *registry,
 			fprintf(stderr, "unable to load default left pointer\n");
 			// TODO: abort ?
 		}
-	} else if (strcmp(interface, "ivi_application") == 0) {
-		d->ivi_application =
-			wl_registry_bind(registry, name,
-					 &ivi_application_interface, 1);
 	}
 }
 
@@ -1059,9 +1011,6 @@ main(int argc, char **argv)
 
 	if (display.shell)
 		zxdg_shell_v6_destroy(display.shell);
-
-	if (display.ivi_application)
-		ivi_application_destroy(display.ivi_application);
 
 	if (display.ias_shell) {
 		ias_shell_destroy(display.ias_shell);
