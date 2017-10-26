@@ -2639,6 +2639,7 @@ idle_repaint(void *data)
 
 	assert(output->repaint_status == REPAINT_BEGIN_FROM_IDLE);
 	output->repaint_status = REPAINT_AWAITING_COMPLETION;
+	output->idle_repaint_source = NULL;
 	output->start_repaint_loop(output);
 }
 
@@ -2763,7 +2764,9 @@ weston_output_schedule_repaint(struct weston_output *output)
 		return;
 
 	output->repaint_status = REPAINT_BEGIN_FROM_IDLE;
-	wl_event_loop_add_idle(loop, idle_repaint, output);
+	assert(!output->idle_repaint_source);
+	output->idle_repaint_source = wl_event_loop_add_idle(loop, idle_repaint,
+							     output);
 	TL_POINT("core_repaint_enter_loop", TLP_OUTPUT(output), TLP_END);
 }
 
@@ -5761,6 +5764,9 @@ weston_output_release(struct weston_output *output)
 	struct weston_head *head, *tmp;
 
 	output->destroying = 1;
+
+	if (output->idle_repaint_source)
+		wl_event_source_remove(output->idle_repaint_source);
 
 	if (output->enabled)
 		weston_compositor_remove_output(output);
