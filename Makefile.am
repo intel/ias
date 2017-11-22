@@ -172,7 +172,9 @@ nodist_libias_@LIBWESTON_MAJOR@_la_SOURCES =				\
 	protocol/pointer-constraints-unstable-v1-protocol.c		\
 	protocol/pointer-constraints-unstable-v1-server-protocol.h      \
 	protocol/input-timestamps-unstable-v1-protocol.c		\
-	protocol/input-timestamps-unstable-v1-server-protocol.h
+	protocol/input-timestamps-unstable-v1-server-protocol.h		\
+	protocol/weston-touch-calibration-protocol.c			\
+	protocol/weston-touch-calibration-server-protocol.h
 
 BUILT_SOURCES += $(nodist_libias_@LIBWESTON_MAJOR@_la_SOURCES)
 
@@ -2219,6 +2221,7 @@ EXTRA_DIST +=					\
 	protocol/weston-screenshooter.xml	\
 	protocol/text-cursor-position.xml	\
 	protocol/weston-test.xml		\
+	protocol/weston-touch-calibration.xml	\
 	protocol/ias-backend.xml		\
 	protocol/ias-layout-manager.xml		\
 	protocol/ias-input-manager.xml		\
