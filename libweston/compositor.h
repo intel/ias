@@ -602,6 +602,7 @@ struct weston_touch_device {
 	void *backend_data;		/**< backend-specific private */
 
 	const struct weston_touch_device_ops *ops;
+	struct weston_touch_device_matrix saved_calibration;
 };
 
 /** Represents a set of touchscreen devices aggregated under a seat */
@@ -1135,6 +1136,21 @@ struct weston_backend {
 			 const char *name);
 };
 
+/** Callback for saving calibration
+ *
+ * \param compositor The compositor.
+ * \param device The physical touch device to save for.
+ * \param calibration The new calibration from a client.
+ * \return -1 on failure, 0 on success.
+ *
+ * Failure will prevent taking the new calibration into use.
+ */
+typedef int (*weston_touch_calibration_save_func)(
+	struct weston_compositor *compositor,
+	struct weston_touch_device *device,
+	const struct weston_touch_device_matrix *calibration);
+struct weston_touch_calibrator;
+
 struct weston_desktop_xwayland;
 struct weston_desktop_xwayland_interface;
 
@@ -1247,8 +1263,14 @@ struct weston_compositor {
 	struct wl_signal heads_changed_signal;
 	struct wl_event_source *heads_changed_source;
 
+	/* Touchscreen calibrator support: */
 	enum weston_touch_mode touch_mode;
-	
+
+	struct wl_global *touch_calibration;
+	weston_touch_calibration_save_func touch_calibration_save;
+	struct weston_layer calibrator_layer;
+	struct weston_touch_calibrator *touch_calibrator;
+
 	/***
 	 *** IAS-specific additions
 	 ***
@@ -1757,8 +1779,20 @@ weston_compositor_set_touch_mode_normal(struct weston_compositor *compositor);
 void
 weston_compositor_set_touch_mode_calib(struct weston_compositor *compositor);
 
-static inline void
-touch_calibrator_mode_changed(struct weston_compositor *compositor) { /* stub */ }
+void
+touch_calibrator_mode_changed(struct weston_compositor *compositor);
+
+void
+notify_touch_calibrator(struct weston_touch_device *device,
+			const struct timespec *time, int32_t slot,
+			const struct weston_point2d_device_normalized *norm,
+			int touch_type);
+
+void
+notify_touch_calibrator_frame(struct weston_touch_device *device);
+
+void
+notify_touch_calibrator_cancel(struct weston_touch_device *device);
 
 void
 weston_layer_entry_insert(struct weston_layer_entry *list,
@@ -2405,6 +2439,10 @@ weston_head_from_resource(struct wl_resource *resource);
 
 struct weston_head *
 weston_output_get_first_head(struct weston_output *output);
+
+int
+weston_compositor_enable_touch_calibrator(struct weston_compositor *compositor,
+				weston_touch_calibration_save_func save);
 
 #ifdef  __cplusplus
 }
