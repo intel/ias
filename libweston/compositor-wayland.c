@@ -2152,7 +2152,7 @@ input_handle_touch_down(void *data, struct wl_touch *wl_touch,
 
 	weston_output_transform_coordinate(&output->base, x, y, &x, &y);
 
-	notify_touch(&input->base, &ts, id, x, y, WL_TOUCH_DOWN);
+	notify_touch(input->touch_device, &ts, id, x, y, WL_TOUCH_DOWN);
 	input->touch_active = true;
 }
 
@@ -2193,7 +2193,7 @@ input_handle_touch_up(void *data, struct wl_touch *wl_touch,
 	}
 
 	if (active)
-		notify_touch(&input->base, &ts, id, 0, 0, WL_TOUCH_UP);
+		notify_touch(input->touch_device, &ts, id, 0, 0, WL_TOUCH_UP);
 }
 
 static void
@@ -2222,7 +2222,7 @@ input_handle_touch_motion(void *data, struct wl_touch *wl_touch,
 
 	weston_output_transform_coordinate(&output->base, x, y, &x, &y);
 
-	notify_touch(&input->base, &ts, id, x, y, WL_TOUCH_MOTION);
+	notify_touch(input->touch_device, &ts, id, x, y, WL_TOUCH_MOTION);
 }
 
 static void
@@ -2233,7 +2233,7 @@ input_handle_touch_frame(void *data, struct wl_touch *wl_touch)
 	if (!input->touch_focus || !input->touch_active)
 		return;
 
-	notify_touch_frame(&input->base);
+	notify_touch_frame(input->touch_device);
 }
 
 static void
@@ -2244,7 +2244,7 @@ input_handle_touch_cancel(void *data, struct wl_touch *wl_touch)
 	if (!input->touch_focus || !input->touch_active)
 		return;
 
-	notify_touch_cancel(&input->base);
+	notify_touch_cancel(input->touch_device);
 }
 
 static const struct wl_touch_listener touch_listener = {
