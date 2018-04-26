@@ -1323,6 +1323,7 @@ struct weston_view {
 	 * view, inheriting the primary output for related views in shells, etc.
 	 */
 	struct weston_output *output;
+	struct wl_listener output_destroy_listener;
 
 	/*
 	 * A more complete representation of all outputs this surface is
@@ -1544,6 +1545,9 @@ enum weston_activate_flag {
 
 void
 weston_version(int *major, int *minor, int *micro);
+
+void
+weston_view_set_output(struct weston_view *view, struct weston_output *output);
 
 void
 weston_view_update_transform(struct weston_view *view);
