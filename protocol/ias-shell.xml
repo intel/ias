@@ -365,6 +365,27 @@
 			<arg name="output_number" type="uint"/>
 		</request>
 
+		<request name="set_soc">
+			<description summary="Sets the SoCs for a surface">
+				Sets which SoCs should a surface be display upon.
+
+				The soc parameter is a bit field where each bit informs the
+				compositor whether a surface should be displayed on that SoC
+				or not. Bit 0 is for local SoC, Bit 1 for remote SoC #1 and so
+				on. So for example, if bit 0 is set to 1, then this surface
+				should be displayed on the local SoC and vice versa.
+				Note that this particular request will determine further
+				behavior of the compositor and HMI. If a particular surface
+				shouldn't be displayed on the local SoC, the HMI must not
+				try to manipulate it by changing its position/size etc.
+				Also, the compositor will present different (fake) Wayland
+				outputs to the the surface's process.
+			</description>
+
+			<arg name="id" type="uint" />
+			<arg name="soc" type="uint" />
+		</request>
+
 		<event name="surface_info">
 			<description summary="Notifies listeners of surface changes">
 				Notifies clients listening on the ias_hmi interface that a

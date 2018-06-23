@@ -467,6 +467,31 @@ ias_hmi_release_buffer_handle(struct wl_client *client,
 #endif
 }
 
+static void
+ias_hmi_set_soc(struct wl_client *client,
+		struct wl_resource *shell_resource,
+		uint32_t id,
+		uint32_t soc)
+{
+	struct ias_shell *shell = shell_resource->data;
+	struct ias_surface *child_shsurf;
+	struct ias_surface *shsurf;
+
+	/* Walk the surface list looking for the requested surface.  */
+	wl_list_for_each(shsurf, &shell->client_surfaces, surface_link) {
+		if (SURFPTR2ID(shsurf) == id) {
+
+			shsurf->soc = soc;
+			 /* Set the soc flag for child and descendant surfaces. */
+			 wl_list_for_each(child_shsurf, &shsurf->child_list, child_link) {
+				 ias_hmi_set_soc(client, shell_resource,
+						SURFPTR2ID(child_shsurf), soc);
+			}
+			return;
+		}
+	}
+}
+
 
 static void
 ias_hmi_set_shareable(struct wl_client *client,
@@ -538,6 +563,7 @@ static const struct ias_hmi_interface ias_hmi_implementation = {
 	ias_hmi_start_capture,
 	ias_hmi_stop_capture,
 	ias_hmi_release_buffer_handle,
+	ias_hmi_set_soc,
 };
 
 

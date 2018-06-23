@@ -865,6 +865,9 @@ ias_shell_get_ias_surface_internal(struct wl_client *client,
 	/* Surface sharing is disabled by default for the new surface */
 	shsurf->shareable = 0;
 
+	/* By default a surface is only locally displayable */
+	shsurf->soc = 1;
+
 	/* get pid and pname for this surface and store them into shsurf */
 	get_process_info(shsurf, name);
 

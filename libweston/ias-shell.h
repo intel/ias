@@ -253,6 +253,14 @@ struct ias_surface {
 	int wl_shell_interface;
 	/* flag that indicates if surface could be shared */
 	int shareable;
+	/*
+	 * A bitmask that indicates which SoCs is this surface for. If this surface
+	 * is meant for local display only, then bit 0 should be set. If it is for
+	 * SoC 1, then Bit 1 should be set and so on. By default, we expect each
+	 * surface to be only locally displayable so this variable will be init to
+	 * 1.
+	 */
+	uint32_t soc;
 };
 
 // whether surface is directly flipped or composited
