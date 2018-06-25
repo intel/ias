@@ -2181,6 +2181,19 @@ ias_assign_planes(struct weston_output *output, void *repaint_data)
 	wl_list_for_each_safe(ev, next, &backend->compositor->view_list, link) {
 		if (!(ev->output_mask & (1 <<output->id)))
 			continue;
+
+		/*
+		 * If this surface is meant for remote SoC, then we must hide it from
+		 * the local one by assigning it to NULL plane. This way, the client
+		 * will continue to provide us with buffers but we will just not be
+		 * showing them on any Wayland output.
+		 */
+		if(ev->surface->role_name &&
+				!strcmp(ev->surface->role_name, "remote_soc")) {
+			weston_view_move_to_plane(ev, NULL);
+			continue;
+		}
+
 		/*
 		 * Surfaces that can be flipped onto the display plane or the cursor plane
 		 * need to have their buffer kept around.

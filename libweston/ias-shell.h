@@ -42,6 +42,13 @@
 
 #define CFG_FILENAME "ias.conf"
 
+#ifndef IAS_SHELL_ERROR_ENUM
+#define IAS_SHELL_ERROR_ENUM
+enum ias_shell_error {
+	IAS_SHELL_ERROR_ROLE = 0,
+};
+#endif /* IAS_SHELL_ERROR_ENUM */
+
 struct ias_shell;
 
 WL_EXPORT struct ias_surface*

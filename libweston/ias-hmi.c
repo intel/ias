@@ -482,6 +482,21 @@ ias_hmi_set_soc(struct wl_client *client,
 		if (SURFPTR2ID(shsurf) == id) {
 
 			shsurf->soc = soc;
+			/*
+			 * If this surface is not supposed to be shown on the local SoC,
+			 * then we skip rendering for it. This way, the client app can
+			 * continue to provide its buffers to the compositor and continue
+			 * rendering. However, the compositor just won't use them for
+			 * presenting on the local screen.
+			 */
+			if (!(soc & 1)) {
+				if (weston_surface_set_role(shsurf->surface, "remote_soc",
+						shell_resource, IAS_SHELL_ERROR_ROLE) < 0) {
+					return;
+				}
+				weston_compositor_damage_all(shell->compositor);
+			}
+
 			 /* Set the soc flag for child and descendant surfaces. */
 			 wl_list_for_each(child_shsurf, &shsurf->child_list, child_link) {
 				 ias_hmi_set_soc(client, shell_resource,
