@@ -2496,7 +2496,6 @@ weston_output_maybe_repaint(struct weston_output *output, struct timespec *now,
 	if(compositor->renderer->finish_frame) {
 		compositor->renderer->finish_frame(output, compositor);
 	}
-	output->repainted = false;
 
 	/* We're not ready yet; come back to make a decision later. */
 	if (output->repaint_status != REPAINT_SCHEDULED)
@@ -2608,6 +2607,9 @@ output_repaint_timer_handler(void *data)
 			compositor->backend->repaint_cancel(compositor,
 							    repaint_data);
 	}
+
+	wl_list_for_each(output, &compositor->output_list, link)
+		output->repainted = false;
 
 	output_repaint_timer_arm(compositor);
 
