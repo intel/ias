@@ -2286,6 +2286,8 @@ SUFFIXES = .1 .5 .7 .man
 
 EXTRA_DIST +=					\
 	CONTRIBUTING.md				\
+	README.md				\
+	doc/wayland-screenshot.jpg		\
 	doc/calibration-helper.bash		\
 	man/weston.man				\
 	man/weston-drm.man			\
