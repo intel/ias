@@ -1290,6 +1290,7 @@ struct weston_compositor {
 	struct weston_touch_calibrator *touch_calibrator;
 
 	struct weston_debug_compositor *weston_debug;
+	struct weston_debug_scope *debug_scene;
 
 	/***
 	 *** IAS-specific additions
@@ -2081,6 +2082,9 @@ weston_buffer_reference(struct weston_buffer_reference *ref,
 
 void
 weston_compositor_get_time(struct timespec *time);
+
+char *
+weston_compositor_print_scene_graph(struct weston_compositor *ec);
 
 void
 weston_compositor_destroy(struct weston_compositor *ec);
