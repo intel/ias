@@ -2531,6 +2531,8 @@ WL_EXPORT int wet_shell_init(struct weston_compositor *compositor,
 
 	shell->compositor = compositor;
 
+	wl_display_set_global_filter(compositor->wl_display, global_filter_func, shell);
+
 	/*
 	 * Hook the shell destructor to the compositor's destruction signal.  We
 	 * don't need to hook anything to the lock/unlock signals since those
