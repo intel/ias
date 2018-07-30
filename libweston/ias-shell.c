@@ -2572,6 +2572,7 @@ WL_EXPORT int wet_shell_init(struct weston_compositor *compositor,
 	wl_list_init(&shell->background_surfaces);
 	wl_list_init(&shell->popup_surfaces);
 	wl_list_init(&shell->client_surfaces);
+	wl_list_init(&shell->soc_list);
 
 	/* Initialize hmi callback list */
 	wl_list_init(&shell->sfc_change_callbacks);

@@ -507,6 +507,19 @@ ias_hmi_set_soc(struct wl_client *client,
 	}
 }
 
+static void
+ias_hmi_client_created(struct wl_client *client,
+		struct wl_resource *shell_resource,
+		uint32_t pid,
+		uint32_t soc)
+{
+	struct ias_shell *shell = shell_resource->data;
+	struct soc_node *node = calloc(1, sizeof(struct soc_node));
+	node->pid = pid;
+	node->soc = soc;
+	wl_list_insert(&shell->soc_list, &node->link);
+}
+
 
 static void
 ias_hmi_set_shareable(struct wl_client *client,
@@ -579,6 +592,7 @@ static const struct ias_hmi_interface ias_hmi_implementation = {
 	ias_hmi_stop_capture,
 	ias_hmi_release_buffer_handle,
 	ias_hmi_set_soc,
+	ias_hmi_client_created,
 };
 
 

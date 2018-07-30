@@ -102,6 +102,7 @@ struct ias_shell {
 	struct wl_list background_surfaces;
 	struct wl_list popup_surfaces;
 	struct wl_list client_surfaces;
+	struct wl_list soc_list;
 
 #ifdef IASDEBUG
 	/*

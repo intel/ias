@@ -386,6 +386,26 @@
 			<arg name="soc" type="uint" />
 		</request>
 
+		<request name="client_created">
+			<description summary="Notify the compositor of a new client">
+				In remote display use cases, the remote display library needs
+				to notify the compositor of an upcoming process that it has
+				just launched, along with the SoC that this process is for.
+				This way, the compositor can hide certain wl_globals (like
+				wl_output) from that newly launched client. 
+
+				The soc parameter is a bit field where each bit informs the
+				compositor whether this process should be displayed on that SoC
+				or not. Bit 0 is for local SoC, Bit 1 for remote SoC #1 and so
+				on. So for example, if bit 0 is set to 1, then this process's
+				surfaces should be displayed on the local SoC and vice versa.
+			</description>
+			
+			<arg name="pid" type="uint" />
+			<arg name="soc" type="uint" />
+		</request>
+
+
 		<event name="surface_info">
 			<description summary="Notifies listeners of surface changes">
 				Notifies clients listening on the ias_hmi interface that a

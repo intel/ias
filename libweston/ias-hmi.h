@@ -44,6 +44,12 @@ struct hmi_callback {
 	struct wl_list link;
 };
 
+struct soc_node {
+	uint32_t pid;
+	uint32_t soc;
+	struct wl_list link;
+};
+
 void
 bind_ias_hmi(struct wl_client *client,
 		void *data, uint32_t version, uint32_t id);
