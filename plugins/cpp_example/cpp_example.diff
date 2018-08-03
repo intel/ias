@@ -1,0 +1,41 @@
+--- grid_layout.c	2012-12-21 09:18:51.609699834 -0800
++++ grid_layout.cc	2012-12-21 09:26:54.311709623 -0800
+@@ -1,6 +1,6 @@
+ /*
+  *-----------------------------------------------------------------------------
+- * Filename: grid-layout.c
++ * Filename: grid-layout.cc
+  *-----------------------------------------------------------------------------
+  * Copyright 2012 Intel Corporation All Rights Reserved.
+  * The source code contained or described herein and all documents related to
+@@ -25,10 +25,12 @@
+  *
+  *-----------------------------------------------------------------------------
+  * Description:
+- *   Grid layout plugin for the Intel Automotive Solutions shell.
++ *   Grid layout plugin for the Intel Automotive Solutions shell (built
++ *   as C++ this time).
+  *-----------------------------------------------------------------------------
+  */
+ 
++extern "C" {
+ #include <stdlib.h>
+ #include <linux/input.h>
+ #include <string.h>
+@@ -37,6 +39,7 @@
+ #include "ias-spug.h"
+ 
+ #include "cursor_image.h"
++}
+ 
+ static ias_identifier myid;
+ static spug_seat_id seat;
+@@ -939,7 +942,7 @@ static spug_keyboard_grab_interface key_grab_interface = {
+  *** Plugin initialization
+  ***/
+ 
+-WL_EXPORT int
++extern "C" WL_EXPORT int
+ ias_plugin_init(struct ias_plugin_info *info,
+ 		ias_identifier id,
+ 		uint32_t version)

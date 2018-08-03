@@ -1,0 +1,523 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="iasshell">
+
+	<copyright>
+		Copyright (c) 2012, Intel Corporation.
+
+		Permission is hereby granted, free of charge, to any person obtaining a copy
+		of this software and associated documentation files (the "Software"), to deal
+		in the Software without restriction, including without limitation the rights
+		to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+		copies of the Software, and to permit persons to whom the Software is
+		furnished to do so, subject to the following conditions:
+
+		The above copyright notice and this permission notice shall be included in
+		all copies or substantial portions of the Software.
+
+		THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+		IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+		FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+		AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+		LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+		OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+		THE SOFTWARE.
+	</copyright>
+
+	<interface name="ias_shell" version="1">
+		<description summary="IVI shell interface">
+			This interface provides the IVI-specific shell functionality
+			exposed by the Intel Automotive Solutions shell.
+		</description>
+
+		<request name="set_background">
+			<description summary="Set desktop background">
+				Sets the desktop background for an output to a specific
+				surface.  This is typically used to create a "wallpaper"
+				although it can also be used to create a "live" background as
+				well.  
+			</description>
+
+			<arg name="output" type="object" interface="wl_output" />
+			<arg name="surface" type="object" interface="ias_surface" />
+		</request>
+
+		<request name="set_parent">
+			<description summary="Links surface to parent surface">
+				Marks a surface as a child of the specified parent surface.
+				Child surfaces will move together with their parent surface in
+				the default layout.  Handling of child surfaces in other
+				display layouts is left to the layout plugin to decide (e.g.,
+				it may not make sense to even draw child surfaces in some
+				kinds of display layouts).
+			</description>
+
+			<arg name="surface" type="object" interface="ias_surface" />
+			<arg name="parent" type="object" interface="ias_surface" />
+		</request>
+
+		<request name="set_parent_with_position">
+			<description summary="Links surface to parent surface with position">
+				Marks a surface as a child of the specified parent surface, in
+				addition to providing relative x and y offsets for the child
+				surface.
+				Child surfaces will move together with their parent surface in
+				the default layout.  Handling of child surfaces in other
+				display layouts is left to the layout plugin to decide (e.g.,
+				it may not make sense to even draw child surfaces in some
+				kinds of display layouts).
+			</description>
+					
+			<arg name="surface" type="object" interface="ias_surface" />
+			<arg name="parent" type="object" interface="ias_surface" />
+			<arg name="x" type="int"/>
+			<arg name="y" type="int"/>
+		</request>
+
+		<request name="popup">
+			<description summary="Requests a popup presentation">
+				Requests that a popup be presented with the specified priority.
+				Popups are important surfaces that are presented to the user
+				regardless of what application is currently running.  Popups
+				are assigned priority levels to prevent less important popups
+				from obscuring more important popups and to allow more
+				important popups to override less important ones.  Priorities
+				are expressed via integer values with lower values being more
+				important and taking precedence.
+
+				TODO:  May need to add an authentication framework to allow only
+				privileged apps to use the lowest priority values.
+			</description>
+
+			<arg name="output" type="object" interface="wl_output" />
+			<arg name="surface" type="object" interface="ias_surface" />
+			<arg name="priority" type="uint" />
+		</request>
+
+		<request name="set_zorder">
+			<description summary="Assigns a surface to a specific zorder">
+				Assigns a surface to a specific zorder.  Zorder is a way of
+				organizing surfaces to enforce z-order restrictions.  The IAS
+				shell uses some zorder values internally for shell-specific
+				functionality (background surface, fullscreen surface, popups,
+				etc.), but applications are free to create their own zorders to
+				organize other types of applications to their liking.
+			</description>
+
+			<arg name="surface" type="object" interface="ias_surface" />
+			<arg name="zorder" type="uint" />
+		</request>
+
+		<request name="set_behavior">
+			<description summary="Set the behavior bits for a surface">
+				Sets the behavior bits for a surface.  Behavior bits control
+				how the surface is drawn, animated, transitioned, etc. in
+				various display layouts.  Only the lower 24 bits of the value
+				passed to this request will be honored; the upper 8 bits are
+				reserved for internal use by the IAS shell itself.
+			</description>
+
+			<arg name="surface" type="object" interface="ias_surface" />
+			<arg name="behavior" type="uint" />
+		</request>
+
+		<request name="get_ias_surface">
+			<description summary="Wrap an existing wl_surface">
+				Create a new ias shell surface for an existing wl_surface.
+			</description>
+			<arg name="id" type="new_id" interface="ias_surface" />
+			<arg name="surface" type="object" interface="wl_surface" />
+			<arg name="name" type="string" />
+		</request>
+
+		<event name="configure">
+			<description summary="Surface resize">
+				This provides a standard surface resize notification, exactly
+				the same as what desktop_shell provides, except there is no
+				notion of edges since IVI doesn't have a mouse interface for
+				resizing windows like desktop does.
+			</description>
+
+			<arg name="surface" type="object" interface="ias_surface" />
+			<arg name="width" type="int" />
+			<arg name="height" type="int" />
+		</event>
+
+	</interface>
+
+	<interface name="ias_surface" version="1">
+		<description summary="IAS shell surface interface">
+			An interface implemented by a wl_surface.  On server side the
+			object is automatically destroyed when the related wl_surface is
+			destroyed.  On client side, ias_surface_destroy() must be
+			called before destroying the wl_surface object.
+		</description>
+
+		<request name="pong">
+		  <description summary="respond to a ping event">
+		A client must respond to a ping event with a pong request or
+		the client may be deemed unresponsive.
+		  </description>
+		  <arg name="serial" type="uint"/>
+		</request>
+
+		<request name="set_title">
+		  <description summary="set surface title">
+			This changes the surface's title, from what it was originally set to
+			when we grabbed the ias surface.
+		  </description>
+		  <arg name="title" type="string"/>
+		</request>
+
+		<request name="set_fullscreen">
+		  <description summary="set surface to be fullscreen">
+			This maps the surface as a fullscreen surface. A NULL output argument
+			is acceptable and it signifies that the client wants to use the 
+			default output.
+		  </description>
+		  <arg name="output" type="object" interface="wl_output" allow-null="true"/>
+		</request>
+
+		<request name="unset_fullscreen">
+		  <description summary="unset surface from being fullscreen to window mode">
+			This maps the surface to being inside a window (not fullscreen).
+			Client provides the new width and height for its surface. 
+		  </description>
+		  <arg name="width" type="uint" />
+		  <arg name="height" type="uint" />
+		</request>
+
+		<event name="ping">
+			<description summary="ping client">
+				Ping a client to check if it is receiving events and sending
+				requests. A client is expected to reply with a pong request.
+			</description>
+			<arg name="serial" type="uint"/>
+		</event>
+
+		<event name="configure">
+			<description summary="suggest resize">
+				The configure event asks the client to resize its surface.
+				The size is a hint, in the sense that the client is free to
+				ignore it if it doesn't resize, pick a smaller size (to
+				satisfy aspect ratio or resize in steps of NxM pixels).  The
+				client is free to dismiss all but the last configure event it
+				received.
+			</description>
+
+			<arg name="width" type="int"/>
+			<arg name="height" type="int"/>
+		</event>
+	</interface>
+
+	<interface name="ias_hmi" version="1">
+		<description summary="IVI HMI interface">
+			This interface provides a client application to control other
+			application's surfaces.
+		</description>
+
+		<request name="set_constant_alpha">
+			<description summary="Sets the constant alpha value of a surface">
+				Sets the constant alpha value (transparency) of a surface.  If
+				the surface is currently bound to a hardware sprite plane, this
+				will cause the sprite plane's constant alpha to be adjusted.
+				If the surface is not bound to a sprite, the shaders used to
+				draw it will be updated to reflect the appropriate transparency.
+			</description>
+
+			<arg name="id" type="uint" />
+			<arg name="alpha" type="uint" />
+		</request>
+		
+		<request name="move_surface">
+			<description summary="Move the surface to a specific location">
+				Sets the position of the surface relative to the output. 
+
+				This request cannot be used on background surfaces or surfaces
+				that have been made fullscreen via the set_fullscreen request.
+			</description>
+
+			<arg name="id" type="uint" />
+			<arg name="x" type="int" />
+			<arg name="y" type="int" />
+		</request>
+
+		<request name="resize_surface">
+			<description summary="Resize the surface">
+				Change the dimensions of a surface.
+
+	 			This request would be considered invalid in the following cases:
+				1) Attempt to resize Background or fullscreen surfaces
+				2) Resizing a surface to have a width or height of 0
+
+				For all the invalid cases mentioned above, the HMI client that 
+				made this request would be notified by calling send_surface_info().
+			</description>
+
+			<arg name="id" type="uint" />
+			<arg name="width" type="uint" />
+			<arg name="height" type="uint" />
+		</request>
+
+		<request name="zorder_surface">
+			<description summary="Set the surface at a specific z-order">
+				Change the z-order of the surface.  This sets the surface
+				z-order to a custom value between 0 and 0xffffff. The
+				default surface z-order is 0.
+
+				This request cannot be used on background surfaces, popup
+				surfaces, or surfaces that have been made fullscreen via
+				the set_fullscreen request.
+			</description>
+
+			<arg name="id" type="uint" />
+			<arg name="zorder" type="uint" />
+		</request>
+
+		<request name="set_visible">
+			<description summary="Set the surface's hidden behavior setting">
+				Set the surface behavior bit to make it hidden or visible.
+			</description>
+
+			<arg name="id" type="uint" />
+			<arg name="visible" type="uint" />
+		</request>
+
+		<request name="set_behavior">
+			<description summary="Set the surface's behavior bits">
+				Set the surface custom behavior bits.
+			</description>
+
+			<arg name="id" type="uint" />
+			<arg name="behavior_bits" type="uint" />
+		</request>
+
+		<request name="set_shareable">
+			<description summary="Set the surface's shareable flag">
+				Set the surface flag to make it available for sharing or not.
+			</description>
+
+			<arg name="id" type="uint" />
+			<arg name="shareable" type="uint" />
+		</request>
+
+		<request name="get_surface_sharing_info">
+			<description summary="Get the surface's information related surface sharing">
+				HMI client that made this request would be notified by surface_sharing_info
+				event about shareable flag for all clients surfaces
+			</description>
+
+			<arg name="id" type="uint" />
+		</request>
+
+		<enum name="visible_options">
+			<entry name="hidden" value="0"
+				summary="Hide the surface" />
+			<entry name="visible" value="1"
+				summary="Show the surface" />
+		</enum>
+
+		<enum name="FCAP_ERROR">
+			<entry name="OK" value="0"
+				summary="No error" />
+			<entry name="NO_CAPTURE_PROXY" value="1"
+				summary="No capture proxy available" />
+			<entry name="DUPLICATE" value="2"
+				summary="Duplicate surface or output requested" />
+			<entry name="NOT_BUILT_IN" value="3"
+				summary="Capture proxy not built in" />
+			<entry name="INVALID" value="4"
+				summary="Invalid argument" />
+		</enum>
+
+		<request name="start_capture">
+			<description summary="Start capturing frames">
+				Tell frame capture to start sending frames to client.
+			</description>
+			<arg name="surfid" type="uint"/>
+			<arg name="output_number" type="uint"/>
+			<arg name="profile" type="int"/>
+			<arg name="verbose" type="int"/>
+		</request>
+
+		<request name="stop_capture">
+			<description summary="Stop capturing frames">
+				Tell frame capture to stop sending frames to client.
+			</description>
+			<arg name="surfid" type="uint"/>
+			<arg name="output_number" type="uint"/>
+		</request>
+
+		<request name="release_buffer_handle">
+			<description summary="Release buffer handle sent to client">
+				The handle was sent to the client for encoding, this is
+				a message that requests it is done with and can be
+				destroyed to free resources.
+			</description>
+			<arg name="shm_surf_id" type="uint"/>
+			<arg name="buf_id" type="uint"/>
+			<arg name="image_id" type="uint"/>
+			<arg name="surfid" type="uint"/>
+			<arg name="output_number" type="uint"/>
+		</request>
+
+		<event name="surface_info">
+			<description summary="Notifies listeners of surface changes">
+				Notifies clients listening on the ias_hmi interface that a
+				surface has been created or modified.
+			</description>
+			<arg name="id" type="uint" />
+			<arg name="title" type="string" />
+			<arg name="z_order" type="uint" />
+			<arg name="x" type="int" />
+			<arg name="y" type="int" />
+			<arg name="width" type="uint" />
+			<arg name="height" type="uint" />
+			<arg name="alpha" type="uint" />
+			<arg name="behavior" type="uint" />
+			<arg name="pid" type="uint" />
+			<arg name="pname" type="string" />
+			<arg name="output" type="uint" />
+			<arg name="flipped" type="uint" />
+		</event>
+
+		<event name="surface_destroyed">
+			<description summary="Notifies listeners of surface destruction">
+				Notifies clients listening on the ias_hmi interface that an
+				existing surface has been destroyed, allowing them to clean
+				up their internal bookkeeping.
+			</description>
+			<arg name="id" type="uint" />
+			<arg name="title" type="string" />
+			<arg name="pid" type="uint" />
+			<arg name="pname" type="string" />
+		</event>
+
+		<event name="surface_sharing_info">
+			<description summary="Notifies listeners of surface sharing changes">
+				Notifies clients listening on the ias_hmi interface that a
+				surface sharing has been enabled or disabled.
+			</description>
+			<arg name="id" type="uint" />
+			<arg name="title" type="string" />
+			<arg name="shareable" type="uint" />
+			<arg name="pid" type="uint" />
+			<arg name="pname" type="string" />
+		</event>
+
+		<event name="raw_buffer_handle">
+			<description summary="Send weston buffer handle to client">
+				Send raw weston buffers to a client that has registered
+				an interest in the buffers for a particular surface or
+				output. The client will need to know the stride of each
+				plane.
+			</description>
+			<arg name="handle" type="int" />
+			<arg name="timestamp" type="uint" />
+			<arg name="frame_number" type="uint" />
+			<arg name="stride0" type="uint" />
+			<arg name="stride1" type="uint" />
+			<arg name="stride2" type="uint" />
+			<arg name="format" type="uint" />
+			<arg name="out_width" type="uint" />
+			<arg name="out_height" type="uint" />
+			<arg name="shm_surf_id" type="uint"/>
+			<arg name="buf_id" type="uint"/>
+			<arg name="image_id" type="uint"/>
+		</event>
+
+		<event name="raw_buffer_fd">
+			<description summary="Send weston buffer prime fd to client">
+				Send raw weston buffers to a client that has registered
+				an interest in the buffers for a particular surface or
+				output. The client will need to know the stride of each
+				plane.
+			</description>
+			<arg name="prime_fd" type="fd" />
+			<arg name="timestamp" type="uint" />
+			<arg name="frame_number" type="uint" />
+			<arg name="stride0" type="uint" />
+			<arg name="stride1" type="uint" />
+			<arg name="stride2" type="uint" />
+			<arg name="format" type="uint" />
+			<arg name="out_width" type="uint" />
+			<arg name="out_height" type="uint" />
+		</event>
+
+		<event name="capture_error">
+			<description summary="Send capture error notification to client">
+				The client needs to be informed of any errors that may occur
+				during creation or operation of the frame capture. We can send
+				error codes through here to prompt shutdown of the client
+				application, should the error be fatal.
+			</description>
+			<arg name="pid" type="int" />
+			<arg name="error" type="int" />
+		</event>
+
+	</interface>
+
+	<interface name="ias_relay_input" version="1">
+		<description summary="IAS relay user input interface">
+			This interface allows a client application to send events to other
+			applications via the server.
+		</description>
+
+		<enum name="touch_event_type">
+			<entry name="down" value="0"
+				summary="Down event" />
+			<entry name="up" value="1"
+				summary="Up event" />
+			<entry name="motion" value="2"
+				summary="Motion event" />
+			<entry name="frame" value="3"
+				summary="Frame event" />
+			<entry name="cancel" value="4"
+				summary="Cancel event" />
+		</enum>
+
+		<request name="send_touch">
+			<description summary="Send user input touch event to the server">
+				If a user input touch event should be directed to a specific
+				application then this request is used to pass the event and
+				the ID of the application to the server.
+			</description>
+			<arg name="touch_event_type" type="uint"/>
+			<arg name="surfid" type="uint"/>
+			<arg name="touch_id" type="uint"/>
+			<arg name="x" type="uint"/>
+			<arg name="y" type="uint"/>
+			<arg name="time" type="uint"/>
+		</request>
+
+		<enum name="key_event_type">
+			<entry name="enter" value="0"
+				summary="Enter key event" />
+			<entry name="leave" value="1"
+				summary="Leave key event" />
+			<entry name="key" value="2"
+				summary="Key event" />
+			<entry name="modifiers" value="3"
+				summary="Modifiers event" />
+		</enum>
+
+		<request name="send_key">
+			<description summary="Send user input key event to the server">
+				If a user input key event should be directed to a specific
+				application then this request is used to pass the event and
+				the ID of the application to the server.
+			</description>
+			<arg name="key_event_type" type="uint"/>
+			<arg name="surfid" type="uint"/>
+			<arg name="time" type="uint"/>
+			<arg name="key" type="uint"/>
+			<arg name="state" type="uint"/>
+			<arg name="mods_depressed" type="uint"/>
+			<arg name="mods_latched" type="uint"/>
+			<arg name="mods_locked" type="uint"/>
+			<arg name="group" type="uint"/>
+		</request>
+
+	</interface>
+
+</protocol>
+

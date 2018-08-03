@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="trace_reporter">
+    <copyright>
+        Copyright (c) 2013, Intel Corporation.
+
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, including without limitation the rights
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        copies of the Software, and to permit persons to whom the Software is
+        furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be included in
+        all copies or substantial portions of the Software.
+
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+        THE SOFTWARE.
+    </copyright>
+
+    <interface name="trace_reporter" version="1">
+        <description summary="Compositor trace reporter">
+            A loadable weston module that makes it possible to retrieve
+            compositor timing/tracing information at runtime.
+        </description>
+
+        <request name="event_report">
+            <description summary="Requests tracing information via events">
+                Requests that the compositor send its current tracing
+                information via "tracepoint" events.  A "trace_end" event
+                will be sent after the final log entry to let clients know
+                they've received the entire log.  The "clear" parameter
+                indicates whether the tracing log should be cleared or
+                preserved after sending this log.
+            </description>
+
+            <arg name="clear" type="uint" />
+        </request>
+
+        <enum name="log_report">
+            <entry name="preserve" value="0" summary="Preserve log contents" />
+            <entry name="clear" value="1" summary="Clear log contents" />
+        </enum>
+
+        <event name="tracepoint">
+            <description summary="Reports tracepoint information">
+                Reports the information stored in a single tracepoint log entry.
+            </description>
+
+            <arg name="message" type="string" />
+            <arg name="time_sec" type="uint" />
+            <arg name="time_usec" type="uint" />
+        </event>
+
+        <event name="trace_end">
+            <description summary="Signals the end of a trace log dump" />
+        </event>
+
+        <request name="stdout_report">
+            <description summary="Dump tracing information to stdout">
+                Requests that the compositor dump its current tracing
+                information to stdout.  The compositor will perform some
+                minimal pretty-printing of the content, but the "event_report"
+                request can be used with a special client if more elaborate
+                printing/charting is desired.  The "clear" parameter indicates
+                whether the tracing log should be cleared or preserved after
+                sending this log.
+            </description>
+
+            <arg name="clear" type="uint" />
+        </request>
+
+        <request name="log_tracepoint">
+            <description summary="Adds tracepoint to compositor trace log">
+                Requests that the compositor log a tracepoint upon receiving
+                this client request.  This can be useful for timing how long
+                it takes for specific client/HMI events to happen after the
+                main compositor has started up (e.g., how long until the
+                HMI client provides its first frame?).  The log event added
+                here will just be a generic "client event" constant string.
+            </description>
+        </request>
+    </interface>
+</protocol>
+

@@ -1,0 +1,8 @@
+new-extension-client-protocol.h
+new-extension-server-protocol.h
+new-extension-protocol.c
+extension_test_client
+cursor_image.h
+extension_sample.c
+grid_layout.c.orig
+

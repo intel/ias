@@ -1,0 +1,334 @@
+The Intel(R) Automotive Solutions Wayland compositor package
+Release EC #1.7.0.03
+December 4, 2015
+
+New Features or Behavior in this Release
+----------------------------------------
+
+- There are no new features introduced in this release.
+
+Temporary Workarounds in this Release
+-------------------------------------
+
+- There are no temporary workarounds introduced in this release.
+
+
+Fixed Issues
+------------
+
+- ASD100015037 - Added ias-spug.h to weston includes
+
+Known Issues, Limitations & Restrictions
+-----------------------------------------
+
+- Flexible output model is not supported as i915 driver does not support atomic 
+pageflip currently
+
+Previous Features or Behavior
+----------------------------------------
+
+- ASD100008795 - Exit Compositor if unable to load Plugin
+- ASD100007119 - Performance improvement when there is only one app running
+- 214 Klockworks issues resolved
+- ASD100006680 - IVI-shell is being added to IAS compositor.
+- ASD100005362 - event notification when ias_crtc_set_* called
+
+
+Previous Bug Fixes
+----------------------------------------
+
+- ASD100007437 - Several sample clients seg fault when they are started up
+	due to a Klockworks identified issue where the tool incorrectly marked
+	an area of code as leaking memory when it really wasn't.
+- ASD100006244 - Fixed an issue where assigning a surface to sprite
+	plane always failed and stoped rendering.
+- ASD100006315 - Fixed an issue where some header files weren't being
+	copied to the sysroot.
+- ASD100005955 - Fixed an issue where we couldn't run Weston on SnB.
+
+Intel(R) Automotive Solutions Compositor Overview
+-------------------------------------------------
+A standard Wayland compositor has 3 high level components:
+
+1) The front-end protocol interface. Client applications use the front-end
+   protocol to communicate with the compositor. The standard Wayland compositor
+   package, Weston, provides two front-end protocol implementations; one
+   designed for desktop environments and one for tablet environments.
+
+2) The core compositor, Weston. This implements the core Wayland protocols.
+
+3) The compositor backend. This interfaces the compositor with the underlying
+   hardware.  The base Weston package provides interfaces for X11 and DRM.
+
+The IAS compositor also includes a fourth component not found elsewhere:
+
+4) The plugin framework.  This component allows customers to specify layout and
+   input plugins via the IAS config file.  An 'ias_layout_manager' interface is
+   exposed to clients to allow them to activate/deactivate layout plugins and
+   respond to layout changes.
+
+The Intel(R) Automotive Solutions Wayland compositor package provides custom
+implementations of the front-end protocol interface and the compositor backend. 
+These custom implementations provide capabilities that are specifically tailored
+to meet the needs of automotive IVI system integrators.
+
+ivi-shell
+	The IAS compositor adds ivi-shell for GENIVI compatibility. This shell
+	comprises of 3 separate modueles. They are ivi-shell.so, ivi-layout.so
+	and hmi-controller.so.
+
+	For details on the protocol see the ivi-application.xml and 
+	ivi-hmi-controller.xml
+
+	The following interfaces are supported:
+	   ivi_surface
+	   	   destroy
+		   [event] visibility
+		   [event] configure
+	  
+	   ivi_application
+	       surface_create
+	
+	   ivi_hmi_controller
+	       UI_ready
+		   workspace_control
+		   switch_mode
+		   home
+		   [event] workspace_end_control
+
+ias-shell
+    The ias-shell has been designed to provide a client protocol tailored to 
+    automotive IVI system needs. It is not compatible with the Weston desktop
+    or tablet shells and thus does not support clients that depend on desktop
+    or tablet specific features.
+
+    For details on the protocol see the ias-shell.xml file.
+    
+	The following interfaces are supported:
+       ias_shell
+           set_background
+           set_zorder
+           set_parent
+           set_behavior
+           popup
+           get_shell_surface
+           [event] configure
+
+        ias_layout_manager
+           set_layout
+           [event] layout
+           [event] layout_switched
+
+        ias_hmi
+           set_constant_alpha
+           move_surface
+           resize_surface
+           zorder_surface
+           set_visible
+           [event] surface_info
+
+    The Weston configuration file, weston.ini, specifies which protocol will be
+    used. To specify that the ias-shell protocol is used make sure your
+    weston.ini contains these lines:
+
+            [core]
+            shell=ias-shell.so
+  
+ 	To use ivi-shell.so, change the above line to say:
+			
+			shell=ivi-shell.so
+
+    The ias-shell supports loading a custom client that is privileged and can
+    control some aspects of client layout. This is similar to the desktop-shell
+    and desktop-shell client where the desktop-shell client may present a
+    global menu bar and desktop menus to launch other client applications.
+    There is some overlap in functionality between with the ias-shell client
+    and layout plug-ins. 
+
+    The ias-shell's configuration is controlled by the ias.conf XML file. This
+    file is located in the directory as the weston.ini file.  The ias.conf file
+    contains a section, <shell>, that defines the controller application.
+    For example:
+
+        <shell>
+            <hmi exec='path_to_hmi_application' />
+        </shell>
+
+    
+ias-backend
+
+    The Intel(R) Automotive Solutions compositor backend module is what enabled
+    the use of layout plug-ins and provides the interface to the Intel(R) EMGD
+    kernel mode driver. It makes use of specific capabilities of the
+    Intel(R) EMGD driver. The backend module will also work with the standard
+    i915 kernel mode driver but the following capabilities will not function:
+
+    - multiplane support (sprite planes)
+    - frame buffer gamma correction
+    - frame buffer contrast adjustment
+    - frame buffer brightness adjustment
+
+    <backend depth='1' stencil='1' raw_keyboards='1'>
+        <startup>
+            <crtc name='HDMI1' model='classic' mode='preferred'>
+                <output name='HDMI1-0' size='inherit' position='origin' />
+            </crtc>
+            <crtc name='HDMI2' model='flexible' mode='preferred'>
+                <output name='HDMI1-0' size='inherit' position='origin' />
+                <output name='LEFT' size='scale:400x400' position='rightof'
+				 target='HDMI1-0' plane_position='10,10' plane_size='600x800' />
+                <output name='RIGHT' size='inherit' position='rightof'
+				 target='LEFT' plane_position='620,10' plane_size='600x800' 
+                 rotation='270' />
+            </crtc>
+        </startup>
+    </backend>
+
+    backend depth can be specified as '0', '1', '8', '16', '24', etc. 
+    backend stencil can be specified as '0', '1', '8', '16', '24', etc.
+    backend raw_keyboards can be either '0' (default) or '1' --- enabling this
+       feature causes all libxkbcommon keymap handling to be disabled; keyboard
+       events will be delivered to clients with their evdev-generated keycodes
+       and no key mapping or modifier handling will be performed; this greatly
+       increases startup speed and is likely to match how keyboard-like devices
+       in real automotive settings work
+    crtc model can be 'disabled', 'classic', 'flexible', 'dualview', or 'stereo'
+    crtc mode can be 'preferred', 'current', or a specific
+       <width>x<height>@<refresh>
+    output mode can be 'inherit' or 'scale:<width>x<height>',
+    output position can be 'origin', 'rightof', 'below', or '<x>,<y>'
+    output target can be an output name to position this output relative to
+	output plane_position can be an '<x>,<y>' position relative to the origin
+    output plane_size should be '<W>x<H>' where <W> and <H> represent the
+       true, on-screen plane geometry
+    output rotation can be 0 (default), 90, 180, or 270 degrees
+
+ias-plugin-framework
+
+    One of the unique features of the IAS compositor is the ability to invoke
+    customer supplied layout plug-ins. When a layout plug-in is loaded and
+    enabled, it intercepts the basic Weston compositor draw() function and
+    replaces it with whatever custom routines are provided by the plug-in.
+    This allows the customer to have complete control over how application
+    surfaces are presented on the screen. Example layout plug-ins are
+    provided, see below for more details.
+
+    In order to use the IAS plugin framework, it should be added as a loaded
+    module to the weston.ini config file.  For example:
+
+        [core]
+        modules=ias-plugin-framework.so
+
+    Customer plugins should be specified in the ias.conf config file.  For
+    example:
+
+        <plugin name='grid' lib='path_to_grid_plugin.so' />
+        <plugin name='list' lib='path_to_list_plugin.so' />
+        <input_plugin='touch' lib='path_to_touch_plugin.so' />
+
+    The IAS plugin framework may be used with any shell module, but some
+    IVI-specific functionality will only be available when using the IAS shell.
+
+
+sample source code
+
+    grid_layout.c - An example layout plug-in. When invoked, it arranges
+      connected clients in a 4 x 4 grid on the screen.  It is invoked 
+      using a special key combination.
+
+    extension_sample.c - An example layout plug-in. When loaded, it creates a
+      new protocol extension that provides a custom API that clients can use.
+      In this case the API provides a rotate_cells() method and cell_selected
+      event. A test client for this extension is also included.
+    
+    surface_gbc_control.c - An example layout plug-in. When invoked it uses a
+      shader to adjust gamma, brightness, and contrast via keyboard control.
+
+    input.c - An example layout plug-in. When invoked handles various type of
+      input; mouse, touch, etc.
+
+    sprite_example.c - An example layout plug-in.  When invoked it arranges
+      connected clients in a grid using a sprite plane for the output.
+
+    ias-test-hmi.c - An example HMI client application.  This simply
+      displays an info panel with text at the bottom of the screen. Client
+      applications are shown as windows on the display in the area above the
+	  info panel.
+      This shows how to use the following:
+        1. Bind to the ias_shell and ias_hmi interfaces
+        2. Handle ias_shell configure events
+        3. Handle ias_hmi surface_info events
+        4. Use the ias_shell set_background() method to display a pattern
+           on the output background surface
+        5. Use the ias_shell set_zorder() method to position a surface at
+           the top of the zorder
+		6. Create a logo and center it on the screen
+
+    ias-test-shell.c - An example HMI client application.  This simply
+      displays an info panel with text at the bottom of the screen. Client
+      applications are maximized to display in the area above the info panel.
+      This shows how to use the following:
+        1. Bind to the ias_shell and ias_hmi interfaces
+        2. Handle ias_shell configure events
+        3. Handle ias_hmi surface_info events
+        4. Use the ias_shell set_background() method to display a pattern
+           on the output background surface
+        5. Use the ias_shell set_zorder() method to position a surface at
+           the top of the zorder
+        6. Use the ias_hmi move_surface(), resize_surface() and 
+           zorder_surface() methods to adjust client surfaces to fit with
+           the area designated for client surfaces
+
+    surfctrl.c - simple command line client that demonstrates how to use the
+      ias_hmi interface. This client shows how to use the following:
+        1. Bind to the ias_hmi interface
+        2. Handle surface_info events from the ias_hmi interface
+        3. Use the ias_hmi interface set_xy() to position a client surface
+           within an output's coordinate space.
+        4. Use the ias_hmi interface resize() method to change a client
+           surface size
+        5. Use the ias_hmi interface visible() method to make a client
+           surface hidden or visible
+        6. Use the ias_hmi interface alpha() method to change a client
+           surface alpha value
+        7. Use the ias_hmi interface zorder() method to change a client
+           surface zorder
+
+    layoutctrl.c - simple command line client that can activate/deactivate
+      layout plug-ins. This client shows how to use the following:
+        1. Bind to the ias_layout_manager interface
+        2. Handle manager_layout events from the ias_layout_manager interface
+        3. Handle manager_layout_switched events from the ias layout_manager
+           interface
+        4. Use the ias_layout_manager interface set_layout() method to
+           enable or disable a specific layout plugin for an output.
+
+    wrandr.c - simple command line client that controls outputs (position, mode,
+      color control, etc.). This demonstrates how to use do the following:
+        1. Bind to the ias_crtc and ias_output interfaces
+        2. Handle modelist events from the ias_crtc interface
+        3. Handle sprite events from the ias_crtc interface
+        4. Handle name events from the ias_output
+        5. Use the ias_crtc interface set_mode() method to set a mode
+        6. Use the ias_crtc interface set_gamma() to change the gamma value
+        7. Use the ias_crtc interface set_contrast() to change the contrast
+        8. Use the ias_crtc interface set_brightness() to change the brightness
+        9. Use the ias_crtc interface set_fb_transparency to set the
+           framebuffer alpha value
+        10. Use the ias_output interface scale_to() to scale the display
+        11. Use the ias_output interface set_xy() to position the output
+            within the global coordinate system
+        12. Use the ias_output interface disable() to disable an output
+        13. Use the ias_output interface enable() to enable an output
+
+    popup-test.c - a simple client to test the popup() method of the ias_shell
+      interface. It will display popup windows on the screen.
+
+    simple-hmi.c - Another example HMI client. This splits the display into an
+      info pane, a menu pane, and a main display area pane.  A triangle is drawn
+      on the main display pane.
+
+    test-randr.c - A client that tests output control.
+
+
+

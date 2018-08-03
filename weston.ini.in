@@ -1,0 +1,6 @@
+[core]
+modules=ias_plugin_framework.so
+shell=ias-shell.so
+
+#[xwayland]
+#path=@bindir@/Xwayland

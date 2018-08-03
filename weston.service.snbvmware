@@ -1,0 +1,12 @@
+[Unit]
+Description=weston
+Wants=sysinit.target
+After=sysinit.target
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/wayland
+Environment=HOME=/home/pulse
+ExecStart=/usr/bin/weston-launch -u pulse
+ExecStop=/usr/bin/killall -sKILL weston
+

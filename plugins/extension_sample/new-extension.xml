@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="new_extension">
+
+	<copyright>
+        Copyright 2012 Intel Corporation All Rights Reserved.
+        The source code contained or described herein and all documents related to
+        the source code ("Material") are owned by Intel Corporation or its suppliers
+        or licensors. Title to the Material remains with Intel Corporation or its
+        suppliers and licensors. The Material contains trade secrets and proprietary
+        and confidential information of Intel or its suppliers and licensors. The
+        Material is protected by worldwide copyright and trade secret laws and
+        treaty provisions. No part of the Material may be used, copied, reproduced,
+        modified, published, uploaded, posted, transmitted, distributed, or
+        disclosed in any way without Intel’s prior express written permission.
+       
+        No license under any patent, copyright, trade secret or other intellectual
+        property right is granted to or conferred upon you by disclosure or delivery
+        of the Materials, either expressly, by implication, inducement, estoppel or
+        otherwise. Any license under such intellectual property rights must be
+        express and approved by Intel in writing.
+
+		Unless otherwise agreed by Intel in writing, you may not remove or alter
+		this notice or any other notice embedded in Materials by Intel or Intel’s
+		suppliers or licensors in any way.
+	</copyright>
+
+	<interface name="my_plugin" version="1">
+		<description summary="IVI shell interface">
+			This is a simple example protocol extension that will
+			be created and advertised by a customer-provided
+			layout plugin.  This extension doesn't do anything
+			terribly interesting/useful, it's more an example
+			of how to hook up extensions in the plugin framework.
+
+			The sample plugin loading this is slightly modified
+			version of the basic grid plugin.
+		</description>
+
+		<request name="rotate_cells">
+			<description summary="Requests grid cells to start/stop rotating">
+				Allows a client to request that the cells of the plugin's
+				4x4 grid begin to rotate in the specified manner.
+			</description>
+
+			<arg name="method" type="uint" />
+		</request>
+
+		<enum name="rotate_cells_method">
+			<entry name="none" value="0" summary="Stop cell rotation" />
+			<entry name="cw" value="1" summary="Rotate cells clockwise" />
+			<entry name="ccw" value="2" summary="Rotate cells counter-clockwise" />
+		</enum>
+
+		<event name="cell_selected">
+			<description summary="Grid cell click notification">
+				This event is raised when the grid cell associated with a
+				surface is selected (clicked or switched to via keyboard).
+			</description>
+
+			<arg name="cell" type="uint" />
+		</event>
+	</interface>
+
+</protocol>
+

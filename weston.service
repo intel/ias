@@ -1,0 +1,13 @@
+[Unit]
+Description=weston
+Wants=early_done.target
+After=early_done.target
+
+[Service]
+Type=simple
+User=pulse
+Environment=XDG_RUNTIME_DIR=/run/wayland
+Environment=HOME=/home/pulse
+ExecStart=/usr/bin/weston-launch
+ExecStop=/usr/bin/killall -sKILL weston
+

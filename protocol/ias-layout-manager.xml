@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="iaslayout">
+	<copyright>
+		Copyright (c) 2013, Intel Corporation.
+
+		Permission is hereby granted, free of charge, to any person obtaining a copy
+		of this software and associated documentation files (the "Software"), to deal
+		in the Software without restriction, including without limitation the rights
+		to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+		copies of the Software, and to permit persons to whom the Software is
+		furnished to do so, subject to the following conditions:
+
+		The above copyright notice and this permission notice shall be included in
+		all copies or substantial portions of the Software.
+
+		THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+		IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+		FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+		AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+		LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+		OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+		THE SOFTWARE.
+	</copyright>
+
+	<interface name="ias_layout_manager" version="1">
+		<description summary="IAS display layout manager">
+			In automotive settings it is quite common to have the same set
+			of surfaces be displayed in different layouts during different
+			modes of operation (e.g., "home screen" vs task switcher vs
+			tiled view).  This interface allows clients to control/monitor
+			the usage of different display layouts.
+		</description>
+
+		<event name="layout">
+			<description summary="Advertises a supported layout">
+				A layout event is raised for each layout that the layout
+				manager is aware of.  This includes both built-in layouts
+				and plugin-loaded layouts.  Layouts are identified by ID
+				number.  ID's less than 64 are reserved for builtin layouts
+				provided by the IAS shell.  ID's 64 and above are available
+				for use by layouts loaded by plugin (the ID assignment can
+				be configured in the IAS configuration file).  ID 0 will always
+				refer to the 'default' layout (sometimes called the "home
+				screen") in which surfaces are organized exactly as specified
+				by their internal geometry.
+			</description>
+
+			<arg name="id" type="uint" />
+			<arg name="name" type="string" />
+		</event>
+
+		<event name="layout_switched">
+			<description summary="Notify clients of layout change">
+				Full detail, full framerate rendering may not be necessary
+				or desirable in all display layouts.  This event provides
+				a hint to applications that the display layout has changed,
+				allowing them to make appropriate adjustments.  For example,
+				in a grid layout where surfaces are only visible as thumbnails,
+				a GPS app may elect to render in lower quality and possibly
+				omit point of interest geometry to lessen the load on the
+				GPU.  A media player could elect to pause completely.
+			</description>
+
+			<arg name="id" type="uint" />
+			<arg name="output" type="object" interface="wl_output" />
+		</event>
+
+		<request name="set_layout">
+			<description summary="Set a specific layout">
+				Requests that the shell switch to a specific layout on
+				specified output.  "layout_switched" event will be delivered to
+				each client to notify it about the change.
+			</description>
+
+			<arg name="output" type="object" interface="wl_output" />
+			<arg name="id" type="uint" />
+		</request>
+	</interface>
+</protocol>

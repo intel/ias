@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="iasbackend">
+
+    <copyright>
+        Copyright (c) 2012, Intel Corporation.
+
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, including without limitation the rights
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        copies of the Software, and to permit persons to whom the Software is
+        furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be included in
+        all copies or substantial portions of the Software.
+
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+        THE SOFTWARE.
+    </copyright>
+
+    <interface name="ias_mode" version="1">
+        <description summary="CRTC mode">
+            Represents a possible width, height, and refresh rate of a CRTC.
+        </description>
+        <request name="add">
+            <description summary="add information about the mode">
+				Do nothing for now. This is to force the interface to
+				get created.
+            </description>
+        </request>
+    </interface>
+
+    <interface name="ias_crtc" version="1">
+        <description summary="CRTC hardware">
+            A CRTC represents a hardware pipe.  Each CRTC has a primary display
+            plane and possibly one or more sprite planes.  During normal
+            operation a CRTC drives exactly one output, but in dualview/stereo
+            setups, it is possible to drive two outputs from a single CRTC.
+        </description>
+
+        <event name="mode">
+            <description summary="Advertises supported mode">
+                Advertises a mode that the CRTC supports.  Note that in dualview
+                and stereo setups, this mode is actually a combination of the
+                modes of the two displays being driven.
+            </description>
+
+            <arg name="mode_number" type="uint" />
+            <arg name="width" type="uint" />
+            <arg name="height" type="uint" />
+            <arg name="refresh" type="uint" />
+        </event>
+        
+        <event name="gamma">
+            <description summary="Advertises current gamma">
+                Advertises the current gamma setting for the CRTC.
+            </description>
+
+            <arg name="red" type="uint" />
+            <arg name="green" type="uint" />
+            <arg name="blue" type="uint" />
+        </event>
+
+        <event name="contrast">
+            <description summary="Advertises current contrast">
+                Advertises the current contrast setting for the CRTC.
+            </description>
+
+            <arg name="red" type="uint" />
+            <arg name="green" type="uint" />
+            <arg name="blue" type="uint" />
+        </event>
+
+        <event name="brightness">
+            <description summary="Advertises current brightness">
+                Advertises the current brightness setting for the CRTC.
+            </description>
+
+            <arg name="red" type="uint" />
+            <arg name="green" type="uint" />
+            <arg name="blue" type="uint" />
+        </event>
+
+        <request name="set_mode">
+            <description summary="Switch CRTC mode">
+                Changes the mode of a CRTC.  Note that in cases where a CRTC is
+                driving multiple displays, this will result in a mode change on
+                both of those displays.
+            </description>
+
+            <arg name="mode" type="uint" />
+        </request>
+
+        <request name="set_gamma">
+            <description summary="Set CRTC gamma correction">
+                Sets the gamma correction for a CRTC.
+            </description>
+
+            <arg name="red" type="uint" />
+            <arg name="green" type="uint" />
+            <arg name="blue" type="uint" />
+        </request>
+
+        <request name="set_contrast">
+            <description summary="Set CRTC contrast">
+                Sets the contrast for a CRTC.
+            </description>
+
+            <arg name="red" type="uint" />
+            <arg name="green" type="uint" />
+            <arg name="blue" type="uint" />
+        </request>
+
+        <request name="set_brightness">
+            <description summary="Set CRTC brightness">
+                Sets the brightness for a CRTC.
+            </description>
+
+            <arg name="red" type="uint" />
+            <arg name="green" type="uint" />
+            <arg name="blue" type="uint" />
+        </request>
+
+		<request name="set_fb_transparency">
+			<description summary="Set CRTC transparency">
+				Enables or disables transparency in the pixel format for the fb.
+			</description>
+
+			<arg name="enable" type="uint" />
+		</request>
+
+    </interface>
+
+    <interface name="ias_output" version="1">
+        <description summary="Display output">
+            An output represents a distinct display (or one "view" of a
+            dualview display).  In normal setups there is a single
+            output per CRTC.  In dualview and stereo 3D setups, there are
+            two outputs per CRTC.
+        </description>
+
+        <request name="set_xy">
+            <description summary="Set output location">
+                Sets the location of the output.
+            </description>
+
+            <arg name="x" type="uint" />
+            <arg name="y" type="uint" />
+        </request>
+
+        <request name="disable">
+            <description summary="Disables a display output">
+                Disables a display output.  Disabling a display will not adjust
+                the compositor coordinates of the other displays managed by the
+                compositor.  If two outputs are being driven off a single CRTC,
+                this will have no effect on the other output.
+            </description>
+        </request>
+
+        <request name="enable">
+            <description summary="Enables a display output">
+                Enables a previously disabled display output.  If two outputs
+                are being driven off a single CRTC, this will have no effect on
+                the other output.
+            </description>
+        </request>
+
+        <request name="scale_to">
+            <description summary="Scales an output">
+                Scales an output to cover a smaller or larger area than the
+                output's mode.
+            </description>
+
+            <arg name="width" type="uint" />
+            <arg name="height" type="uint" />
+        </request>
+
+		<event name="name">
+			<description summary="Output name">
+				Advertises the name of this output.
+			</description>
+			
+			<arg name="name" type="string" />
+		</event>
+
+    </interface>
+</protocol>
