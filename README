@@ -237,3 +237,15 @@ explicitly mentioned.
 
 Weston's build may not sanely allow this yet, but this is the
 intention.
+
+LIBDRM dependency:
+-------------
+
+At present, there are two extra patches in libdrm required to 
+compile Intel Automotive Solution Compositor for Wayland.
+They are:
+xf86drmMode-Add-RGBA-property-helpers.patch
+xf86drmMode-Add-plane-blending-helpers.patch
+
+It is expected that these patches will be upstreamed in the near
+future and no longer needed to be carried by the integration team.
