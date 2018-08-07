@@ -249,3 +249,24 @@ xf86drmMode-Add-plane-blending-helpers.patch
 
 It is expected that these patches will be upstreamed in the near
 future and no longer needed to be carried by the integration team.
+
+Building IAS:
+-----------
+
+The following build options should be used to compile IAS:
+./autogen.sh --disable-setuid-install \
+        --enable-ias-shell \
+        --disable-xkbcommon \
+        --enable-simple-clients \
+        --enable-clients \
+        --disable-wayland-compositor \
+        --disable-libunwind \
+        --disable-xwayland \
+        --disable-xwayland-test \
+        --disable-x11-compositor \
+        --disable-rpi-compositor \
+        --enable-ivi-plugin-manager \
+        --enable-layer-manager-control \
+        --disable-tracing \
+        --enable-shadergen 
+ 
