@@ -3,7 +3,7 @@ Summary:    Weston Compositor
 Version:    1.7.0.03
 Release:    2%{?dist}
 Group:      Graphics & UI Framework/Wayland Window System
-License:    Intel-Proprietary
+License:    MIT
 URL:        http://wayland.freedesktop.org
 Source0:    %{name}-%{version}.tar.gz
 Source1:    ias_dualscreen.conf
