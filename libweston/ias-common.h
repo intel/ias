@@ -273,8 +273,7 @@ struct ias_backend {
 			pixman_region32_t *);
 	int (*assign_zorder_to_sprite) (struct weston_output *, int, int);
 	int (*set_fb_blend_ovl) (struct weston_output *, int );
-	int (*assign_blending_to_sprite) (struct weston_output *output,	int, int, int,
-			float, int);
+	int (*assign_constant_alpha_to_sprite) (struct weston_output *, int, float, int);
 	struct weston_plane * (*attempt_scanout_for_view) (struct weston_output *,
 			struct weston_view *, uint32_t check_xy);
 	void (*get_tex_info)(struct weston_view *view, int *num, GLuint *names);

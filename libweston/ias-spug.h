@@ -350,18 +350,6 @@ enum spug_output_transform {
 	SPUG_OUTPUT_TRANSFORM_FLIPPED_270 = 7,
 };
 
-enum spug_blend_factor {
-	SPUG_BLEND_FACTOR_AUTO,
-	SPUG_BLEND_FACTOR_ZERO,
-	SPUG_BLEND_FACTOR_ONE,
-	SPUG_BLEND_FACTOR_SRC_ALPHA,
-	SPUG_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-	SPUG_BLEND_FACTOR_CONSTANT_ALPHA,
-	SPUG_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
-	SPUG_BLEND_FACTOR_CONSTANT_ALPHA_TIMES_SRC_ALPHA,
-	SPUG_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA_TIMES_SRC_ALPHA,
-};
-
 struct ipug_event_listener {
 	struct ias_plugin *plugin;
 };
@@ -507,12 +495,6 @@ WL_EXPORT int spug_assign_constant_alpha_to_sprite(	const spug_output_id output_
 													int sprite_id,
 													float constant_value,
 													int enable);
-WL_EXPORT int spug_assign_blending_to_sprite(const spug_output_id output_id,
-											int sprite_id,
-											int src_factor,
-											int dst_factor,
-											float blend_color,
-											int enable);
 
 /* return true if the view is a cursor */
 WL_EXPORT spug_bool spug_view_is_cursor(const spug_view_id view_id);

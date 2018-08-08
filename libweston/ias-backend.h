@@ -176,8 +176,6 @@ struct ias_properties {
 
 	uint32_t fb_id;
 	uint32_t crtc_id;
-	uint32_t blend_func;
-	uint32_t blend_color;
 
 	uint32_t rotation;
 };
@@ -359,7 +357,7 @@ struct ias_fb {
 
 enum sprite_dirty_bit {
 	SPRITE_DIRTY_ZORDER			= 0x1,
-	SPRITE_DIRTY_BLENDING = 0x2,
+	SPRITE_DIRTY_CONSTANT_ALPHA = 0x2,
 	SPRITE_DIRTY_FB_BLEND_OVL	= 0x4
 };
 
@@ -372,11 +370,8 @@ struct ias_sprite {
 	int locked;
 	enum sprite_dirty_bit sprite_dirty;
 	int zorder;
-
-	int blending_enabled;
-	float blending_value;
-	int blending_src_factor;
-	int blending_dst_factor;
+	int constant_alpha_enabled;
+	float constant_alpha_value;
 
 	struct ias_backend *compositor;
 	struct ias_crtc *ias_crtc;
