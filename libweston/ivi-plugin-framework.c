@@ -555,8 +555,8 @@ ias_assign_constant_alpha_to_sprite(struct weston_output *output,
 	ret = ((struct ias_backend *)
 			(framework->compositor->backend))->assign_blending_to_sprite(
 					output, sprite_id,
-					DRM_BLEND_FACTOR_CONSTANT_ALPHA,
-					DRM_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
+					SPUG_BLEND_FACTOR_CONSTANT_ALPHA,
+					SPUG_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
 					constant_value, enable);
 
 	return ret;

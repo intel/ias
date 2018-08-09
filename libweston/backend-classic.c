@@ -1107,23 +1107,23 @@ update_sprites_classic(struct ias_crtc *ias_crtc)
 					if (s->blending_enabled) {
 						drmModeAtomicAddProperty(ias_crtc->prop_set,
 								s->plane_id,
-								s->prop.blend_func,
-								(s->blending_src_factor << 16) | s->blending_dst_factor);
+								s->prop.pixel_blend_mode,
+								s->pixel_blend_mode);
 
 						drmModeAtomicAddProperty(ias_crtc->prop_set,
 								s->plane_id,
-								s->prop.blend_color,
-								DRM_RGBA16161616(0, 0, 0, s->blending_value * 0xFFFF));
+								s->prop.alpha,
+								s->constant_alpha * 0xFFFF);
 					} else {
 						drmModeAtomicAddProperty(ias_crtc->prop_set,
 								s->plane_id,
-								s->prop.blend_func,
-								DRM_BLEND_FUNC(ONE, ZERO));
+								s->prop.pixel_blend_mode,
+								DRM_MODE_BLEND_PIXEL_NONE);
 
 						drmModeAtomicAddProperty(ias_crtc->prop_set,
 								s->plane_id,
-								s->prop.blend_color,
-								DRM_RGBA16161616(0, 0, 0, 0xFFFF));
+								s->prop.alpha,
+								0xFFFF);
 					}
 				}
 

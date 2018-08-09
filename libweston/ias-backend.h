@@ -63,6 +63,12 @@
 
 #define MAX_OUTPUTS_PER_CRTC 4
 
+#ifndef DRM_MODE_BLEND_PIXEL_NONE
+#define DRM_MODE_BLEND_PIXEL_NONE       0
+#define DRM_MODE_BLEND_PREMULTI         1
+#define DRM_MODE_BLEND_COVERAGE         2
+#endif
+
 struct ias_fb;
 struct ias_configured_output;
 struct ias_configured_crtc;
@@ -176,8 +182,8 @@ struct ias_properties {
 
 	uint32_t fb_id;
 	uint32_t crtc_id;
-	uint32_t blend_func;
-	uint32_t blend_color;
+	uint32_t alpha;
+	uint32_t pixel_blend_mode;
 
 	uint32_t rotation;
 };
@@ -349,6 +355,7 @@ struct ias_fb {
 	int is_compressed;
 	int is_client_buffer;
 	struct weston_buffer_reference buffer_ref;
+	uint32_t format;
 };
 
 /*
@@ -373,9 +380,8 @@ struct ias_sprite {
 	int zorder;
 
 	int blending_enabled;
-	float blending_value;
-	int blending_src_factor;
-	int blending_dst_factor;
+	float constant_alpha;
+	int pixel_blend_mode;
 
 	struct ias_backend *compositor;
 	struct ias_crtc *ias_crtc;

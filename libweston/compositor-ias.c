@@ -378,8 +378,8 @@ ias_get_object_properties(int fd,
 		{ "CRTC_ID", F(crtc_id) },
 		{ "rotation", F(rotation) },
 
-		{ "blend_func", F(blend_func) },
-		{ "blend_color", F(blend_color) },
+		{ "alpha", F(alpha) },
+		{ "pixel blend mode", F(pixel_blend_mode) },
 	};
 #undef F
 
@@ -1335,10 +1335,10 @@ ias_fb_get_from_bo(struct gbm_bo *bo, struct weston_buffer *buffer,
 
 	width = gbm_bo_get_width(bo);
 	height = gbm_bo_get_height(bo);
+	format = gbm_bo_get_format(bo);
 
 	if ((!ias_crtc->sprites_are_broken && fb_type != IAS_FB_CURSOR) ||
 	    (!ias_crtc->cursors_are_broken && fb_type == IAS_FB_CURSOR)) {
-		format = gbm_bo_get_format(bo);
 
 		/* if transparency is not enabled disable alpha channel only
 		 * when scanout == true, otherwise leave format unchanged
@@ -1415,6 +1415,8 @@ ias_fb_get_from_bo(struct gbm_bo *bo, struct weston_buffer *buffer,
 			}
 		}
 	}
+
+	fb->format = format;
 
 	gbm_bo_set_user_data(bo, fb, ias_fb_destroy_callback);
 
@@ -4521,6 +4523,7 @@ assign_blending_to_sprite(struct weston_output *output,
 	struct ias_crtc *ias_crtc = ias_output->ias_crtc;
 	struct ias_sprite *s;
 	int ret = -1;
+	uint32_t format;
 
 	/* Make sure sprites are actually functioning (e.g., new enough kernel) */
 	if (ias_crtc->sprites_are_broken) {
@@ -4530,12 +4533,46 @@ assign_blending_to_sprite(struct weston_output *output,
 
 	wl_list_for_each(s, &ias_crtc->sprite_list, link) {
 		if (s->plane_id == sprite_id) {
+			format = s->next->format;
+
+			if ((src_factor == SPUG_BLEND_FACTOR_AUTO &&
+					dst_factor == SPUG_BLEND_FACTOR_AUTO) ||
+					(src_factor == SPUG_BLEND_FACTOR_ONE &&
+							dst_factor == SPUG_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA)) {
+				s->constant_alpha = 1.0f;
+				s->pixel_blend_mode = (format == GBM_FORMAT_ARGB8888) ?
+						DRM_MODE_BLEND_PREMULTI :
+						DRM_MODE_BLEND_PIXEL_NONE;
+			} else if (src_factor == SPUG_BLEND_FACTOR_ONE &&
+					dst_factor == SPUG_BLEND_FACTOR_ZERO) {
+				s->constant_alpha = 1.0f;
+				s->pixel_blend_mode = DRM_MODE_BLEND_PIXEL_NONE;
+			} else if (src_factor == SPUG_BLEND_FACTOR_SRC_ALPHA &&
+					dst_factor == SPUG_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA) {
+				s->constant_alpha = 1.0f;
+				s->pixel_blend_mode = (format == GBM_FORMAT_ARGB8888) ?
+						DRM_MODE_BLEND_COVERAGE :
+						DRM_MODE_BLEND_PIXEL_NONE;
+			} else if (src_factor == SPUG_BLEND_FACTOR_CONSTANT_ALPHA &&
+					dst_factor == SPUG_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA) {
+				s->constant_alpha = blend_color;
+				s->pixel_blend_mode = DRM_MODE_BLEND_PIXEL_NONE;
+			} else if (src_factor == SPUG_BLEND_FACTOR_CONSTANT_ALPHA &&
+					dst_factor == SPUG_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA_TIMES_SRC_ALPHA) {
+				s->constant_alpha = blend_color;
+				s->pixel_blend_mode = DRM_MODE_BLEND_PREMULTI;
+			} else if (src_factor == SPUG_BLEND_FACTOR_CONSTANT_ALPHA_TIMES_SRC_ALPHA &&
+					dst_factor == SPUG_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA_TIMES_SRC_ALPHA) {
+				s->constant_alpha = blend_color;
+				s->pixel_blend_mode = DRM_MODE_BLEND_COVERAGE;
+			} else {
+				IAS_ERROR("Invalid blend factor combination");
+				return -1;
+			}
+
 			s->blending_enabled = enable;
-			s->blending_value = blend_color;
-			s->blending_src_factor = src_factor;
-			s->blending_dst_factor = dst_factor;
 			s->sprite_dirty |= SPRITE_DIRTY_BLENDING;
-			s->view->alpha = s->blending_value;
+			s->view->alpha = s->constant_alpha;
 			ret = 0;
 		}
 	}
@@ -4981,9 +5018,9 @@ assign_view_to_sprite(struct weston_view *view,
 	 */
 	weston_buffer_reference(&sprite->next->buffer_ref, surface->buffer_ref.buffer);
 
-	if (view->alpha != sprite->blending_value) {
+	if (view->alpha != sprite->constant_alpha) {
 		sprite->sprite_dirty |= SPRITE_DIRTY_BLENDING;
-		sprite->blending_value = view->alpha;
+		sprite->constant_alpha = view->alpha;
 	}
 
 	return &ias_output->fb_plane;
