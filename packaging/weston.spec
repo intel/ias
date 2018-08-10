@@ -124,7 +124,7 @@ mkdir  -p $RPM_BUILD_ROOT%{_weston_confdir}
 install -m 0644 weston.ini      $RPM_BUILD_ROOT%{_weston_confdir}
 install -m 0644 ivi-shell/weston.ini      $RPM_BUILD_ROOT%{_weston_confdir}/weston.ini.ivi
 install -m 0644 ias_brd2.conf   $RPM_BUILD_ROOT%{_weston_confdir}/ias.conf
-install -m 0644 ias_snb.conf    $RPM_BUILD_ROOT%{_weston_confdir}
+install -m 0644 ias.conf.example    $RPM_BUILD_ROOT%{_weston_confdir}
 install -m 0644 ias_vmware.conf $RPM_BUILD_ROOT%{_weston_confdir}
 
 #copy ias_dualscreen.conf
@@ -263,10 +263,10 @@ install -m 0775 traceinfo             $RPM_BUILD_ROOT%{_weston_clientdir}
 %attr(755,pulse,pulse) %dir /home/pulse
 %attr(755,pulse,pulse) %dir /home/pulse/.config
 %attr(644,pulse,pulse) /home/pulse/.config/weston.ini
-%attr(644,pulse,pulse) /home/pulse/.config/ias_snb.conf
+%attr(644,pulse,pulse) /home/pulse/.config/ias.conf.example
 %{_libdir}/systemd/system/weston.service.snbvmware
 %post ias-config-snb
-ln -s /home/pulse/.config/ias_snb.conf /home/pulse/.config/ias.conf
+ln -s /home/pulse/.config/ias.conf.example /home/pulse/.config/ias.conf
 ln -s %{_libdir}/systemd/system/weston.service.snbvmware %{_libdir}/systemd/system/weston.service
 
 
