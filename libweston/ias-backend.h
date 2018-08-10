@@ -331,6 +331,9 @@ struct ias_crtc {
 	/* Id of drm blob with color correction table to be updated atomically */
 	uint32_t color_correction_blob_id;
 	int index;
+
+	struct wl_event_source *cp_timer;
+	int cp_timer_index;
 };
 
 enum ias_fb_type {

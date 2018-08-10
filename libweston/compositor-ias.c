@@ -615,12 +615,13 @@ ias_crtc_set_mode(struct wl_client *client,
 }
 
 static int32_t
-ias_get_crtc_prop(int fd, uint32_t id, const char *name, uint32_t *prop_id, uint64_t *prop_value)
+ias_get_object_prop(int fd, uint32_t id, uint32_t object_type,
+		const char *name, uint32_t *prop_id, uint64_t *prop_value)
 {
 	int32_t ret = -1;
 	uint32_t i;
 	drmModePropertyPtr prop;
-	drmModeObjectPropertiesPtr props = drmModeObjectGetProperties(fd, id, DRM_MODE_OBJECT_CRTC);
+	drmModeObjectPropertiesPtr props = drmModeObjectGetProperties(fd, id, object_type);
 	for (i = 0; i < props->count_props; i++) {
 		prop = drmModeGetProperty(fd, props->props[i]);
 		if (!prop) {
@@ -657,7 +658,7 @@ ias_set_crtc_lut(int fd, uint32_t crtc_id, const char *lut_name,
 		return;
 	}
 
-	ret = ias_get_crtc_prop(fd, crtc_id, lut_name, &lut_id, NULL);
+	ret = ias_get_object_prop(fd, crtc_id, DRM_MODE_OBJECT_CRTC, lut_name, &lut_id, NULL);
 
 	if (ret < 0) {
 		IAS_ERROR("Cannot find %s property of CRTC %d\n", lut_name, crtc_id);
@@ -715,8 +716,8 @@ update_color_correction(struct ias_crtc *ias_crtc, uint32_t atomic)
 	int32_t ret;
 	uint32_t i;
 
-	ret = ias_get_crtc_prop(backend->drm.fd, ias_crtc->crtc_id, "GAMMA_LUT_SIZE",
-				NULL, &lut_size);
+	ret = ias_get_object_prop(backend->drm.fd, ias_crtc->crtc_id, DRM_MODE_OBJECT_CRTC,
+			"GAMMA_LUT_SIZE", NULL, &lut_size);
 
 	if (ret < 0) {
 		IAS_ERROR("Cannot query LUT size");
@@ -861,6 +862,45 @@ ias_crtc_set_brightness(struct wl_client *client,
 	ias_crtc_send_brightness(resource, red, green, blue);
 }
 
+static int
+cp_handler(void *data)
+{
+	struct wl_resource *resource = data;
+	struct ias_crtc *ias_crtc = wl_resource_get_user_data(resource);
+	int32_t ret;
+	struct ias_backend *backend;
+	uint32_t cp_prop_id;
+	uint64_t cp_val;
+
+	backend = ias_crtc->backend;
+
+	ret = ias_get_object_prop(backend->drm.fd, ias_crtc->connector_id,
+			DRM_MODE_OBJECT_CONNECTOR, "Content Protection",
+			&cp_prop_id, &cp_val);
+
+	if (ret < 0) {
+		IAS_ERROR("Cannot query content protection");
+		return 0;
+	}
+
+	/*
+	 * We have set a limit of 10 for cp_handler to be called. Either
+	 * CP has been enabled by the driver by then or there is some problem
+	 * and we should unnecessarily wait for the driver to turn on CP so we
+	 * will turn this timer off.
+	 */
+	if(++ias_crtc->cp_timer_index < 10 && !cp_val) {
+		wl_event_source_timer_update(ias_crtc->cp_timer, 16);
+	} else {
+		if(cp_val) {
+			ias_crtc_send_content_protection_enabled(resource);
+		}
+		wl_event_source_remove(ias_crtc->cp_timer);
+	}
+
+	return 1;
+}
+
 static void
 ias_output_set_fb_transparency(struct wl_client *client,
 		struct wl_resource *resource,
@@ -871,6 +911,88 @@ ias_output_set_fb_transparency(struct wl_client *client,
 	ias_output->transparency_enabled = enabled;
 
 	return;
+}
+
+static void
+ias_crtc_set_content_protection(struct wl_client *client,
+		struct wl_resource *resource,
+		uint32_t enabled)
+{
+	struct ias_crtc *ias_crtc = wl_resource_get_user_data(resource);
+	int32_t ret;
+	struct ias_backend *backend;
+	uint32_t cp_prop_id;
+	uint64_t cp_val;
+	struct wl_event_loop *loop;
+
+	if(!ias_crtc) {
+		IAS_ERROR("Invalid crtc provided");
+		return;
+	}
+
+	/* Make this value a 1 or a 0 */
+	enabled = !!enabled;
+
+	backend = ias_crtc->backend;
+
+	ret = ias_get_object_prop(backend->drm.fd, ias_crtc->connector_id,
+			DRM_MODE_OBJECT_CONNECTOR, "Content Protection",
+			&cp_prop_id, &cp_val);
+
+	if (ret < 0) {
+		IAS_ERROR("Cannot query content protection");
+		return;
+	}
+
+	/*
+	 * If the client is asking to enable/disable CP, but the driver already has
+	 * that value set, then reject this request. Also, make sure that we can
+	 * use nuclear pageflipping.
+	 */
+	if((uint32_t) cp_val != enabled &&
+			backend->has_nuclear_pageflip) {
+
+		cp_val = (uint64_t) enabled;
+		ret = drmModeObjectSetProperty(backend->drm.fd, ias_crtc->connector_id,
+				DRM_MODE_OBJECT_CONNECTOR, cp_prop_id, cp_val);
+		if (ret < 0) {
+			IAS_ERROR("Cannot set content protection property");
+			return;
+		}
+
+		/*
+		 * According to the spec, userspace can only request to turn on CP by setting the flag
+		 * DRM_MODE_CONTENT_PROTECTION_DESIRED, but it is up to driver to decide if it really
+		 * will be enabled and change that property to DRM_MODE_CONTENT_PROTECTION_ENABLED.
+		 * We must check to see if the driver changed this DESIRED to ENABLED and then report
+		 * back to our client that CP indeed got turned on.
+		 * Here we start polling and this timer function will be called every 16 ms.
+		 */
+		if(enabled) {
+
+			/*
+			 * Check once to see if the driver already turned on CP. If it did, perfect! We
+			 * will inform the client about it. If not, then we have to poll
+			 */
+			ret = ias_get_object_prop(backend->drm.fd, ias_crtc->connector_id,
+					DRM_MODE_OBJECT_CONNECTOR, "Content Protection",
+					&cp_prop_id, &cp_val);
+
+			if (ret < 0) {
+				IAS_ERROR("Cannot query content protection");
+				return;
+			}
+
+			if(cp_val) {
+				ias_crtc_send_content_protection_enabled(resource);
+			} else {
+				loop = wl_display_get_event_loop(backend->compositor->wl_display);
+				ias_crtc->cp_timer_index = 0;
+				ias_crtc->cp_timer = wl_event_loop_add_timer(loop, cp_handler, resource);
+				wl_event_source_timer_update(ias_crtc->cp_timer, 16);
+			}
+		}
+	}
 }
 
 /*
@@ -957,6 +1079,7 @@ struct ias_crtc_interface ias_crtc_implementation = {
 	ias_crtc_set_gamma,
 	ias_crtc_set_contrast,
 	ias_crtc_set_brightness,
+	ias_crtc_set_content_protection,
 };
 
 static int
@@ -1050,6 +1173,8 @@ bind_ias_crtc(struct wl_client *client,
 			         (ias_crtc->brightness >> 16) & 0xFF,
 			         (ias_crtc->brightness >> 8) & 0xFF,
 			         ias_crtc->brightness & 0xFF);
+
+	ias_crtc_send_id(resource, ias_crtc->crtc_id);
 }
 
 static struct

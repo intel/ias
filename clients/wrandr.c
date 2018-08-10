@@ -75,6 +75,7 @@ struct crtc {
 	unsigned int gamma[3];
 	unsigned int brightness[3];
 	unsigned int contrast[3];
+	unsigned int id;
 };
 
 struct wayland {
@@ -204,12 +205,22 @@ static void brightness_event(void *data,
 	crtc->brightness[2] = blue;
 }
 
+static void id_event(void *data,
+	   struct ias_crtc *ias_crtc,
+	   uint32_t id)
+{
+	struct crtc *crtc = data;
+
+	crtc->id = id;
+}
+
 
 static const struct ias_crtc_listener ias_crtc_listener = {
 	modelist_event,
 	gamma_event,
 	contrast_event,
 	brightness_event,
+	id_event,
 };
 
 
