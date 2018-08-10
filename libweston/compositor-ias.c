@@ -880,6 +880,51 @@ ias_crtc_set_fb_transparency(struct wl_client *client,
 	return;
 }
 
+static void
+ias_crtc_set_content_protection(struct wl_client *client,
+		struct wl_resource *resource,
+		uint32_t enabled)
+{
+	struct ias_crtc *ias_crtc = wl_resource_get_user_data(resource);
+	int32_t ret;
+	struct ias_backend *backend;
+	uint32_t cp_prop_id;
+	uint64_t cp_val;
+
+	if(!ias_crtc) {
+		IAS_ERROR("Invalid crtc provided");
+		return;
+	}
+
+	backend = ias_crtc->backend;
+
+	ret = ias_get_crtc_prop(backend->drm.fd, ias_crtc->crtc_id, "Content Protection",
+			&cp_prop_id, &cp_val);
+
+	if (ret < 0) {
+		IAS_ERROR("Cannot query content protection");
+		return;
+	}
+
+	/*
+	 * If the client is asking to enable/disable CP, but the driver already has
+	 * that value set, then reject this request. Also, make sure that we can
+	 * use nuclear pageflipping.
+	 */
+	if((uint32_t) cp_val != enabled &&
+			backend->has_nuclear_pageflip) {
+
+		cp_val = (uint64_t) enabled;
+		ret = drmModeObjectSetProperty(backend->drm.fd, ias_crtc->crtc_id,
+				DRM_MODE_OBJECT_CRTC, cp_prop_id, cp_val);
+		if (ret < 0) {
+			IAS_ERROR("Cannot set content protection property");
+			return;
+		}
+
+	}
+}
+
 /*
  * After moving an output, check to see if any pointers also need
  * to be moved.
@@ -965,6 +1010,7 @@ struct ias_crtc_interface ias_crtc_implementation = {
 	ias_crtc_set_contrast,
 	ias_crtc_set_brightness,
 	ias_crtc_set_fb_transparency,
+	ias_crtc_set_content_protection,
 };
 
 static int
@@ -1058,6 +1104,8 @@ bind_ias_crtc(struct wl_client *client,
 			         (ias_crtc->brightness >> 16) & 0xFF,
 			         (ias_crtc->brightness >> 8) & 0xFF,
 			         ias_crtc->brightness & 0xFF);
+
+	ias_crtc_send_id(resource, ias_crtc->crtc_id);
 }
 
 static struct

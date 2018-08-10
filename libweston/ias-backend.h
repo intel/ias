@@ -323,6 +323,7 @@ struct ias_crtc {
 	uint32_t gamma;
 	/* Id of drm blob with color correction table to be updated atomically */
 	uint32_t color_correction_blob_id;
+
 	int index;
 };
 

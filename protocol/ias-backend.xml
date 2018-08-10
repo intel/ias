@@ -86,6 +86,14 @@
             <arg name="blue" type="uint" />
         </event>
 
+        <event name="id">
+            <description summary="Advertise the CRTC id">
+                This informs a client of the CRTC id that is created by the DRM.
+            </description>
+
+            <arg name="id" type="uint" />
+        </event>
+
         <request name="set_mode">
             <description summary="Switch CRTC mode">
                 Changes the mode of a CRTC.  Note that in cases where a CRTC is
@@ -126,13 +134,21 @@
             <arg name="blue" type="uint" />
         </request>
 
-		<request name="set_fb_transparency">
-			<description summary="Set CRTC transparency">
-				Enables or disables transparency in the pixel format for the fb.
-			</description>
+        <request name="set_fb_transparency">
+            <description summary="Set CRTC transparency">
+                Enables or disables transparency in the pixel format for the fb.
+            </description>
 
-			<arg name="enable" type="uint" />
-		</request>
+            <arg name="enable" type="uint" />
+        </request>
+
+        <request name="set_content_protection">
+            <description summary="Set content protection">
+                Sets the content protection property (HDCP) for a CRTC.
+            </description>
+
+            <arg name="enable" type="uint" />
+        </request>
 
     </interface>
 
