@@ -3641,7 +3641,7 @@ gl_renderer_display_create(struct weston_compositor *ec, EGLenum platform,
 	struct gl_renderer *gr;
 	EGLint major, minor;
 	int supports = 0;
-	int vm_result;
+	int vm_result = 0;
 
 	if (platform) {
 		supports = gl_renderer_supports(
