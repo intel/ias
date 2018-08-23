@@ -5606,8 +5606,8 @@ int surface_covers_output(struct weston_surface *surface,
 	 * opaque region covers the whole output, but we have
 	 * to use XRGB as the KMS format code. */
 	pixman_region32_init_rect(&r, 0, 0,
-				  output->width,
-				  output->height);
+			output->width,
+			output->height);
 	pixman_region32_subtract(&r, &r, &surface->opaque);
 
 	ret = pixman_region32_not_empty(&r);
@@ -5620,47 +5620,6 @@ config_init_to_defaults(struct weston_ias_backend_config *config)
 {
 }
 
-/***
- *** Backend initial entrypoint
- ***/
-WL_EXPORT int
-weston_backend_init(struct weston_compositor *compositor,
-		    struct weston_backend_config *config_base)
-{
-	int ret;
-	struct ias_backend *b;
-	struct weston_ias_backend_config config = {{0, }};
-
-	TRACING_MODULE_INIT();
-
-	if (config_base == NULL ||
-	    config_base->struct_version != WESTON_IAS_BACKEND_CONFIG_VERSION ||
-	    config_base->struct_size > sizeof(struct weston_ias_backend_config)) {
-		weston_log("ias backend config structure is invalid\n");
-		return -1;
-	}
-
-	config_init_to_defaults(&config);
-	memcpy(&config, config_base, config_base->struct_size);
-
-	wl_list_init(&configured_crtc_list);
-	wl_list_init(&configured_output_list);
-	wl_list_init(&global_env_list);
-
-	ret = ias_read_configuration(CFG_FILENAME, backend_parse_data,
-			sizeof(backend_parse_data) / sizeof(backend_parse_data[0]),
-			NULL);
-	if (ret) {
-		IAS_ERROR("Failed to read configuration; bailing out");
-		return 0;
-	}
-
-	b = ias_compositor_create(compositor, &config);
-	if (b == NULL)
-		return -1;
-
-	return 0;
-}
 
 static int
 components_list_create(struct ias_backend *backend,
@@ -5708,42 +5667,42 @@ components_list_create(struct ias_backend *backend,
 		TRACEPOINT("    * After getting connector");
 
 		/* Do we recognize this connector type?  If not, it's unknown */
-                if (components_list->connector[i]->connector->connector_type >=
-                    ARRAY_LENGTH(connector_type_names)) {
-                        type_name = "UNKNOWN";
-                        IAS_DEBUG("Unrecognized KMS connector type %d",
-                                        connector[i]->connector_type);
-                } else {
-                        type_name = connector_type_names[components_list->connector[i]->connector->connector_type];
-                }
+		if (components_list->connector[i]->connector->connector_type >=
+				ARRAY_LENGTH(connector_type_names)) {
+			type_name = "UNKNOWN";
+			IAS_DEBUG("Unrecognized KMS connector type %d",
+					connector[i]->connector_type);
+		} else {
+			type_name = connector_type_names[components_list->connector[i]->connector->connector_type];
+		}
 
-                /* Determine the name we should match against in the config file */
-                snprintf(connector_name, sizeof(connector_name), "%s%d",
-                                type_name,
-                                components_list->connector[i]->connector->connector_type_id);
+		/* Determine the name we should match against in the config file */
+		snprintf(connector_name, sizeof(connector_name), "%s%d",
+				type_name,
+				components_list->connector[i]->connector->connector_type_id);
 
 		/*
-                 * Assuming we will find the connector this time around. The idea
-                 * behind the following code is that the user knew what crtcs they
-                 * wanted to be used with IAS as they provided the specific names
-                 * via ias.conf. So why bother looking for extra connectors that are
-                 * not going to be used by IAS anyways and will add extra time delay
-                 * in its startup.
-                 */
-                stop_searching = 1;
-                wl_list_for_each_reverse(confcrtc, &configured_crtc_list, link) {
+		 * Assuming we will find the connector this time around. The idea
+		 * behind the following code is that the user knew what crtcs they
+		 * wanted to be used with IAS as they provided the specific names
+		 * via ias.conf. So why bother looking for extra connectors that are
+		 * not going to be used by IAS anyways and will add extra time delay
+		 * in its startup.
+		 */
+		stop_searching = 1;
+		wl_list_for_each_reverse(confcrtc, &configured_crtc_list, link) {
 
-                        if (strcmp(confcrtc->name, connector_name) == 0) {
-                                confcrtc->found = 1;
-                        }
+			if (strcmp(confcrtc->name, connector_name) == 0) {
+				confcrtc->found = 1;
+			}
 
-                        stop_searching &= confcrtc->found;
-                }
+			stop_searching &= confcrtc->found;
+		}
 
-                if(stop_searching) {
-                        resources->count_connectors = i+1;
-                        break;
-                }
+		if(stop_searching) {
+			resources->count_connectors = i+1;
+			break;
+		}
 	}
 
 	return 0;
@@ -5985,4 +5944,46 @@ ias_update_outputs(struct ias_backend *backend, struct udev_device *event)
 		weston_view_geometry_dirty(curr_view);
 	}
 
+}
+
+/***
+ *** Backend initial entrypoint
+ ***/
+WL_EXPORT int
+weston_backend_init(struct weston_compositor *compositor,
+		    struct weston_backend_config *config_base)
+{
+	int ret;
+	struct ias_backend *b;
+	struct weston_ias_backend_config config = {{0, }};
+
+	TRACING_MODULE_INIT();
+
+	if (config_base == NULL ||
+			config_base->struct_version != WESTON_IAS_BACKEND_CONFIG_VERSION ||
+			config_base->struct_size > sizeof(struct weston_ias_backend_config)) {
+		weston_log("ias backend config structure is invalid\n");
+		return -1;
+	}
+
+	config_init_to_defaults(&config);
+	memcpy(&config, config_base, config_base->struct_size);
+
+	wl_list_init(&configured_crtc_list);
+	wl_list_init(&configured_output_list);
+	wl_list_init(&global_env_list);
+
+	ret = ias_read_configuration(CFG_FILENAME, backend_parse_data,
+			sizeof(backend_parse_data) / sizeof(backend_parse_data[0]),
+			NULL);
+	if (ret) {
+		IAS_ERROR("Failed to read configuration; bailing out");
+		return 0;
+	}
+
+	b = ias_compositor_create(compositor, &config);
+	if (b == NULL)
+		return -1;
+
+	return 0;
 }
