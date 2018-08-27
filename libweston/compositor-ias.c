@@ -3515,12 +3515,6 @@ capture_proxy_destroy_from_surface(struct ias_backend *ias_backend, struct westo
 			if (!capture_item->cp) {
 				weston_log("ERROR: Trying to destroy capture proxy that doesn't exist for this surface.\n");
 			} else {
-				if (surface->output) {
-					surface->output->disable_planes--;
-				} else {
-					weston_log("Warning - capture_proxy_destroy_from_surface - No output associated with surface %p.\n",
-							surface);
-				}
 				capture_proxy_destroy(capture_item->cp);
 				capture_item->cp = NULL;
 			}
@@ -4035,9 +4029,9 @@ start_capture(struct wl_client *client,
 
 		capture_proxy_set_verbose(output->cp, verbose);
 		capture_proxy_set_resource(output->cp, resource);
+		output->base.disable_planes++;
 	}
 
-	output->base.disable_planes++;
 	weston_log("start_capture done.\n");
 	return IAS_HMI_FCAP_ERROR_OK;
 }
