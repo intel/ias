@@ -144,9 +144,6 @@ struct gl_renderer_interface {
 #ifdef USE_VM
 	int vm_exec;
 	int vm_dbg;
-	int vm_pin;
-	int vm_bufs;
-	int vm_use_ggtt;
 	int vm_unexport_delay;
 	int vm_share_only;
 	const char* vm_plugin_path;
@@ -240,11 +237,7 @@ struct gl_renderer {
 	PFNEGLDUPNATIVEFENCEFDANDROIDPROC dup_native_fence_fd;
 
 #ifdef USE_VM
-	PFNEGLPINBOWL pin_bo;
-	PFNEGLUNPINBOWL unpin_bo;
-
 	void *vm_buffer_table;
-	struct wl_list vm_bufs_pinned_list;
 #endif // USE_VM
 };
 
