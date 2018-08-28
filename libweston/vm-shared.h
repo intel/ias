@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "config.h"
 #ifdef HYPER_DMABUF
-#include <xen/hyper_dmabuf.h>
+#include <hyper_dmabuf.h>
 #else
 typedef struct {
 	int id;
