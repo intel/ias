@@ -1,5 +1,6 @@
 #include "config.h"
 #include "vm.h"
+#include "linux-dmabuf.h"
 #include <sched.h>
 #ifdef HYPER_DMABUF
 #include <hyper_dmabuf.h>
@@ -191,20 +192,37 @@ static void print_vm_buf_list(struct gl_renderer *gr)
 	weston_log("-------------------------\n");
 }
 
-static int get_format(struct ias_backend *bc, struct weston_buffer *buffer)
+static void get_buffer_details(struct ias_backend *bc,
+			       struct gl_renderer *gr,
+			       struct weston_buffer *buffer,
+			       struct gr_buffer_ref *buffer_ref_ptr)
 {
-	struct gbm_bo *bo;
-	uint32_t format;
+	struct linux_dmabuf_buffer *dmabuf = NULL;
 
-	bo = gbm_bo_import(bc->gbm, GBM_BO_IMPORT_WL_BUFFER, buffer->resource, GBM_BO_USE_SCANOUT);
-	if (!bo) {
-		return 0;
+	if ((dmabuf = linux_dmabuf_buffer_get(buffer->resource))) {
+		buffer_ref_ptr->vm_buffer_info.format = dmabuf->attributes.format;
+		buffer_ref_ptr->vm_buffer_info.offset[0] = dmabuf->attributes.offset[0];
+		buffer_ref_ptr->vm_buffer_info.offset[1] = dmabuf->attributes.offset[1];
+		buffer_ref_ptr->vm_buffer_info.offset[2] = dmabuf->attributes.offset[2];
+		buffer_ref_ptr->vm_buffer_info.pitch[0] = dmabuf->attributes.stride[0];
+		buffer_ref_ptr->vm_buffer_info.pitch[1] = dmabuf->attributes.stride[1];
+		buffer_ref_ptr->vm_buffer_info.pitch[2] = dmabuf->attributes.stride[2];
+
+		switch(dmabuf->attributes.modifier[0])
+		{
+			case I915_FORMAT_MOD_X_TILED:
+			buffer_ref_ptr->vm_buffer_info.tile_format = 1;
+			break;
+			case I915_FORMAT_MOD_Y_TILED:
+			buffer_ref_ptr->vm_buffer_info.tile_format = 2;
+			break;
+			case I915_FORMAT_MOD_Y_TILED_CCS:
+			buffer_ref_ptr->vm_buffer_info.tile_format = 4;
+			break;
+			default:
+			buffer_ref_ptr->vm_buffer_info.tile_format = 0;
+		}
 	}
-
-	format = gbm_bo_get_format(bo);
-	gbm_bo_destroy(bo);
-
-	return format;
 }
 
 void vm_add_buf(struct weston_compositor *ec, struct gl_renderer *gr,
@@ -213,9 +231,13 @@ void vm_add_buf(struct weston_compositor *ec, struct gl_renderer *gr,
 {
 	struct vm_buffer_table *vbt = gr->vm_buffer_table;
 	struct gr_buffer_ref *gr_buffer_ref_ptr;
-	int32_t tiling_format[2];
 	struct gbm_bo *bo = NULL;
+	struct linux_dmabuf_buffer *dmabuf = NULL;
 	struct weston_surface *surface = view->surface;
+
+	dmabuf = linux_dmabuf_buffer_get(buffer->resource);
+	if (!dmabuf)
+		return;
 
 	if(!buffer->priv_buffer) {
 		gr_buffer_ref_ptr = zalloc(sizeof(struct gr_buffer_ref));
@@ -242,22 +264,10 @@ void vm_add_buf(struct weston_compositor *ec, struct gl_renderer *gr,
 	gr_buffer_ref_ptr->vm_buffer_info.counter = gs->frame_count;
 	gr_buffer_ref_ptr->vm_buffer_info.width = buffer->width;
 	gr_buffer_ref_ptr->vm_buffer_info.height = buffer->height;
-	gr->query_buffer(gr->egl_display, (void *) buffer->resource,
-			  EGL_TEXTURE_FORMAT,
-			  &(gr_buffer_ref_ptr->vm_buffer_info.format));
-	gr->query_buffer(gr->egl_display, (void *) buffer->resource,
-			  EGL_STRIDE,
-			  gr_buffer_ref_ptr->vm_buffer_info.pitch);
-	gr->query_buffer(gr->egl_display, (void *) buffer->resource,
-			  EGL_OFFSET,
-			  gr_buffer_ref_ptr->vm_buffer_info.offset);
-	gr->query_buffer(gr->egl_display, (void *) buffer->resource,
-			  EGL_TILING,
-			  tiling_format);
-	gr_buffer_ref_ptr->vm_buffer_info.format = get_format(bc, buffer);
+
+	get_buffer_details(bc, gr, buffer, gr_buffer_ref_ptr);
 
 	gr_buffer_ref_ptr->vm_buffer_info.status |= UPDATED;
-	gr_buffer_ref_ptr->vm_buffer_info.tile_format = tiling_format[0];
 
 	if(ec->renderer->get_surf_id) {
 		gr_buffer_ref_ptr->vm_buffer_info.surface_id =
@@ -288,7 +298,17 @@ void vm_add_buf(struct weston_compositor *ec, struct gl_renderer *gr,
 	}
 
 	gr_buffer_ref_ptr->cleanup_required = 1;
-	bo = gbm_bo_import(bc->gbm, GBM_BO_IMPORT_WL_BUFFER, buffer->resource, GBM_BO_USE_SCANOUT);
+	struct gbm_import_fd_data gbm_dmabuf = {
+		.fd = dmabuf->attributes.fd[0],
+		.width = dmabuf->attributes.width,
+		.height = dmabuf->attributes.height,
+		.stride = dmabuf->attributes.stride[0],
+		.format = dmabuf->attributes.format
+	};
+
+	bo = gbm_bo_import(bc->gbm, GBM_BO_IMPORT_FD,
+			&gbm_dmabuf, GBM_BO_USE_SCANOUT);
+
 	gr_buffer_ref_ptr->bo = bo;
 	if (!bo) {
 		return;
