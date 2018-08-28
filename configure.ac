@@ -780,7 +780,7 @@ else
 fi
 
 if test x$enable_hyper_dmabuf = xyes; then
-	   AC_CHECK_HEADER([xen/hyper_dmabuf.h], [],
+	   AC_CHECK_HEADER([hyper_dmabuf.h], [],
 			   [AC_MSG_ERROR([Couldn't find or include hyper_dmabuf.h])])
 	   AC_DEFINE([HYPER_DMABUF], [1], [Enable hyper dmabuf support])
 fi
