@@ -2,7 +2,7 @@
 #include "vm.h"
 #include <sched.h>
 #ifdef HYPER_DMABUF
-#include <xen/hyper_dmabuf.h>
+#include <hyper_dmabuf.h>
 #endif
 
 char vm_data[METADATA_BUFFER_SIZE];

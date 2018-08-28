@@ -67,7 +67,7 @@
 #include <EGL/eglext.h>
 
 #ifdef HYPER_DMABUF
-#include <xen/hyper_dmabuf.h>
+#include <hyper_dmabuf.h>
 #endif
 
 #ifndef EGL_PLATFORM_GBM_KHR
