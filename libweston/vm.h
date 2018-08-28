@@ -22,12 +22,6 @@
 										{ res = vm_init(gr); } else { res = 0; }
 #define VM_ADD_BUF(es, gr, gs, bc, buf, surf, idx) if(gl_renderer_interface.vm_exec) \
 										{ vm_add_buf(es, gr, gs, bc, buf, surf, idx); }
-#define VM_TABLE_DRAW(o, go, gr)    if(gl_renderer_interface.vm_exec) \
-										{ struct ias_output *io = (struct ias_output *) o; \
-										  if(io->vm) \
-											{ if(vm_table_draw(o, go, gr)) { return; } } \
-										}
-
 #define VM_TABLE_EXPOSE(o, go, gr)    if(gl_renderer_interface.vm_exec) \
 										{ struct ias_output *io = (struct ias_output *) o; \
 										  if(io->vm) \
@@ -51,28 +45,6 @@
 										{ vm_destroy(gr); }
 
 #define VM_MAX_BUFFERS_NUMBER 4
-
-/*
- * structure used to store pinned ggtt offsets
- * and buffer pointer
- */
-struct pinned_info {
-	unsigned long ggtt_offset;
-	void *buffer;
-};
-
-/*
- * structure used to store pinned ggtt offsets
- * for the surface
- */
-struct vm_bufs_pinned {
-	struct weston_surface* surface;
-	struct pinned_info bufs[VM_MAX_BUFFERS_NUMBER];
-	int idx;
-	int len;
-	struct wl_list elm;
-	uint32_t width, height;
-};
 
 struct vm_buffer_table {
 	struct vm_header h;

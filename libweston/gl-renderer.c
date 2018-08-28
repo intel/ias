@@ -3400,13 +3400,6 @@ gl_renderer_setup_egl_extensions(struct weston_compositor *ec)
 	gr->query_buffer =
 		(void *) eglGetProcAddress("eglQueryWaylandBufferWL");
 
-#ifdef USE_VM
-	gr->pin_bo =
-		(void *) eglGetProcAddress("eglPinBoWL");
-	gr->unpin_bo =
-		(void *) eglGetProcAddress("eglUnPinBoWL");
-#endif
-
 	extensions =
 		(const char *) eglQueryString(gr->egl_display, EGL_EXTENSIONS);
 	if (!extensions) {

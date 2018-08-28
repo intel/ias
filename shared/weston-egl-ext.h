@@ -38,13 +38,9 @@ struct wl_display;
 #ifdef EGL_EGLEXT_PROTOTYPES
 EGLAPI EGLBoolean EGLAPIENTRY eglBindWaylandDisplayWL(EGLDisplay dpy, struct wl_display *display);
 EGLAPI EGLBoolean EGLAPIENTRY eglUnbindWaylandDisplayWL(EGLDisplay dpy, struct wl_display *display);
-EGLAPI EGLBoolean EGLAPIENTRY eglPinBoWL(EGLDisplay dpy, struct wl_resource *buffer, unsigned long *ggtt_offset);
-EGLAPI EGLBoolean EGLAPIENTRY eglUnPinBoWL(EGLDisplay dpy, struct wl_resource *buffer);
 #endif
 typedef EGLBoolean (EGLAPIENTRYP PFNEGLBINDWAYLANDDISPLAYWL) (EGLDisplay dpy, struct wl_display *display);
 typedef EGLBoolean (EGLAPIENTRYP PFNEGLUNBINDWAYLANDDISPLAYWL) (EGLDisplay dpy, struct wl_display *display);
-typedef EGLBoolean (EGLAPIENTRYP PFNEGLPINBOWL) (EGLDisplay dpy, struct wl_resource *buffer, unsigned long *ggtt_offset);
-typedef EGLBoolean (EGLAPIENTRYP PFNEGLUNPINBOWL) (EGLDisplay dpy, struct wl_resource *buffer);
 #endif
 
 /*
