@@ -45,10 +45,7 @@ struct vm_buffer_info {
 	int32_t rotation;
 	int32_t status;
 	int32_t counter;
-	union {
-		hyper_dmabuf_id_t hyper_dmabuf_id;
-		unsigned long ggtt_offset;
-	};
+	hyper_dmabuf_id_t hyper_dmabuf_id;
 	char surface_name[SURFACE_NAME_LENGTH];
 	uint64_t surface_id;
 	int32_t bbox[4];

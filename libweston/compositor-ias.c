@@ -121,9 +121,6 @@ static int need_depth;
 static int need_stencil;
 static int vm_exec = 0;
 static int vm_dbg = 0;
-static int vm_pin = 0;
-static int vm_bufs = 4;
-static int vm_use_ggtt = 0;
 static int vm_unexport_delay = HYPER_DMABUF_UNEXPORT_DELAY;
 static int vm_share_only = 1;
 static char vm_plugin_path[256];
@@ -4058,21 +4055,15 @@ create_gbm_device(int fd)
 #ifdef USE_VM
 	gl_renderer->vm_exec = vm_exec;
 	gl_renderer->vm_dbg = vm_dbg;
-	gl_renderer->vm_pin = vm_pin;
-	gl_renderer->vm_bufs = vm_bufs;
 #ifdef HYPER_DMABUF
-	gl_renderer->vm_use_ggtt = vm_use_ggtt;
 	gl_renderer->vm_unexport_delay = vm_unexport_delay;
 	gl_renderer->vm_plugin_path = vm_plugin_path;
 	gl_renderer->vm_plugin_args = vm_plugin_args;
 	gl_renderer->vm_share_only = vm_share_only;
 #else
-	/* When hyper dmabuf is not enabled, force using GGTT method */
-	if (!vm_use_ggtt) {
-		weston_log("Hyper dmabuf support not enabled during compilation, "
-			   "falling back to GGTT\n");
-	}
-	gl_renderer->vm_use_ggtt = 1;
+	weston_log("Hyper dmabuf support not enabled during compilation, "
+		   "disabling surface sharing\n");
+	gl_renderer->vm_exec = 0;
 #endif // HYPER_DMABUF
 #endif // USE_VM
 
@@ -4336,7 +4327,7 @@ ias_compositor_create(struct weston_compositor *compositor,
 	}
 
 #ifdef HYPER_DMABUF
-	if (vm_exec && vm_use_ggtt == 0 && init_hyper_dmabuf(backend) < 0) {
+	if (vm_exec && init_hyper_dmabuf(backend) < 0) {
 		weston_log("Failed to initialize hyper dmabuf\n");
 		goto err_udev_dev;
 	}
@@ -4469,9 +4460,8 @@ err_sprite:
 	gbm_device_destroy(backend->gbm);
 	destroy_sprites(backend);
 #ifdef HYPER_DMABUF
-	if (vm_exec && vm_use_ggtt == 0) {
+	if (vm_exec)
 		cleanup_hyper_dmabuf(backend);
-	}
 #endif
 err_udev_dev:
 	if(backend->drm.fd) {
@@ -5117,12 +5107,6 @@ void backend_begin(void *userdata, const char **attrs) {
 			vm_exec = atoi(attrs[1]);
 		} else if (strcmp(attrs[0], "vm_dbg") == 0) {
 			vm_dbg = atoi(attrs[1]);
-		} else if (strcmp(attrs[0], "vm_pin") == 0) {
-			vm_pin = atoi(attrs[1]);
-		} else if (strcmp(attrs[0], "vm_bufs") == 0) {
-			vm_bufs = atoi(attrs[1]);
-		} else if (strcmp(attrs[0], "vm_use_ggtt") == 0) {
-			vm_use_ggtt = atoi(attrs[1]);
 		} else if (strcmp(attrs[0], "vm_unexport_delay") == 0) {
 			vm_unexport_delay = atoi(attrs[1]);
 		} else if (strcmp(attrs[0], "vm_plugin_path") == 0) {
