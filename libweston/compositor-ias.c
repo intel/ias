@@ -1310,8 +1310,8 @@ ias_output_scale(struct ias_output *ias_output,
 			 * will receive the swapped width and height.
 			 */
 			if (compositor->normalized_rotation) {
-				output->mm_width = height;
-				output->mm_height = width;
+				weston_head_set_physical_size(&output->head,
+							      height, width);
 			}
 
 			break;
@@ -2724,8 +2724,9 @@ ias_backend_output_enable(struct weston_output *base)
 					ias_output->name);
 	}
 
-	ias_output->base.mm_width = ias_output->width;
-	ias_output->base.mm_height = ias_output->height;
+	weston_head_set_physical_size(&base->head,
+				      ias_output->width,
+				      ias_output->height);
 
 	/* Hook up implementation */
 	ias_output->base.repaint = ias_output_repaint;
@@ -2799,9 +2800,6 @@ create_outputs_for_crtc(struct ias_backend *backend, struct ias_crtc *ias_crtc)
 
 		ias_output->base.current_mode = &ias_output->mode;
 		ias_output->base.original_mode = &ias_output->mode;
-		ias_output->base.subpixel = ias_subpixel_to_wayland(ias_crtc->subpixel);
-		ias_output->base.make = "unknown";
-		ias_output->base.model = "unknown";
 
 		wl_signal_init(&ias_output->update_signal);
 		wl_signal_init(&ias_output->printfps_signal);
@@ -2871,9 +2869,10 @@ create_outputs_for_crtc(struct ias_backend *backend, struct ias_crtc *ias_crtc)
 		ias_output->base.disable = ias_backend_output_disable;
 
 
-		ias_output->base.make = "unknown";
-		ias_output->base.model = "unknown";
-		ias_output->base.serial_number = "unknown";
+		weston_head_set_monitor_strings(&ias_output->base.head,
+						"unknown", "unknown", "unknown");
+		weston_head_set_subpixel(&ias_output->base.head,
+					 ias_subpixel_to_wayland(ias_crtc->subpixel));
 
 		wl_list_insert(&ias_output->base.mode_list, &ias_output->mode.link);
 

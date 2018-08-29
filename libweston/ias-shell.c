@@ -2561,8 +2561,9 @@ ias_shell_output_change_notify(struct wl_listener *listener, void *data)
 						shsurf->output->y,
 						ias_output->width,
 						ias_output->height,
-						shsurf->output->subpixel,
-						shsurf->output->make, shsurf->output->model,
+						shsurf->output->head.subpixel,
+						shsurf->output->head.make,
+						shsurf->output->head.model,
 						shsurf->output->transform);
 				}
 
