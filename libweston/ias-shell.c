@@ -2553,8 +2553,9 @@ ias_shell_output_change_notify(struct wl_listener *listener, void *data)
 				shell = shsurf->shell;
 
 				wl_list_for_each(bound, &shell->ias_shell_clients, link) {
-					resource = wl_resource_find_for_client(&shsurf->output->resource_list,
-											bound->client_id);
+					resource = wl_resource_find_for_client(
+						&shsurf->output->head.resource_list,
+						bound->client_id);
 
 					wl_output_send_geometry(resource,
 						shsurf->output->x,
