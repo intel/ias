@@ -213,7 +213,8 @@ ias_surface_set_fullscreen(struct wl_client *client,
 	struct weston_frame_callback *cb, *cnext;
 
 	if (output_resource) {
-		shsurf->output = output_resource->data;
+		shsurf->output =
+			weston_head_from_resource(output_resource)->output;
 	} else {
 		shsurf->output = get_default_output(shsurf->shell->compositor);
 	}
@@ -385,7 +386,7 @@ shell_surface_set_maximized(struct wl_client *client,
 
 	/* Output is optional; if unset, the default (primary) output is used */
 	if (output_resource) {
-		output = (struct weston_output *)output_resource->data;
+		output = weston_head_from_resource(output_resource)->output;
 	} else {
 		output = get_default_output(shsurf->surface->compositor);
 	}
@@ -512,7 +513,7 @@ ias_shell_set_background(struct wl_client *client,
 	wl_list_insert(&shsurf->shell->background_surfaces, &shsurf->special_link);
 
 	/* Assign the surface to the output that it will be the background for */
-	shsurf->output = output_resource->data;
+	shsurf->output = weston_head_from_resource(output_resource)->output;
 
 	/*
 	 * Reposition background surface at upper left of output in case the
@@ -626,7 +627,7 @@ ias_shell_popup(struct wl_client *client,
 	shsurf->popup.priority = priority;
 
 	/* Assign the surface to the output that the popup is for */
-	shsurf->output = output_resource->data;
+	shsurf->output = weston_head_from_resource(output_resource)->output;
 
 	/*
 	 * Figure out whether this surface is high enough priority to set as

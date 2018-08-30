@@ -1734,7 +1734,8 @@ ias_layout_manager_set_layout(struct wl_client *client,
 		struct wl_resource *output_resource,
 		uint32_t layout)
 {
-	struct weston_output *output = wl_resource_get_user_data(output_resource);
+	struct weston_output *output = 
+		weston_head_from_resource(output_resource)->output;
 
 	assert(wl_resource_get_user_data(framework_resource) == framework);
 
