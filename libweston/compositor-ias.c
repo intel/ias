@@ -1310,7 +1310,7 @@ ias_output_scale(struct ias_output *ias_output,
 			 * will receive the swapped width and height.
 			 */
 			if (compositor->normalized_rotation) {
-				weston_head_set_physical_size(&output->head,
+				weston_head_set_physical_size(&ias_output->head,
 							      height, width);
 			}
 
@@ -2367,6 +2367,8 @@ ias_output_destroy(struct weston_output *output_base)
 	//wl_list_remove(&output->base.link);
 	wl_list_remove(&output->link);
 
+	weston_head_release(&output->head);
+
 	wl_global_destroy(output->global);
 	free(output);
 }
@@ -2724,7 +2726,7 @@ ias_backend_output_enable(struct weston_output *base)
 					ias_output->name);
 	}
 
-	weston_head_set_physical_size(&base->head,
+	weston_head_set_physical_size(&ias_output->head,
 				      ias_output->width,
 				      ias_output->height);
 
@@ -2778,6 +2780,11 @@ create_outputs_for_crtc(struct ias_backend *backend, struct ias_crtc *ias_crtc)
 		ias_crtc->output[i] = ias_output;
 		ias_output->ias_crtc = ias_crtc;
 		ias_output->vm = ias_crtc->configuration->output[i]->vm;
+
+		/* Use connector name from ias.conf also for head*/
+		weston_head_init(&ias_output->head, ias_crtc->name);
+
+		weston_compositor_add_head(backend->compositor, &ias_output->head);
 
 		/*
 		 * Initialize output size according to output model.  The general case
@@ -2869,9 +2876,9 @@ create_outputs_for_crtc(struct ias_backend *backend, struct ias_crtc *ias_crtc)
 		ias_output->base.disable = ias_backend_output_disable;
 
 
-		weston_head_set_monitor_strings(&ias_output->base.head,
+		weston_head_set_monitor_strings(&ias_output->head,
 						"unknown", "unknown", "unknown");
-		weston_head_set_subpixel(&ias_output->base.head,
+		weston_head_set_subpixel(&ias_output->head,
 					 ias_subpixel_to_wayland(ias_crtc->subpixel));
 
 		wl_list_insert(&ias_output->base.mode_list, &ias_output->mode.link);
@@ -2879,6 +2886,7 @@ create_outputs_for_crtc(struct ias_backend *backend, struct ias_crtc *ias_crtc)
 		weston_output_set_scale(&ias_output->base, scale);
 		weston_output_set_transform(&ias_output->base, ias_output->rotation);
 
+		weston_output_attach_head(&ias_output->base, &ias_output->head);
 		weston_output_enable(&ias_output->base);
 
 		weston_plane_init(&ias_output->fb_plane, backend->compositor, ias_output->base.x,

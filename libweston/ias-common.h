@@ -124,6 +124,7 @@ struct ias_output {
 	struct wl_list link;
 	struct backlight *backlight;
 	struct ias_crtc *ias_crtc;
+	struct weston_head head;
 	int32_t width;
 	int32_t height;
 	int32_t rotation;

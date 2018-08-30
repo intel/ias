@@ -2555,7 +2555,7 @@ ias_shell_output_change_notify(struct wl_listener *listener, void *data)
 
 				wl_list_for_each(bound, &shell->ias_shell_clients, link) {
 					resource = wl_resource_find_for_client(
-						&shsurf->output->head.resource_list,
+						&ias_output->head.resource_list,
 						bound->client_id);
 
 					wl_output_send_geometry(resource,
@@ -2563,9 +2563,9 @@ ias_shell_output_change_notify(struct wl_listener *listener, void *data)
 						shsurf->output->y,
 						ias_output->width,
 						ias_output->height,
-						shsurf->output->head.subpixel,
-						shsurf->output->head.make,
-						shsurf->output->head.model,
+						ias_output->head.subpixel,
+						ias_output->head.make,
+						ias_output->head.model,
 						shsurf->output->transform);
 				}
 

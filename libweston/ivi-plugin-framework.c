@@ -1472,7 +1472,7 @@ ias_activate_plugin(struct weston_output *output, ias_identifier id)
 			struct wl_client *client =
 				wl_resource_get_client(layout_callback_resource);
 			resource =
-				find_resource_for_client(&output->head.resource_list,
+				find_resource_for_client(&ias_output->head.resource_list,
 							 client);
 			ias_layout_manager_send_layout_switched(layout_callback_resource,
 																id, resource);
@@ -1582,7 +1582,7 @@ ias_deactivate_plugin(struct weston_output *output)
 	wl_list_for_each(layout_callback_resource, &framework->layout_change_callbacks, link) {
 		struct wl_client *client = wl_resource_get_client(layout_callback_resource);
 		/* get new layout */
-		resource = find_resource_for_client(&output->head.resource_list, client);
+		resource = find_resource_for_client(&ias_output->head.resource_list, client);
 		/* tell layout mager it's switched */
 		ias_layout_manager_send_layout_switched(layout_callback_resource, 0, resource);
 	}
@@ -1831,7 +1831,7 @@ bind_ias_layout_manager(struct wl_client *client,
 		if (ias_output->plugin) {
 
 			struct wl_client *client = wl_resource_get_client(layout_callback_resource);
-			resource = find_resource_for_client(&output->head.resource_list,
+			resource = find_resource_for_client(&ias_output->head.resource_list,
 							    client);
 			ias_layout_manager_send_layout_switched(layout_callback_resource,
 					(uint32_t)ias_output->plugin->info.id, resource);
