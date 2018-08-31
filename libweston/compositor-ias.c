@@ -860,6 +860,45 @@ ias_crtc_set_brightness(struct wl_client *client,
 	ias_crtc_send_brightness(resource, red, green, blue);
 }
 
+static int
+cp_handler(void *data)
+{
+	struct wl_resource *resource = data;
+	struct ias_crtc *ias_crtc = wl_resource_get_user_data(resource);
+	int32_t ret;
+	struct ias_backend *backend;
+	uint32_t cp_prop_id;
+	uint64_t cp_val;
+
+	backend = ias_crtc->backend;
+
+	ret = ias_get_crtc_prop(backend->drm.fd, ias_crtc->connector_id,
+			DRM_MODE_OBJECT_CONNECTOR, "Content Protection",
+			&cp_prop_id, &cp_val);
+
+	if (ret < 0) {
+		IAS_ERROR("Cannot query content protection");
+		return 0;
+	}
+
+	/*
+	 * We have set a limit of 10 for cp_handler to be called. Either
+	 * CP has been enabled by the driver by then or there is some problem
+	 * and we should unnecessarily wait for the driver to turn on CP so we
+	 * will turn this timer off.
+	 */
+	if(++ias_crtc->cp_timer_index < 10 && !cp_val) {
+		wl_event_source_timer_update(ias_crtc->cp_timer, 16);
+	} else {
+		if(cp_val) {
+			ias_crtc_send_content_protection_enabled(resource);
+		}
+		wl_event_source_remove(ias_crtc->cp_timer);
+	}
+
+	return 1;
+}
+
 static void
 ias_crtc_set_fb_transparency(struct wl_client *client,
 		struct wl_resource *resource,
@@ -890,11 +929,15 @@ ias_crtc_set_content_protection(struct wl_client *client,
 	struct ias_backend *backend;
 	uint32_t cp_prop_id;
 	uint64_t cp_val;
+	struct wl_event_loop *loop;
 
 	if(!ias_crtc) {
 		IAS_ERROR("Invalid crtc provided");
 		return;
 	}
+
+	/* Make this value a 1 or a 0 */
+	enabled = !!enabled;
 
 	backend = ias_crtc->backend;
 
@@ -923,6 +966,38 @@ ias_crtc_set_content_protection(struct wl_client *client,
 			return;
 		}
 
+		/*
+		 * According to the spec, userspace can only request to turn on CP by setting the flag
+		 * DRM_MODE_CONTENT_PROTECTION_DESIRED, but it is up to driver to decide if it really
+		 * will be enabled and change that property to DRM_MODE_CONTENT_PROTECTION_ENABLED.
+		 * We must check to see if the driver changed this DESIRED to ENABLED and then report
+		 * back to our client that CP indeed got turned on.
+		 * Here we start polling and this timer function will be called every 16 ms.
+		 */
+		if(enabled) {
+
+			/*
+			 * Check once to see if the driver already turned on CP. If it did, perfect! We
+			 * will inform the client about it. If not, then we have to poll
+			 */
+			ret = ias_get_crtc_prop(backend->drm.fd, ias_crtc->connector_id,
+					DRM_MODE_OBJECT_CONNECTOR, "Content Protection",
+					&cp_prop_id, &cp_val);
+
+			if (ret < 0) {
+				IAS_ERROR("Cannot query content protection");
+				return;
+			}
+
+			if(cp_val) {
+				ias_crtc_send_content_protection_enabled(resource);
+			} else {
+				loop = wl_display_get_event_loop(backend->compositor->wl_display);
+				ias_crtc->cp_timer_index = 0;
+				ias_crtc->cp_timer = wl_event_loop_add_timer(loop, cp_handler, resource);
+				wl_event_source_timer_update(ias_crtc->cp_timer, 16);
+			}
+		}
 	}
 }
 

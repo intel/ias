@@ -94,6 +94,13 @@
             <arg name="id" type="uint" />
         </event>
 
+        <event name="content_protection_enabled">
+            <description summary="Advertise content protection enabled">
+                This informs a client when content protection has been enabled by the driver.
+            </description>
+        </event>
+        
+
         <request name="set_mode">
             <description summary="Switch CRTC mode">
                 Changes the mode of a CRTC.  Note that in cases where a CRTC is
