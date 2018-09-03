@@ -697,6 +697,23 @@ transport_plugin_tcp_la_SOURCES = clients/RemoteDisplay/transport_plugin_tcp.c
 
 endif
 
+if ENABLE_VMDISPLAY
+noinst_LTLIBRARIES += libvmdisplay.la
+
+libvmdisplay_la_LIBADD = $(COMPOSITOR_LIBS)	\
+			$(EGL_LIBS)		\
+			$(GLIB_LIBS)		\
+			libshared.la -lm
+libvmdisplay_la_CFLAGS = $(GCC_CFLAGS)		\
+			$(COMPOSITOR_CFLAGS)	\
+			$(LIBDRM_CFLAGS)	\
+			$(GLIB_CFLAGS)		\
+			$(AM_CFLAGS)
+libvmdisplay_la_SOURCES = clients/vmdisplay/vmdisplay-parser.c \
+		clients/vmdisplay/vmdisplay.c		\
+		clients/vmdisplay/wayland-drm-protocol.c
+endif
+
 # Stick a copy of compositor.h and the public plugin framework headers under
 # {datadir}/doc/ias
 ias_doc_DATA = libweston/ias-plugin-framework.h libweston/compositor.h
