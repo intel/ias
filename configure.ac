@@ -878,6 +878,12 @@ if test x$enable_ivi_share_protocol = xyes; then
                     [libdrm gbm])
 fi
 
+AC_ARG_ENABLE(vmdisplay,
+	AS_HELP_STRING([--enable-vmdisplay],
+		       [Enable support for vmdisplay [default=no]]),,
+		       enable_vmdisplay=no)
+AM_CONDITIONAL(ENABLE_VMDISPLAY, test "x$enable_vmdisplay" = "xyes")
+
 AC_CONFIG_FILES([Makefile libweston/version.h compositor/weston.pc])
 
 # AC_CONFIG_FILES needs the full name when running autoconf, so we need to use
@@ -938,6 +944,7 @@ AC_MSG_RESULT([
 	Generate binary shaders		${enable_shadergen}
 
 	VM				${enable_vm}
+        vmdisplay                       ${enable_vmdisplay}
 	Hyper dmabuf			${enable_hyper_dmabuf}
 	Xen communication channel	${enable_xen_comm_channel}
 ])
