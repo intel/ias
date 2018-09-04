@@ -191,11 +191,13 @@ ias_weston_LDFLAGS = -export-dynamic -pie
 ias_weston_CPPFLAGS = $(AM_CPPFLAGS) -DIN_WESTON 		\
 				 -DMODULEDIR='"$(moduledir)"' \
 				 -DXSERVER_PATH='"@XSERVER_PATH@"'
-ias_weston_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS) $(LIBINPUT_BACKEND_CFLAGS) -fPIE
+ias_weston_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS) $(LIBINPUT_BACKEND_CFLAGS) \
+					$(PTHREAD_CFLAGS) -fPIE
 ias_weston_LDADD = libshared.la libias-@LIBWESTON_MAJOR@.la \
 	$(COMPOSITOR_LIBS) \
 	$(DL_LIBS) $(LIBINPUT_BACKEND_LIBS) \
 	$(CLOCK_GETRES_LIBS) \
+	$(PTHREAD_LIBS) \
 	-lm
 
 ias_weston_SOURCES = 					\
