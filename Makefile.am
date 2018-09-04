@@ -703,7 +703,8 @@ noinst_LTLIBRARIES += libvmdisplay.la
 libvmdisplay_la_LIBADD = $(COMPOSITOR_LIBS)	\
 			$(EGL_LIBS)		\
 			$(GLIB_LIBS)		\
-			libshared.la -lm
+			$(LIBDRM_LIBS)		\
+			libshared.la -lm -ldrm_intel
 libvmdisplay_la_CFLAGS = $(GCC_CFLAGS)		\
 			$(COMPOSITOR_CFLAGS)	\
 			$(LIBDRM_CFLAGS)	\
@@ -712,6 +713,30 @@ libvmdisplay_la_CFLAGS = $(GCC_CFLAGS)		\
 libvmdisplay_la_SOURCES = clients/vmdisplay/vmdisplay-parser.c \
 		clients/vmdisplay/vmdisplay.c		\
 		clients/vmdisplay/wayland-drm-protocol.c
+
+vmdisplay_wayland_SOURCES =	clients/vmdisplay/vmdisplay-wayland.c
+nodist_vmdisplay_wayland_SOURCES =				\
+	protocol/ias-shell-server-protocol.h    \
+	protocol/ias-shell-protocol.c
+vmdisplay_wayland_CFLAGS = $(AM_CFLAGS) $(GCC_CFLAGS) $(LIBDRM_CFLAGS) $(COMPOSITOR_CFLAGS) $(SIMPLE_CLIENT_CFLAGS)
+vmdisplay_wayland_LDADD = $(COMPOSITOR_LIBS) $(GLIB_LIBS) $(EGL_LIBS) $(SIMPLE_CLIENT_LIBS) $(LIBDRM_LIBS) \
+	libshared.la libvmdisplay.la -lm -ldrm_intel \
+	$(WAYLAND_COMPOSITOR_EGL_LIBS)		\
+	$(WAYLAND_COMPOSITOR_LIBS)		\
+	$(SIMPLE_EGL_CLIENT_LIBS)
+
+vmdisplay_server_SOURCES = clients/vmdisplay/vmdisplay-server.cpp	\
+		clients/vmdisplay/vmdisplay-server-network.cpp		\
+		clients/vmdisplay/vmdisplay-server-hyperdmabuf.cpp
+vmdisplay_server_CFLAGS = $(AM_CFLAGS) $(GCC_CFLAGS)
+vmdisplay_server_LDADD =  $(GLIB_LIBS) \
+	libshared.la libvmdisplay.la -lm
+
+vmdisplay_input_SOURCES = clients/vmdisplay/vmdisplay-input.cpp
+nodist_vmdisplay_input_SOURCES = clients/vmdisplay/vmdisplay-server-network.cpp
+vmdisplay_input_CFLAGS = $(AM_CFLAGS) $(GCC_CFLAGS)
+vmdisplay_input_LDADD =  $(GLIB_LIBS) \
+	libshared.la libvmdisplay.la -lm
 endif
 
 # Stick a copy of compositor.h and the public plugin framework headers under
@@ -881,6 +906,11 @@ libexec_PROGRAMS +=				\
 if ENABLE_IVI_SHELL
 libexec_PROGRAMS +=				\
 	weston-ivi-shell-user-interface
+endif
+if ENABLE_VMDISPLAY
+libexec_PROGRAMS += vmdisplay-wayland		\
+	vmdisplay-server			\
+	vmdisplay-input
 endif
 
 demo_clients =					\
