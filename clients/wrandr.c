@@ -421,13 +421,13 @@ set_transparency(struct wayland *wayland,
 	unsigned int output_num,
 	bool fb_transparency)
 {
-	struct crtc *crtc;
+	struct new_output *output;
 	unsigned int i = 1;
 
-	wl_list_for_each(crtc, &wayland->crtc_list, link) {
+	wl_list_for_each(output, &wayland->ias_output_list, link) {
 		if (output_num == i) {
 			printf("Set transparency to %d\n", fb_transparency);
-			ias_crtc_set_fb_transparency(crtc->ias_crtc, (int)fb_transparency);
+			ias_output_set_fb_transparency(output->ias_output, (int)fb_transparency);
 			return 0;
 		}
 		i++;
