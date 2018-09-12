@@ -126,14 +126,6 @@
             <arg name="blue" type="uint" />
         </request>
 
-		<request name="set_fb_transparency">
-			<description summary="Set CRTC transparency">
-				Enables or disables transparency in the pixel format for the fb.
-			</description>
-
-			<arg name="enable" type="uint" />
-		</request>
-
     </interface>
 
     <interface name="ias_output" version="1">
@@ -179,6 +171,14 @@
             <arg name="width" type="uint" />
             <arg name="height" type="uint" />
         </request>
+
+		<request name="set_fb_transparency">
+			<description summary="Set Wayland output's transparency">
+				Enables or disables transparency in the pixel format for the fb.
+			</description>
+
+			<arg name="enable" type="uint" />
+		</request>
 
 		<event name="name">
 			<description summary="Output name">
