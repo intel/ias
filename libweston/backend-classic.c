@@ -299,7 +299,7 @@ init_output_classic(struct ias_output *ias_output,
 		while (attrs[0]) {
 			if (strcmp(attrs[0], "transparent") == 0) {
 				if ((sscanf(attrs[1], "%d",
-							&ias_crtc->transparency_enabled)) != 1) {
+							&ias_output->transparency_enabled)) != 1) {
 					IAS_ERROR("Badly formed transparent element: %s\n",
 							attrs[1]);
 				}

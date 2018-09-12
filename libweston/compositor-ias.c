@@ -862,21 +862,13 @@ ias_crtc_set_brightness(struct wl_client *client,
 }
 
 static void
-ias_crtc_set_fb_transparency(struct wl_client *client,
+ias_output_set_fb_transparency(struct wl_client *client,
 		struct wl_resource *resource,
 		uint32_t enabled)
 {
-	struct ias_crtc *ias_crtc = wl_resource_get_user_data(resource);
+	struct ias_output *ias_output = wl_resource_get_user_data(resource);
 
-	/*
-	 * Only set transparency when the output model has a  1 to 1
-	 * mapping between crtc and outputs.
-	 */
-	if (ias_crtc->num_outputs != 1) {
-		return;
-	}
-
-	ias_crtc->transparency_enabled = enabled;
+	ias_output->transparency_enabled = enabled;
 
 	return;
 }
@@ -965,7 +957,6 @@ struct ias_crtc_interface ias_crtc_implementation = {
 	ias_crtc_set_gamma,
 	ias_crtc_set_contrast,
 	ias_crtc_set_brightness,
-	ias_crtc_set_fb_transparency,
 };
 
 static int
@@ -1244,6 +1235,7 @@ struct ias_output_interface ias_output_implementation = {
 	ias_output_disable,
 	ias_output_enable,
 	ias_output_scale_to,
+	ias_output_set_fb_transparency,
 };
 
 static void
@@ -1351,7 +1343,7 @@ ias_fb_get_from_bo(struct gbm_bo *bo, struct weston_buffer *buffer,
 		/* if transparency is not enabled disable alpha channel only
 		 * when scanout == true, otherwise leave format unchanged
 		 */
-		if (fb_type == IAS_FB_SCANOUT && !ias_crtc->transparency_enabled &&
+		if (fb_type == IAS_FB_SCANOUT && !output->transparency_enabled &&
 		    format == GBM_FORMAT_ARGB8888) {
 			format = GBM_FORMAT_XRGB8888;
 		}

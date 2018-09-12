@@ -283,7 +283,6 @@ struct ias_crtc {
 
 	int vblank_pending;
 	int page_flip_pending;
-	int transparency_enabled;
 	int request_set_mode;
 	int request_color_correction_reset;
 

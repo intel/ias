@@ -140,6 +140,7 @@ struct ias_output {
 	struct wl_signal update_signal;
 	struct wl_listener update_listener;
 	int is_resized;
+	int transparency_enabled;
 
 	int disabled;
 
