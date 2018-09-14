@@ -153,7 +153,6 @@ ias_relay_input_send_key(struct wl_client *client,
 	struct ias_shell *shell = wl_resource_get_user_data(resource);
 	struct ias_surface *shsurf;
 	struct wl_resource *surf_resource = NULL;
-	struct wl_resource *ws_resource = NULL;
 	struct wl_resource *t_resource = NULL;
 	struct wl_resource *target_resource = NULL;
     struct weston_seat *seat = NULL;
@@ -165,7 +164,6 @@ ias_relay_input_send_key(struct wl_client *client,
 		printf("Surface ID: %u\n", SURFPTR2ID(shsurf));
 		if (SURFPTR2ID(shsurf) == surfid) {
 			surf_resource = shsurf->resource;
-			ws_resource = shsurf->surface->resource;
 			break;
 		}
 	}
