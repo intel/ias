@@ -1507,7 +1507,9 @@ nodist_weston_info_SOURCES =					\
 	protocol/linux-dmabuf-unstable-v1-protocol.c		\
 	protocol/linux-dmabuf-unstable-v1-client-protocol.h	\
 	protocol/tablet-unstable-v2-protocol.c			\
-	protocol/tablet-unstable-v2-client-protocol.h
+	protocol/tablet-unstable-v2-client-protocol.h		\
+	protocol/xdg-output-unstable-v1-protocol.c		\
+	protocol/xdg-output-unstable-v1-client-protocol.h
 weston_info_LDADD = $(WESTON_INFO_LIBS) libshared.la
 weston_info_CFLAGS = $(AM_CFLAGS) $(CLIENT_CFLAGS) -fPIE
 weston_info_LDFLAGS = -pie
@@ -1598,7 +1600,9 @@ BUILT_SOURCES +=					\
 	protocol/tablet-unstable-v2-protocol.c		\
 	protocol/tablet-unstable-v2-client-protocol.h			\
 	protocol/input-timestamps-unstable-v1-protocol.c		\
-	protocol/input-timestamps-unstable-v1-client-protocol.h
+	protocol/input-timestamps-unstable-v1-client-protocol.h		\
+	protocol/xdg-output-unstable-v1-protocol.c			\
+	protocol/xdg-output-unstable-v1-client-protocol.h
 
 westondatadir = $(datadir)/ias
 dist_westondata_DATA =				\
