@@ -148,6 +148,7 @@ struct gl_renderer_interface {
 	int vm_dbg;
 	int vm_unexport_delay;
 	int vm_share_only;
+	int vm_use_plugin;
 	const char* vm_plugin_path;
 	const char* vm_plugin_args;
 #endif // USE_VM

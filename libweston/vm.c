@@ -31,41 +31,48 @@ int vm_init(struct gl_renderer *gr)
 
 	wl_list_init(&vbt->vm_buffer_info_list);
 
-	if (!gl_renderer_interface.vm_plugin_path || strlen(gl_renderer_interface.vm_plugin_path) == 0) {
-		weston_log("No VM plugin provided\n");
-		return -1;
+	/*
+	 * Check if vm plugin was not provided in ias.conf,
+	 * in such case use only hyper_dmabuf for metadata
+	 */
+	if (!gl_renderer_interface.vm_plugin_path ||
+	    strlen(gl_renderer_interface.vm_plugin_path) == 0)
+		gl_renderer_interface.vm_use_plugin = 0;
+	else
+		gl_renderer_interface.vm_use_plugin = 1;
+
+	if (gl_renderer_interface.vm_use_plugin) {
+		weston_log("Loading %s\n", gl_renderer_interface.vm_plugin_path);
+
+		comm_module = dlopen(gl_renderer_interface.vm_plugin_path,
+				     RTLD_NOW | RTLD_LOCAL);
+		err = dlerror();
+
+		if (comm_module == NULL) {
+			weston_log("Failed to load communications library '%s': %s\n",
+				   gl_renderer_interface.vm_plugin_path, err);
+			return -2;
+		}
+
+		init_comm_interface comm_init = dlsym(comm_module, "init_comm");
+
+		if (comm_init == NULL) {
+			weston_log("find init_comm function == NULL\n");
+			return -2;
+		}
+
+		if ((err = dlerror()) != NULL) {
+			weston_log("Failed to find init_comm function: %s\n", err);
+			return -2;
+		}
+		if (comm_init(&comm_interface, 0,
+			      METADATA_BUFFER_SIZE,
+			      gl_renderer_interface.vm_plugin_args)) {
+			weston_log("hypervisor communication channel initialization failed\n");
+			return -1;
+		}
+		weston_log("Succesfully loaded hypervisor communication channel plugin\n");
 	}
-
-	weston_log("Loading %s\n", gl_renderer_interface.vm_plugin_path);
-
-	comm_module = dlopen(gl_renderer_interface.vm_plugin_path,
-			     RTLD_NOW | RTLD_LOCAL);
-	err = dlerror();
-
-	if (comm_module == NULL) {
-		weston_log("Failed to load communications library '%s': %s\n",
-			   gl_renderer_interface.vm_plugin_path, err);
-		return -2;
-	}
-
-	init_comm_interface comm_init = dlsym(comm_module, "init_comm");
-
-	if (comm_init == NULL) {
-		weston_log("find init_comm function == NULL\n");
-		return -2;
-	}
-
-	if ((err = dlerror()) != NULL) {
-		weston_log("Failed to find init_comm function: %s\n", err);
-		return -2;
-	}
-	if (comm_init(&comm_interface, 0,
-		      METADATA_BUFFER_SIZE,
-		      gl_renderer_interface.vm_plugin_args)) {
-		weston_log("hypervisor communication channel initialization failed\n");
-		return -1;
-	}
-	weston_log("Succesfully loaded hypervisor communication channel\n");
 
 	return 0;
 }
@@ -89,24 +96,26 @@ void vm_table_clean(struct gl_renderer *gr)
 	int i = 0, rc;
 	int retries = METADATA_SEND_RETRIES;
 
-	while (comm_interface.available_space() < vm_data_offset && retries--) {
-		usleep(METADATA_SEND_SLEEP);
-	}
-
-	if (comm_interface.available_space() >= vm_data_offset) {
-		if (comm_interface.send_data != NULL) {
-			add_marker_to_vm_data(METADATA_STREAM_END);
-			do {
-				rc = comm_interface.send_data(&vm_data[i], vm_data_offset - i);
-				i += rc;
-			} while (i != vm_data_offset && rc >= 0);
+	if (gl_renderer_interface.vm_use_plugin) {
+		while (comm_interface.available_space() < vm_data_offset && retries--) {
+			usleep(METADATA_SEND_SLEEP);
 		}
-	} else {
-		printf("No space in comm channel - skipping frame %d < %d\n",
-			comm_interface.available_space(), vm_data_offset);
+
+		if (comm_interface.available_space() >= vm_data_offset) {
+			if (comm_interface.send_data != NULL) {
+				add_marker_to_vm_data(METADATA_STREAM_END);
+				do {
+					rc = comm_interface.send_data(&vm_data[i], vm_data_offset - i);
+					i += rc;
+				} while (i != vm_data_offset && rc >= 0);
+			}
+		} else {
+			printf("No space in comm channel - skipping frame %d < %d\n",
+				comm_interface.available_space(), vm_data_offset);
+		}
+		vm_data_offset = 0;
+		memset(vm_data, 0, METADATA_BUFFER_SIZE);
 	}
-	vm_data_offset = 0;
-	memset(vm_data, 0, METADATA_BUFFER_SIZE);
 
 	/* remove any buffer refs inside this table */
 	wl_list_for_each_safe(gr_buf, tmp, &vbt->vm_buffer_info_list, elm) {
@@ -139,11 +148,13 @@ void vm_destroy(struct gl_renderer * gr)
 
 	free(gr->vm_buffer_table);
 
-	if (comm_interface.cleanup != NULL) {
-		comm_interface.cleanup();
-	}
-	if (comm_module != NULL) {
-		dlclose(comm_module);
+	if (gl_renderer_interface.vm_use_plugin) {
+		if (comm_interface.cleanup != NULL) {
+			comm_interface.cleanup();
+		}
+		if (comm_module != NULL) {
+			dlclose(comm_module);
+		}
 	}
 }
 
@@ -411,8 +422,10 @@ int vm_table_expose(struct weston_output *output, struct gl_output_state *go,
 		return 1;
 	}
 
-	add_marker_to_vm_data(METADATA_STREAM_START);
-	add_to_vm_data(&vbt->h, sizeof(struct vm_header));
+	if (gl_renderer_interface.vm_use_plugin) {
+		add_marker_to_vm_data(METADATA_STREAM_START);
+		add_to_vm_data(&vbt->h, sizeof(struct vm_header));
+	}
 
 	/* Write individual buffers */
 	wl_list_for_each(gr_buf, &vbt->vm_buffer_info_list, elm) {
@@ -432,7 +445,8 @@ int vm_table_expose(struct weston_output *output, struct gl_output_state *go,
 			unexport_bo(gr_buf->backend, &gr_buf->vm_buffer_info);
 		}
 
-		add_to_vm_data(&gr_buf->vm_buffer_info, sizeof(struct vm_buffer_info));
+		if (gl_renderer_interface.vm_use_plugin)
+			add_to_vm_data(&gr_buf->vm_buffer_info, sizeof(struct vm_buffer_info));
 	}
 
 	wait_for_gpu(&vbt->vm_buffer_info_list, drm_fd);
