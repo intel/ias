@@ -1055,10 +1055,6 @@ nodist_remote_display_SOURCES =		\
 remote_display_CFLAGS = $(AM_CFLAGS) $(SIMPLE_CLIENT_CFLAGS) $(LIBVA_CFLAGS)
 remote_display_LDADD = $(LIBDRM_LIBS) $(SIMPLE_CLIENT_LIBS) $(LIBVA_LIBS) libshared.la -lm -ldrm_intel
 
-weston_clock_SOURCES = 				\
-	clients/clock.c				\
-	shared/helpers.h
-weston_clock_LDADD = libtoytoolkit.la
 weston_clock_CFLAGS = $(AM_CFLAGS) $(CLIENT_CFLAGS)
 
 weston_simple_clock_SOURCES = clients/simple-clock.c

@@ -33,8 +33,14 @@
 #include <stdlib.h>
 #include <linux/input.h>
 #include <GLES2/gl2.h>
+#include <string.h>
 #include "ias-plugin-framework.h"
+#include "ias-spug.h"
 
+static ias_identifier myid;
+static spug_matrix projmat;
+static spug_matrix *outmat;
+static spug_matrix gl_matrix;
 static ias_identifier myid;
 struct weston_seat *seat;
 
@@ -94,6 +100,21 @@ static const char *frag_shader_text =
 	"  gl_FragColor = mix(vec4(0.2, 0.2, 0.2, 1.0), gl_FragColor, opacity);\n"
 	"}\n";
 
+/*
+ * Tile vertices.  First two components of each line are vertex x,y.
+ * Second two are texture coordinates.
+ *
+ * These values never change; the vertex shader for tiles figures out which
+ * tile number its drawing and offsets the vertices appropriately.
+ */
+static const GLfloat tile_verts[] = {
+	   0.0,   0.0, /**/  0.0, 0.0,
+	 400.0,   0.0, /**/  1.0, 0.0,
+	   0.0, 400.0, /**/  0.0, 1.0,
+	 400.0, 400.0, /**/  1.0, 1.0,
+};
+
+static GLuint pos_att, tex_att;
 static GLuint program;
 static GLuint proj_uniform, tile_uniform, gray_uniform, sprite_uniform;
 static GLuint tex_uniform, opacity_uniform, timedout_uniform;
@@ -105,7 +126,9 @@ static GLuint ibo;
 
 static int mouse_x, mouse_y;
 static int selected_tile = -1;
-
+static int fullscreen_draw = 0;
+static int i, current_tile;
+static uint32_t frame = 0;
 static struct weston_compositor *compositor;
 
 static GLuint
@@ -140,7 +163,25 @@ grid_switch_to(const spug_output_id output_id)
 }
 
 static int
-use_for_grid(struct weston_surface *surface)
+compositor_owns_view(const spug_view_id view)
+{
+	char *pname = NULL;
+	int ret = 0;
+
+	spug_get_owning_process_info(view, NULL, &pname);
+
+	if(pname) {
+		if(strcmp(pname, "weston") == 0) {
+			ret = 1;
+		}
+		free(pname);
+	}
+
+	return ret;
+}
+
+static int
+use_for_grid(const spug_view_id view)
 {
 	/*
 	 * Ignore background surfaces, popups, solid color surfaces,
@@ -152,41 +193,45 @@ use_for_grid(struct weston_surface *surface)
 	 * them, so the fragment shader would have to be written to recognize
 	 * this.
 	 */
-	if (ias_get_zorder(surface) == SHELL_SURFACE_ZORDER_BACKGROUND ||
-			ias_get_zorder(surface) == SHELL_SURFACE_ZORDER_POPUP ||
-			/* TODO removing these lines for now to fix a build error,
-			 * this whole example will be rewritten in the near future */
-			/*surface->shader == &compositor->solid_shader ||
-			surface == seat->pointer->sprite ||
-			surface->num_textures > 1*/ 0) {
+	if (spug_get_zorder(view) == SHELL_SURFACE_ZORDER_BACKGROUND ||
+			spug_get_zorder(view) == SHELL_SURFACE_ZORDER_POPUP ||
+			compositor_owns_view(view) ||
+			spug_view_is_sprite(view,(spug_seat_id)seat) ||
+			spug_view_num_textures(view) > 1) {
 		return 0;
 	} else {
 		return 1;
 	}
 }
 
-static void
-grid_draw(struct weston_output *output)
+static spug_bool
+fullscreen_filter(	const spug_view_id view_id,
+					spug_view_list all_views)
 {
-	struct weston_compositor *compositor = output->compositor;
-	struct weston_view *view;
-	int j;
-	int i;
-	static const GLfloat texv[] = {
-		0.0, 0.0,
-		0.0, 1.0,
-		1.0, 1.0,
-		1.0, 0.0
-	};
-	static uint32_t frame = 0;
+	if(spug_is_surface_flippable(view_id) &&
+		spug_get_zorder(view_id) != SHELL_SURFACE_ZORDER_BACKGROUND) {
+		/*
+		 * Let's assign this surface to scanout buffer now, if we are
+		 * unsuccessful, we will continue compositing
+		 */
+		if(!spug_assign_surface_to_scanout(view_id, 0, 0)) {
+			return SPUG_TRUE;
+		}
+	}
+	return SPUG_FALSE;
+}
 
-	glViewport(0, 0, output->width, output->height);
+static void
+view_draw_clean_state(void)
+{
+}
 
-	frame++;
-
-	glClearColor(0.2, 0.2, 0.2, 1.0);
-
+static void
+view_draw_setup()
+{
+	glClearColor(0.2, 0.2, 0.2, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glUseProgram(program);
 
@@ -194,73 +239,99 @@ grid_draw(struct weston_output *output)
 	 * Pass the output's projection matrix which converts us to the screen's
 	 * coordinate system.
 	 */
-	glUniformMatrix4fv(proj_uniform, 1, GL_FALSE, output->matrix.d);
+	glUniformMatrix4fv(proj_uniform, 1, GL_FALSE, projmat.d);
 
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	/* Buffer format is vert_x, vert_y, tex_x, tex_y */
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
-			4 * sizeof(GLfloat), (GLvoid*)0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
-			4 * sizeof(GLfloat), (GLvoid*)2);
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(pos_att, 2, GL_FLOAT, GL_FALSE,
+			4 * sizeof(GLfloat), &tile_verts[0]);
+	glVertexAttribPointer(tex_att, 2, GL_FLOAT, GL_FALSE,
+			4 * sizeof(GLfloat), &tile_verts[2]);
+	glEnableVertexAttribArray(pos_att);
+	glEnableVertexAttribArray(tex_att);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	/* reset the current tile. This is incremented and passed into the tile
+	 * uniform in view_draw */
+	current_tile = 0;
+}
+/* user created filter function. *all_views isn't used in this one, but in
+ * more advanced filters the user might want to compare views to each other,
+ * for example to get the n most X views.
+ */
+static int
+view_filter(const spug_view_id view_id, spug_view_list all_views)
+{
+	if (!use_for_grid(view_id) || current_tile >= 4) {
+		return SPUG_FALSE;
+	}
 
-	i = 0;
-	j = 0;
-	wl_list_for_each(view, &compositor->view_list, link) {
-		if (!use_for_grid(view->surface)) {
-			continue;
-		}
+	current_tile++;
+	return SPUG_TRUE;
+}
+/* user created draw function */
 
-		if (i >= 4) {
-			break;
-		}
-
-
-		/* TODO removing this reference to surface->textures[0] for now to fix a
-		 * build error. When porting this sample to spug, use spug_view_texture()
-		 * to get the view's texture name */
-		glBindTexture(GL_TEXTURE_2D, 0 /*view->surface->textures[0]*/);
+static void
+view_draw(	struct spug_view_draw_info *view_draw_info,
+			struct spug_draw_info *draw_info)
+{
+		glBindTexture(GL_TEXTURE_2D, view_draw_info->texture);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		glUniform1i(tile_uniform, i);
+		glUniform1i(tile_uniform, current_tile);
 		glUniform1i(gray_uniform, 0);
 		glUniform1i(tex_uniform, 0);
-		glUniform1f(contrast_uniform, contrast);
-		glUniform1f(brightness_uniform, brightness);
-		glUniform1f(gamma_uniform, gamma_correction);
-		glUniform1i(timedout_uniform, ias_has_surface_timedout(view->surface));
-		glUniform1f(opacity_uniform, (i == selected_tile) ?
+		glUniform1i(timedout_uniform,
+				spug_has_surface_timedout(view_draw_info->id));
+		glUniform1f(opacity_uniform, (current_tile++ == selected_tile) ?
 				abs(60.0 - (float)(frame%120)) / 60.0 :
 				1.0);
-		
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glBindTexture(GL_TEXTURE_2D, 0);
-		i++;
-	}
-
-	/*
-	 * Draw gray boxes for any remaining tiles if we didn't have a full
-	 * four clients.
-	 */
-
-		
-	for ( ; i < 4; i++) {
-		glUniform1i(tile_uniform, i);
+}
+static void
+gray_box_draw(void)
+{
+		glUniform1i(tile_uniform, current_tile);
 		glUniform1i(gray_uniform, 1);
 		glUniform1i(timedout_uniform, 0);
-		glUniform1f(opacity_uniform, (i == selected_tile) ?
+		glUniform1f(opacity_uniform, (current_tile++ == selected_tile) ?
 				abs(60.0 - (float)(frame%120)) / 60.0 :
 				1.0);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-	}
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
+static void
+grid_draw(spug_view_list view_list)
+{
+	spug_view_list window_list, cursor_list;
+	spug_view_id *sview;
 
+	if(fullscreen_draw) {
+		spug_view_list fullscreen_list;
+		fullscreen_list = spug_filter_view_list(view_list,&fullscreen_filter, 1);
+		if(spug_view_list_is_empty(&fullscreen_list)) {
+			return;
+		}
+	}
+
+	frame++;
+
+
+	/* remove anything we don't want to draw from surface_list */
+	current_tile = 0;
+	window_list = spug_filter_view_list(view_list, &view_filter, 4);
+
+
+
+	/* call surface_draw_setup, then call surface_draw on each
+	 * surface still in surface list */
+	spug_draw(window_list,&view_draw,&view_draw_setup,&view_draw_clean_state);
+
+	/* draw grey boxes for the empty tiles. They aren't surfaces, so we don't
+	 * need to use spug to draw them */
+	while(current_tile < 4){
+		gray_box_draw();
+	}
+}
 /***
  *** Input handlers
  ***/
@@ -431,7 +502,7 @@ grid_grab_key(struct weston_keyboard_grab *grab,
 		/* Set focus to selected window and deactivate plugin */
 		if (selected_tile >= 0) {
 			wl_list_for_each(view, &compositor->view_list, link) {
-				if (!use_for_grid(view->surface)) {
+				if (!use_for_grid((spug_view_id)view->surface)) {
 					continue;
 				}
 				if (i++ == selected_tile) {
@@ -451,7 +522,7 @@ grid_grab_key(struct weston_keyboard_grab *grab,
 		/* Suspend/unsuspend frame events to this surface on spacebar */
 		if (selected_tile >= 0) {
 			wl_list_for_each(view, &compositor->view_list, link) {
-				if (!use_for_grid(view->surface)) {
+				if (!use_for_grid((spug_view_id)view->surface)) {
 					continue;
 				}
 				if (i++ == selected_tile) {
