@@ -3,14 +3,16 @@ ACLOCAL_AMFLAGS = -I m4
 bin_PROGRAMS =
 noinst_PROGRAMS =
 libexec_PROGRAMS =
-moduledir = $(libdir)/weston
+moduledir = $(libdir)/ias
 module_LTLIBRARIES =
-libweston_moduledir = $(libdir)/libweston-$(LIBWESTON_MAJOR)
+libweston_moduledir = $(libdir)/libias-$(LIBWESTON_MAJOR)
 libweston_module_LTLIBRARIES =
 noinst_LTLIBRARIES =
 plugindir = $(libdir)/ias
 plugin_LTLIBRARIES =
 BUILT_SOURCES = plugins
+exampledir = $(bindir)/../share/ias/examples
+example_PROGRAMS =
 
 AM_DISTCHECK_CONFIGURE_FLAGS = --disable-setuid-install
 
@@ -174,20 +176,20 @@ nodist_libweston_@LIBWESTON_MAJOR@_la_SOURCES =				\
 
 BUILT_SOURCES += $(nodist_libweston_@LIBWESTON_MAJOR@_la_SOURCES)
 
-bin_PROGRAMS += weston
+bin_PROGRAMS += ias-weston
 
-weston_LDFLAGS = -export-dynamic -pie
-weston_CPPFLAGS = $(AM_CPPFLAGS) -DIN_WESTON 		\
+ias_weston_LDFLAGS = -export-dynamic -pie
+ias_weston_CPPFLAGS = $(AM_CPPFLAGS) -DIN_WESTON 		\
 				 -DMODULEDIR='"$(moduledir)"' \
 				 -DXSERVER_PATH='"@XSERVER_PATH@"'
-weston_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS) $(LIBINPUT_BACKEND_CFLAGS) -fPIE
-weston_LDADD = libshared.la libweston-@LIBWESTON_MAJOR@.la \
+ias_weston_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS) $(LIBINPUT_BACKEND_CFLAGS) -fPIE
+ias_weston_LDADD = libshared.la libweston-@LIBWESTON_MAJOR@.la \
 	$(COMPOSITOR_LIBS) \
 	$(DL_LIBS) $(LIBINPUT_BACKEND_LIBS) \
 	$(CLOCK_GETRES_LIBS) \
 	-lm
 
-weston_SOURCES = 					\
+ias_weston_SOURCES = 					\
 	compositor/main.c				\
 	compositor/weston-screenshooter.c		\
 	compositor/text-backend.c			\
@@ -240,20 +242,20 @@ endif
 .FORCE :
 
 if BUILD_WESTON_LAUNCH
-bin_PROGRAMS += weston-launch
-weston_launch_SOURCES = libweston/weston-launch.c libweston/weston-launch.h
-weston_launch_CPPFLAGS = -DBINDIR='"$(bindir)"'
-weston_launch_CFLAGS=				\
+bin_PROGRAMS += ias-weston-launch
+ias_weston_launch_SOURCES = libweston/weston-launch.c libweston/weston-launch.h
+ias_weston_launch_CPPFLAGS = -DBINDIR='"$(bindir)"'
+ias_weston_launch_CFLAGS=				\
 	$(AM_CFLAGS)				\
 	$(PAM_CFLAGS)				\
 	$(SYSTEMD_LOGIN_CFLAGS)			\
 	$(LIBDRM_CFLAGS)			\
 	-fPIE
-weston_launch_LDADD = $(PAM_LIBS) $(SYSTEMD_LOGIN_LIBS)
-weston_launch_LDFLAGS = -pie
+ias_weston_launch_LDADD = $(PAM_LIBS) $(SYSTEMD_LOGIN_LIBS)
+ias_weston_launch_LDFLAGS = -pie
 
 if ENABLE_DRM_COMPOSITOR
-weston_launch_LDADD += $(LIBDRM_LIBS)
+ias_weston_launch_LDADD += $(LIBDRM_LIBS)
 endif
 
 if ENABLE_SETUID_INSTALL
@@ -280,7 +282,7 @@ pkgconfig_DATA = \
 wayland_sessiondir = $(datadir)/wayland-sessions
 dist_wayland_session_DATA = compositor/weston.desktop
 
-libwestonincludedir = $(includedir)/libweston-${LIBWESTON_MAJOR}
+libwestonincludedir = $(includedir)/libias-${LIBWESTON_MAJOR}
 libwestoninclude_HEADERS =				\
 	libweston/version.h				\
 	libweston/compositor.h			\
@@ -803,7 +805,7 @@ extension_sample_la_SOURCES = plugins/extension_sample/cursor_image.h \
 							  plugins/extension_sample/new-extension-protocol.c \
 							  plugins/extension_sample/new-extension-server-protocol.h
 
-bin_PROGRAMS += extension_test_client
+example_PROGRAMS += extension_test_client
 
 extension_test_client_SOURCES = plugins/extension_sample/extension_test_client.c \
 				plugins/extension_sample/new-extension-protocol.c \
@@ -894,7 +896,7 @@ thumbnail_layout_la_LDFLAGS = -module -L$(WLD)/lib
 
 if BUILD_CLIENTS
 
-bin_PROGRAMS += weston-terminal weston-info
+example_PROGRAMS += weston-terminal weston-info
 
 libexec_PROGRAMS +=				\
 	weston-desktop-shell			\
@@ -931,7 +933,7 @@ demo_clients =					\
 	weston-simple-clock
 
 if INSTALL_DEMO_CLIENTS
-bin_PROGRAMS += $(demo_clients)
+example_PROGRAMS += $(demo_clients)
 else
 noinst_PROGRAMS += $(demo_clients)
 endif
@@ -1498,7 +1500,7 @@ endif
 
 
 if BUILD_WCAP_TOOLS
-bin_PROGRAMS += wcap-decode
+example_PROGRAMS += wcap-decode
 
 wcap_decode_SOURCES =				\
 	wcap/main.c				\
