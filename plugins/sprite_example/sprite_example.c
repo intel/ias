@@ -41,7 +41,6 @@
 
 static ias_identifier myid;
 static spug_seat_id seat;
-static spug_matrix projmat;
 static spug_matrix *outmat;
 static spug_output_id output;
 

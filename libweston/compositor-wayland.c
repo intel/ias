@@ -2529,7 +2529,7 @@ create_cursor(struct wayland_backend *b,
 					       b->parent.shm);
 	if (!b->cursor_theme) {
 		fprintf(stderr, "could not load cursor theme\n");
-		free(theme);
+		free(b->cursor_theme);
 		return;
 	}
 

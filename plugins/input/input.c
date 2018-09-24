@@ -36,7 +36,6 @@
 #include "ias-plugin-framework.h"
 #include "ias-spug.h"
 
-static int mouse_x, mouse_y;
 
 /* the input plugin entry point. Here we can block, modify, monitor or ignore 
  * all input.

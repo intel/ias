@@ -3,7 +3,7 @@
 
 #ifndef USE_VM
 
-#define VM_INIT(gr, res)
+#define VM_INIT(gr, res) res=0
 #define VM_ADD_BUF(es, gr, gs, bc, buf, surf, idx)
 #define VM_TABLE_DRAW(o, go, gr)
 #define VM_TABLE_EXPOSE(o, go, gr)

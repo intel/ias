@@ -133,7 +133,7 @@ struct spug_client {
 };
 
 typedef struct wl_resource spug_resource;
-
+typedef struct wl_client   spug_client_itf;
 /* wrapper for wl_global_create. Used for extending wayland */
 WL_EXPORT spug_global_id spug_global_create(const struct spug_interface *interface,
 									void *data, spug_global_bind_func_t bind);
