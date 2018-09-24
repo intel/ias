@@ -2228,17 +2228,6 @@ ias_output_destroy(struct weston_output *output_base)
 	 */
 	drmModeSetCursor(c->drm.fd, output->ias_crtc->crtc_id, 0, 0, 0);
 
-#if 0
-	c->crtc_allocator &= ~(1 << output->ias_crtc->crtc_id);
-	c->connector_allocator &= ~(1 << output->ias_crtc->connector_id);
-
-	printf("eglDestroySurface called from ias_output_destroy\n");
-	eglDestroySurface(c->base.egl_display, output->egl_surface);
-	gbm_surface_destroy(output->ias_crtc->surface);
-#else
-#warning Rework output destruction
-#endif
-
 	weston_plane_release(&output->fb_plane);
 	weston_output_release(&output->base);
 
@@ -2960,7 +2949,7 @@ create_single_crtc(struct ias_backend *backend,
 		if (crtc_mode) {
 			break;
 		}
-
+		__attribute__((fallthrough));
 	case CRTC_CONFIG_CURRENT:
 		/* Use current mode */
 		crtc_mode = ias_crtc->current_mode;

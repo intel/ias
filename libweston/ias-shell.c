@@ -1550,6 +1550,7 @@ add_to_layer(struct ias_surface *shsurf)
 		break;
 	case SHELL_SURFACE_ZORDER_DEFAULT:
 		layer = &shell->default_app_layer;
+		__attribute__((fallthrough));
 	default:
 		/*
 		 * Not a built-in zorder, must be user-defined.  Walk

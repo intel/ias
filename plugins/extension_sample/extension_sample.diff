@@ -183,7 +183,7 @@
 + * Begins rotating grid cells at client's request.
 + */
 +static void
-+my_plugin_rotate_cells(spug_client_id client,
++my_plugin_rotate_cells(spug_client_itf *client,
 +	spug_resource *resource,
 +	uint32_t method)
 +{
@@ -247,12 +247,12 @@
 +	spug_list_init(&cell_listener_list);
 +
 +	/* Create an object to expose our protocol extension */
-+	pluginext.base.interface = &my_plugin_interface;
++	pluginext.base.interface = (struct spug_interface *)&my_plugin_interface;
 +	pluginext.base.implementation =
 +	    (void(**)(void)) &my_plugin_implementation;
 +	/* TODO This won't work yet. pluginext.compositor will be undefined, this is
 +	 * just to make it build until the time comes to port this test to spug. */
-+	pluginext.global = spug_global_create(&my_plugin_interface, &pluginext, bind_pluginext);
++	pluginext.global = (struct spug_global * )spug_global_create((const struct spug_interface * )&my_plugin_interface, &pluginext, (spug_global_bind_func_t )bind_pluginext);
 +	pluginext.spinning = MY_PLUGIN_ROTATE_CELLS_METHOD_NONE;
 +
  	/*

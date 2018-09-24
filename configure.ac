@@ -797,8 +797,8 @@ PKG_CHECK_MODULES(SETBACKLIGHT, [libudev libdrm], enable_setbacklight=yes, enabl
 AM_CONDITIONAL(BUILD_SETBACKLIGHT, test "x$enable_setbacklight" = "xyes")
 
 if test "x$GCC" = "xyes"; then
-	GCC_CFLAGS="-Wall -Wextra -Wno-unused-parameter \
-		-Wno-shift-negative-value -Wno-missing-field-initializers \
+	GCC_CFLAGS="-Wall -Wextra -Wno-unused-parameter -Wunused-variable \
+		-Wno-missing-field-initializers \
 		-g -fvisibility=hidden \
 		-Wstrict-prototypes -Wmissing-prototypes -Wsign-compare"
 fi
