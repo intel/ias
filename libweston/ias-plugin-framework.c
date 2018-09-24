@@ -311,7 +311,7 @@ WL_EXPORT struct weston_surface * ias_get_weston_surface(
 	/*
 	 * This isnt gaurenteed to work, the surface_id shouldnt be dereferenced back to an address
 	 */
-	struct ias_surface *shsurf = (struct ias_surface *) ias_surface_id;
+	struct ias_surface *shsurf = (struct ias_surface *) (intptr_t) ias_surface_id;
 
 	if(shsurf && shsurf->surface) {
 		weston_surface = shsurf->surface;

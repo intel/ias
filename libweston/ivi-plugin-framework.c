@@ -368,7 +368,7 @@ WL_EXPORT struct weston_surface * ias_get_weston_surface(
 		uint32_t ivi_shell_surface_id)
 {
 	struct weston_surface *weston_surface = NULL;
-	struct ivi_shell_surface *shsurf = (struct ivi_shell_surface *) ivi_shell_surface_id;
+	struct ivi_shell_surface *shsurf = (struct ivi_shell_surface *)(intptr_t)ivi_shell_surface_id;
 
 	if(shsurf && shsurf->surface) {
 		weston_surface = shsurf->surface;
