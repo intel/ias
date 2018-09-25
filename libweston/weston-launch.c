@@ -626,7 +626,7 @@ setup_session(struct weston_launch *wl, char **child_argv)
 	child_argv[0] = "/bin/sh";
 	child_argv[1] = "-l";
 	child_argv[2] = "-c";
-	child_argv[3] = BINDIR "/weston \"$@\"";
+	child_argv[3] = BINDIR "/ias-weston \"$@\"";
 	child_argv[4] = "weston";
 	return 5;
 }
@@ -654,7 +654,7 @@ launch_compositor(struct weston_launch *wl, int argc, char *argv[])
 	if (wl->new_user) {
 		o = setup_session(wl, child_argv);
 	} else {
-		child_argv[0] = BINDIR "/weston";
+		child_argv[0] = BINDIR "/ias-weston";
 		o = 1;
 	}
 	for (i = 0; i < argc; ++i)
