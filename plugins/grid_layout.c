@@ -166,7 +166,7 @@ static GLuint mouse_texture;
 static int selected_tile = -1;
 static int always_redraw = 1;
 static int fullscreen_draw = 0;
-static int i, current_tile;
+static int current_tile;
 static uint32_t frame = 0;
 static int update_input_focus = 0;
 

@@ -2010,7 +2010,7 @@ weston_surface_attach(struct weston_surface *surface,
 	if (!buffer) {
 		if (weston_surface_is_mapped(surface))
 			weston_surface_unmap(surface);
-			wl_list_init(&surface->buffer_ref.destroy_listener.link);
+		wl_list_init(&surface->buffer_ref.destroy_listener.link);
 	}
 
 	surface->compositor->renderer->attach(surface, buffer);
