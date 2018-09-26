@@ -229,11 +229,9 @@ is_surface_flippable_on_sprite(struct weston_view *view,
 		struct weston_output *output);
 
 static int
-assign_blending_to_sprite(struct weston_output *output,
+assign_constant_alpha_to_sprite(struct weston_output *output,
 		int sprite_id,
-		int src_factor,
-		int dst_factor,
-		float blend_color,
+		float constant_value,
 		int enable);
 
 /* retrieve the number of GL textures associated with a view and their names.
@@ -378,8 +376,6 @@ ias_get_object_properties(int fd,
 		{ "CRTC_ID", F(crtc_id) },
 		{ "rotation", F(rotation) },
 
-		{ "blend_func", F(blend_func) },
-		{ "blend_color", F(blend_color) },
 	};
 #undef F
 
@@ -2220,17 +2216,6 @@ ias_output_destroy(struct weston_output *output_base)
 	 */
 	drmModeSetCursor(c->drm.fd, output->ias_crtc->crtc_id, 0, 0, 0);
 
-#if 0
-	c->crtc_allocator &= ~(1 << output->ias_crtc->crtc_id);
-	c->connector_allocator &= ~(1 << output->ias_crtc->connector_id);
-
-	printf("eglDestroySurface called from ias_output_destroy\n");
-	eglDestroySurface(c->base.egl_display, output->egl_surface);
-	gbm_surface_destroy(output->ias_crtc->surface);
-#else
-#warning Rework output destruction
-#endif
-
 	weston_plane_release(&output->fb_plane);
 	weston_output_release(&output->base);
 
@@ -2952,7 +2937,7 @@ create_single_crtc(struct ias_backend *backend,
 		if (crtc_mode) {
 			break;
 		}
-
+		__attribute__((fallthrough));
 	case CRTC_CONFIG_CURRENT:
 		/* Use current mode */
 		crtc_mode = ias_crtc->current_mode;
@@ -4414,7 +4399,7 @@ ias_compositor_create(struct weston_compositor *compositor,
 	backend->get_sprite_list = get_sprite_list;
 	backend->assign_view_to_sprite = assign_view_to_sprite;
 	backend->assign_zorder_to_sprite = assign_zorder_to_sprite;
-	backend->assign_blending_to_sprite = assign_blending_to_sprite;
+	backend->assign_constant_alpha_to_sprite = assign_constant_alpha_to_sprite;
 	backend->attempt_scanout_for_view = ias_attempt_scanout_for_view;
 	backend->get_tex_info = get_tex_info;
 	backend->get_egl_image_info = get_egl_image_info;
@@ -4521,11 +4506,9 @@ get_sprite_list(struct weston_output *output,
 }
 
 static int
-assign_blending_to_sprite(struct weston_output *output,
+assign_constant_alpha_to_sprite(struct weston_output *output,
 		int sprite_id,
-		int src_factor,
-		int dst_factor,
-		float blend_color,
+		float constant_value,
 		int enable)
 {
 	struct ias_output *ias_output = (struct ias_output*)output;
@@ -4541,18 +4524,18 @@ assign_blending_to_sprite(struct weston_output *output,
 
 	wl_list_for_each(s, &ias_crtc->sprite_list, link) {
 		if (s->plane_id == sprite_id) {
-			s->blending_enabled = enable;
-			s->blending_value = blend_color;
-			s->blending_src_factor = src_factor;
-			s->blending_dst_factor = dst_factor;
-			s->sprite_dirty |= SPRITE_DIRTY_BLENDING;
-			s->view->alpha = s->blending_value;
+			s->constant_alpha_enabled = enable;
+			s->constant_alpha_value = constant_value;
+			s->sprite_dirty |= SPRITE_DIRTY_CONSTANT_ALPHA;
+			s->view->alpha = s->constant_alpha_value;
 			ret = 0;
 		}
 	}
 
 	return ret;
+
 }
+
 
 static int
 assign_zorder_to_sprite(struct weston_output *output,
@@ -4992,9 +4975,9 @@ assign_view_to_sprite(struct weston_view *view,
 	 */
 	weston_buffer_reference(&sprite->next->buffer_ref, surface->buffer_ref.buffer);
 
-	if (view->alpha != sprite->blending_value) {
-		sprite->sprite_dirty |= SPRITE_DIRTY_BLENDING;
-		sprite->blending_value = view->alpha;
+	if (view->alpha != sprite->constant_alpha_value) {
+		sprite->sprite_dirty |= SPRITE_DIRTY_CONSTANT_ALPHA;
+		sprite->constant_alpha_value = view->alpha;
 	}
 
 	return &ias_output->fb_plane;

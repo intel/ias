@@ -368,7 +368,7 @@ WL_EXPORT struct weston_surface * ias_get_weston_surface(
 		uint32_t ivi_shell_surface_id)
 {
 	struct weston_surface *weston_surface = NULL;
-	struct ivi_shell_surface *shsurf = (struct ivi_shell_surface *) ivi_shell_surface_id;
+	struct ivi_shell_surface *shsurf = (struct ivi_shell_surface *)(intptr_t)ivi_shell_surface_id;
 
 	if(shsurf && shsurf->surface) {
 		weston_surface = shsurf->surface;
@@ -553,51 +553,11 @@ ias_assign_constant_alpha_to_sprite(struct weston_output *output,
 	}
 
 	ret = ((struct ias_backend *)
-			(framework->compositor->backend))->assign_blending_to_sprite(
-					output, sprite_id,
-					DRM_BLEND_FACTOR_CONSTANT_ALPHA,
-					DRM_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
-					constant_value, enable);
+			(framework->compositor->backend))->assign_constant_alpha_to_sprite(
+					output, sprite_id, constant_value, enable);
 
 	return ret;
 
-}
-
-/*
- * ias_assign_blending_to_sprite()
- * Given the sprite id, apply blending function to the sprite before it blends
- * in the pipe.   The constant blend_color take values from 0-0xff.
- * 0 - full transparent
- * 0xff - opaque
- */
-WL_EXPORT int
-ias_assign_blending_to_sprite(struct weston_output *output,
-		int sprite_id,
-		int src_factor,
-		int dst_factor,
-		float blend_color,
-		int enable)
-{
-	int ret;
-
-	/*
-	 * Make sure we were handed a non-NULL sprite.  This is just a sanity
-	 * check in case we're running in dualview/stereo mode and the plugin
-	 * forgot to pay attention to the return value of ias_get_sprite_list.
-	 */
-	if (!output) {
-		return -1;
-	}
-
-	if ((blend_color < 0.0) || (blend_color > 1.0)) {
-		return -1;
-	}
-
-	ret = ((struct ias_backend *)
-			(framework->compositor->backend))->assign_blending_to_sprite(
-					output, sprite_id, src_factor, dst_factor, blend_color, enable);
-
-	return ret;
 }
 
 /*

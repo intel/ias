@@ -196,21 +196,6 @@ ias_assign_constant_alpha_to_sprite(struct weston_output *output,
 		int enable);
 
 /*
- * ias_assign_blending_to_sprite()
- * Given the sprite id, apply blending function to the sprite before it blends
- * in the pipe.   The constant blend_color take values from 0-0xff.
- * 0 - full transparent
- * 0xff - opaque
- */
-WL_EXPORT int
-ias_assign_blending_to_sprite(struct weston_output *output,
-		int sprite_id,
-		int src_factor,
-		int dst_factor,
-		float blend_color,
-		int enable);
-
-/*
  * ias_assign_surface_to_sprite()
  *
  * Assigns the specified surface (or subregion of the surface) to a sprite for

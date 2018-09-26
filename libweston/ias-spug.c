@@ -1276,24 +1276,6 @@ spug_assign_constant_alpha_to_sprite(	const spug_output_id output_id,
 	return -1;
 }
 
-WL_EXPORT int
-spug_assign_blending_to_sprite(const spug_output_id output_id,
-		int sprite_id,
-		int src_factor,
-		int dst_factor,
-		float blend_color,
-		int enable)
-{
-	struct spug_output *soutput = renderer_interface.get_output_from_id(output_id);
-
-	if(soutput) {
-		return ias_assign_blending_to_sprite(soutput->output, sprite_id, src_factor,
-				dst_factor, blend_color, enable);
-	}
-
-	return -1;
-}
-
 WL_EXPORT spug_bool
 spug_view_is_cursor(const spug_view_id view_id)
 {

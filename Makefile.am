@@ -3,14 +3,16 @@ ACLOCAL_AMFLAGS = -I m4
 bin_PROGRAMS =
 noinst_PROGRAMS =
 libexec_PROGRAMS =
-moduledir = $(libdir)/weston
+moduledir = $(libdir)/ias
 module_LTLIBRARIES =
-libweston_moduledir = $(libdir)/libweston-$(LIBWESTON_MAJOR)
+libweston_moduledir = $(libdir)/libias-$(LIBWESTON_MAJOR)
 libweston_module_LTLIBRARIES =
 noinst_LTLIBRARIES =
 plugindir = $(libdir)/ias
 plugin_LTLIBRARIES =
 BUILT_SOURCES = plugins
+exampledir = $(bindir)/../share/ias/examples
+example_PROGRAMS =
 
 AM_DISTCHECK_CONFIGURE_FLAGS = --disable-setuid-install
 
@@ -60,16 +62,16 @@ CLEANFILES = weston.ini				\
 # targets. See http://debbugs.gnu.org/cgi/bugreport.cgi?bug=7328
 install-libweston_moduleLTLIBRARIES install-moduleLTLIBRARIES: install-libLTLIBRARIES
 
-lib_LTLIBRARIES = libweston-@LIBWESTON_MAJOR@.la
-libweston_@LIBWESTON_MAJOR@_la_CPPFLAGS = $(AM_CPPFLAGS) -DIN_WESTON
-libweston_@LIBWESTON_MAJOR@_la_CFLAGS = $(AM_CFLAGS) \
+lib_LTLIBRARIES = libias-@LIBWESTON_MAJOR@.la
+libias_@LIBWESTON_MAJOR@_la_CPPFLAGS = $(AM_CPPFLAGS) -DIN_WESTON
+libias_@LIBWESTON_MAJOR@_la_CFLAGS = $(AM_CFLAGS) \
 	$(COMPOSITOR_CFLAGS) $(EGL_CFLAGS) $(LIBDRM_CFLAGS)
-libweston_@LIBWESTON_MAJOR@_la_LIBADD = $(COMPOSITOR_LIBS) \
+libias_@LIBWESTON_MAJOR@_la_LIBADD = $(COMPOSITOR_LIBS) \
 	$(DL_LIBS) -lm $(CLOCK_GETTIME_LIBS) \
 	$(LIBINPUT_BACKEND_LIBS) libshared.la
-libweston_@LIBWESTON_MAJOR@_la_LDFLAGS = -version-info $(LT_VERSION_INFO)
+libias_@LIBWESTON_MAJOR@_la_LDFLAGS = -version-info $(LT_VERSION_INFO)
 
-libweston_@LIBWESTON_MAJOR@_la_SOURCES =			\
+libias_@LIBWESTON_MAJOR@_la_SOURCES =			\
 	libweston/git-version.h				\
 	libweston/log.c					\
 	libweston/compositor.c				\
@@ -107,15 +109,15 @@ libweston_@LIBWESTON_MAJOR@_la_SOURCES =			\
 	shared/platform.h				\
 	shared/weston-egl-ext.h
 
-lib_LTLIBRARIES += libweston-desktop-@LIBWESTON_MAJOR@.la
-libweston_desktop_@LIBWESTON_MAJOR@_la_CPPFLAGS = $(AM_CPPFLAGS) -DIN_WESTON
-libweston_desktop_@LIBWESTON_MAJOR@_la_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS)
-libweston_desktop_@LIBWESTON_MAJOR@_la_LIBADD =		\
-	libweston-@LIBWESTON_MAJOR@.la			\
+lib_LTLIBRARIES += libias-desktop-@LIBWESTON_MAJOR@.la
+libias_desktop_@LIBWESTON_MAJOR@_la_CPPFLAGS = $(AM_CPPFLAGS) -DIN_WESTON
+libias_desktop_@LIBWESTON_MAJOR@_la_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS)
+libias_desktop_@LIBWESTON_MAJOR@_la_LIBADD =		\
+	libias-@LIBWESTON_MAJOR@.la			\
 	$(COMPOSITOR_LIBS)
-libweston_desktop_@LIBWESTON_MAJOR@_la_LDFLAGS = -version-info $(LT_VERSION_INFO)
+libias_desktop_@LIBWESTON_MAJOR@_la_LDFLAGS = -version-info $(LT_VERSION_INFO)
 
-libweston_desktop_@LIBWESTON_MAJOR@_la_SOURCES =	\
+libias_desktop_@LIBWESTON_MAJOR@_la_SOURCES =	\
 	libweston-desktop/client.c			\
 	libweston-desktop/internal.h			\
 	libweston-desktop/libweston-desktop.c		\
@@ -126,18 +128,18 @@ libweston_desktop_@LIBWESTON_MAJOR@_la_SOURCES =	\
 	libweston-desktop/xdg-shell-v6.c		\
 	libweston-desktop/xwayland.c
 
-nodist_libweston_desktop_@LIBWESTON_MAJOR@_la_SOURCES =		\
+nodist_libias_desktop_@LIBWESTON_MAJOR@_la_SOURCES =		\
 	protocol/xdg-shell-unstable-v6-protocol.c		\
 	protocol/xdg-shell-unstable-v6-server-protocol.h
 
-BUILT_SOURCES += $(nodist_libweston_desktop_@LIBWESTON_MAJOR@_la_SOURCES)
+BUILT_SOURCES += $(nodist_libias_desktop_@LIBWESTON_MAJOR@_la_SOURCES)
 
-libweston-desktop-@LIBWESTON_MAJOR@.la libweston-desktop/libweston_desktop_@LIBWESTON_MAJOR@_la-xdg-shell-v6.lo: protocol/xdg-shell-unstable-v6-server-protocol.h
+libias-desktop-@LIBWESTON_MAJOR@.la libweston-desktop/libias_desktop_@LIBWESTON_MAJOR@_la-xdg-shell-v6.lo: protocol/xdg-shell-unstable-v6-server-protocol.h
 
 if SYSTEMD_NOTIFY_SUPPORT
 module_LTLIBRARIES += systemd-notify.la
 systemd_notify_la_LDFLAGS = -module -avoid-version
-systemd_notify_la_LIBADD = libweston-@LIBWESTON_MAJOR@.la $(SYSTEMD_DAEMON_LIBS)
+systemd_notify_la_LIBADD = libias-@LIBWESTON_MAJOR@.la $(SYSTEMD_DAEMON_LIBS)
 systemd_notify_la_CFLAGS =			\
 	$(COMPOSITOR_CFLAGS)			\
 	$(SYSTEMD_DAEMON_CFLAGS)		\
@@ -150,7 +152,7 @@ systemd_notify_la_SOURCES =			\
 	libweston/compositor.h
 endif
 
-nodist_libweston_@LIBWESTON_MAJOR@_la_SOURCES =				\
+nodist_libias_@LIBWESTON_MAJOR@_la_SOURCES =				\
 	protocol/weston-screenshooter-protocol.c			\
 	protocol/weston-screenshooter-server-protocol.h			\
 	protocol/text-cursor-position-protocol.c	\
@@ -172,22 +174,22 @@ nodist_libweston_@LIBWESTON_MAJOR@_la_SOURCES =				\
 	protocol/input-timestamps-unstable-v1-protocol.c		\
 	protocol/input-timestamps-unstable-v1-server-protocol.h
 
-BUILT_SOURCES += $(nodist_libweston_@LIBWESTON_MAJOR@_la_SOURCES)
+BUILT_SOURCES += $(nodist_libias_@LIBWESTON_MAJOR@_la_SOURCES)
 
-bin_PROGRAMS += weston
+bin_PROGRAMS += ias-weston
 
-weston_LDFLAGS = -export-dynamic -pie
-weston_CPPFLAGS = $(AM_CPPFLAGS) -DIN_WESTON 		\
+ias_weston_LDFLAGS = -export-dynamic -pie
+ias_weston_CPPFLAGS = $(AM_CPPFLAGS) -DIN_WESTON 		\
 				 -DMODULEDIR='"$(moduledir)"' \
 				 -DXSERVER_PATH='"@XSERVER_PATH@"'
-weston_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS) $(LIBINPUT_BACKEND_CFLAGS) -fPIE
-weston_LDADD = libshared.la libweston-@LIBWESTON_MAJOR@.la \
+ias_weston_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS) $(LIBINPUT_BACKEND_CFLAGS) -fPIE
+ias_weston_LDADD = libshared.la libias-@LIBWESTON_MAJOR@.la \
 	$(COMPOSITOR_LIBS) \
 	$(DL_LIBS) $(LIBINPUT_BACKEND_LIBS) \
 	$(CLOCK_GETRES_LIBS) \
 	-lm
 
-weston_SOURCES = 					\
+ias_weston_SOURCES = 					\
 	compositor/main.c				\
 	compositor/weston-screenshooter.c		\
 	compositor/text-backend.c			\
@@ -211,7 +213,7 @@ libsession_helper_la_SOURCES =			\
 	libweston/launcher-weston-launch.c	\
 	libweston/launcher-direct.c
 libsession_helper_la_CFLAGS = $(AM_CFLAGS) $(LIBDRM_CFLAGS) $(PIXMAN_CFLAGS) $(COMPOSITOR_CFLAGS)
-libsession_helper_la_LIBADD = libweston-@LIBWESTON_MAJOR@.la
+libsession_helper_la_LIBADD = libias-@LIBWESTON_MAJOR@.la
 
 if ENABLE_DRM_COMPOSITOR
 libsession_helper_la_LIBADD += $(LIBDRM_LIBS)
@@ -240,20 +242,20 @@ endif
 .FORCE :
 
 if BUILD_WESTON_LAUNCH
-bin_PROGRAMS += weston-launch
-weston_launch_SOURCES = libweston/weston-launch.c libweston/weston-launch.h
-weston_launch_CPPFLAGS = -DBINDIR='"$(bindir)"'
-weston_launch_CFLAGS=				\
+bin_PROGRAMS += ias-weston-launch
+ias_weston_launch_SOURCES = libweston/weston-launch.c libweston/weston-launch.h
+ias_weston_launch_CPPFLAGS = -DBINDIR='"$(bindir)"'
+ias_weston_launch_CFLAGS=				\
 	$(AM_CFLAGS)				\
 	$(PAM_CFLAGS)				\
 	$(SYSTEMD_LOGIN_CFLAGS)			\
 	$(LIBDRM_CFLAGS)			\
 	-fPIE
-weston_launch_LDADD = $(PAM_LIBS) $(SYSTEMD_LOGIN_LIBS)
-weston_launch_LDFLAGS = -pie
+ias_weston_launch_LDADD = $(PAM_LIBS) $(SYSTEMD_LOGIN_LIBS)
+ias_weston_launch_LDFLAGS = -pie
 
 if ENABLE_DRM_COMPOSITOR
-weston_launch_LDADD += $(LIBDRM_LIBS)
+ias_weston_launch_LDADD += $(LIBDRM_LIBS)
 endif
 
 if ENABLE_SETUID_INSTALL
@@ -278,9 +280,9 @@ pkgconfig_DATA = \
 	compositor/weston.pc
 
 wayland_sessiondir = $(datadir)/wayland-sessions
-dist_wayland_session_DATA = compositor/weston.desktop
+dist_wayland_session_DATA = compositor/ias-weston.desktop
 
-libwestonincludedir = $(includedir)/libweston-${LIBWESTON_MAJOR}
+libwestonincludedir = $(includedir)/libias-${LIBWESTON_MAJOR}
 libwestoninclude_HEADERS =				\
 	libweston/version.h				\
 	libweston/compositor.h			\
@@ -317,7 +319,7 @@ if ENABLE_EGL
 libweston_module_LTLIBRARIES += gl-renderer.la
 gl_renderer_la_LDFLAGS = -module -avoid-version
 gl_renderer_la_LIBADD =				\
-	libweston-@LIBWESTON_MAJOR@.la		\
+	libias-@LIBWESTON_MAJOR@.la		\
 	$(EGL_LIBS)				\
 	$(COMPOSITOR_LIBS)
 gl_renderer_la_CFLAGS =				\
@@ -356,7 +358,7 @@ libweston_module_LTLIBRARIES += x11-backend.la
 x11_backend_la_LDFLAGS = -module -avoid-version
 x11_backend_la_LIBADD =				\
 	libshared-cairo.la			\
-	libweston-@LIBWESTON_MAJOR@.la		\
+	libias-@LIBWESTON_MAJOR@.la		\
 	$(X11_COMPOSITOR_LIBS)			\
 	$(COMPOSITOR_LIBS)
 x11_backend_la_CFLAGS =				\
@@ -386,7 +388,7 @@ libweston_module_LTLIBRARIES += drm-backend.la
 drm_backend_la_LDFLAGS = -module -avoid-version
 drm_backend_la_LIBADD =				\
 	libsession-helper.la			\
-	libweston-@LIBWESTON_MAJOR@.la		\
+	libias-@LIBWESTON_MAJOR@.la		\
 	$(COMPOSITOR_LIBS)			\
 	$(DRM_COMPOSITOR_LIBS)			\
 	$(INPUT_BACKEND_LIBS)			\
@@ -460,7 +462,7 @@ libweston_module_LTLIBRARIES += wayland-backend.la
 wayland_backend_la_LDFLAGS = -module -avoid-version
 wayland_backend_la_LIBADD =			\
 	libshared-cairo.la			\
-	libweston-@LIBWESTON_MAJOR@.la		\
+	libias-@LIBWESTON_MAJOR@.la		\
 	$(COMPOSITOR_LIBS)			\
 	$(WAYLAND_COMPOSITOR_EGL_LIBS)		\
 	$(WAYLAND_COMPOSITOR_LIBS)
@@ -487,7 +489,7 @@ libweston_module_LTLIBRARIES += headless-backend.la
 headless_backend_la_LDFLAGS = -module -avoid-version
 headless_backend_la_LIBADD =			\
 	libshared.la				\
-	libweston-@LIBWESTON_MAJOR@.la		\
+	libias-@LIBWESTON_MAJOR@.la		\
 	$(COMPOSITOR_LIBS)
 headless_backend_la_CFLAGS = $(COMPOSITOR_CFLAGS) $(AM_CFLAGS)
 headless_backend_la_SOURCES = 			\
@@ -502,7 +504,7 @@ fbdev_backend_la_LDFLAGS = -module -avoid-version
 fbdev_backend_la_LIBADD =			\
 	libshared.la				\
 	libsession-helper.la			\
-	libweston-@LIBWESTON_MAJOR@.la		\
+	libias-@LIBWESTON_MAJOR@.la		\
 	$(COMPOSITOR_LIBS)			\
 	$(FBDEV_COMPOSITOR_LIBS)		\
 	$(INPUT_BACKEND_LIBS)
@@ -525,7 +527,7 @@ libweston_module_LTLIBRARIES += rdp-backend.la
 rdp_backend_la_LDFLAGS = -module -avoid-version
 rdp_backend_la_LIBADD =				\
 	libshared.la				\
-	libweston-@LIBWESTON_MAJOR@.la		\
+	libias-@LIBWESTON_MAJOR@.la		\
 	$(COMPOSITOR_LIBS)		\
 	$(RDP_COMPOSITOR_LIBS)
 rdp_backend_la_CFLAGS =				\
@@ -543,7 +545,7 @@ module_LTLIBRARIES += cms-static.la
 cms_static_la_LDFLAGS = -module -avoid-version
 cms_static_la_LIBADD =				\
 	libshared.la				\
-	libweston-@LIBWESTON_MAJOR@.la		\
+	libias-@LIBWESTON_MAJOR@.la		\
 	$(LCMS_LIBS)				\
 	$(COMPOSITOR_LIBS)
 cms_static_la_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS) $(LCMS_CFLAGS)
@@ -557,7 +559,7 @@ module_LTLIBRARIES += cms-colord.la
 cms_colord_la_LDFLAGS = -module -avoid-version
 cms_colord_la_LIBADD =				\
 	libshared.la				\
-	libweston-@LIBWESTON_MAJOR@.la		\
+	libias-@LIBWESTON_MAJOR@.la		\
 	$(COLORD_LIBS)				\
 	$(LCMS_LIBS)				\
 	$(COMPOSITOR_LIBS)
@@ -803,7 +805,7 @@ extension_sample_la_SOURCES = plugins/extension_sample/cursor_image.h \
 							  plugins/extension_sample/new-extension-protocol.c \
 							  plugins/extension_sample/new-extension-server-protocol.h
 
-bin_PROGRAMS += extension_test_client
+example_PROGRAMS += extension_test_client
 
 extension_test_client_SOURCES = plugins/extension_sample/extension_test_client.c \
 				plugins/extension_sample/new-extension-protocol.c \
@@ -894,7 +896,7 @@ thumbnail_layout_la_LDFLAGS = -module -L$(WLD)/lib
 
 if BUILD_CLIENTS
 
-bin_PROGRAMS += weston-terminal weston-info
+example_PROGRAMS += weston-terminal weston-info
 
 libexec_PROGRAMS +=				\
 	weston-desktop-shell			\
@@ -931,7 +933,7 @@ demo_clients =					\
 	weston-simple-clock
 
 if INSTALL_DEMO_CLIENTS
-bin_PROGRAMS += $(demo_clients)
+example_PROGRAMS += $(demo_clients)
 else
 noinst_PROGRAMS += $(demo_clients)
 endif
@@ -1055,10 +1057,6 @@ nodist_remote_display_SOURCES =		\
 remote_display_CFLAGS = $(AM_CFLAGS) $(SIMPLE_CLIENT_CFLAGS) $(LIBVA_CFLAGS)
 remote_display_LDADD = $(LIBDRM_LIBS) $(SIMPLE_CLIENT_LIBS) $(LIBVA_LIBS) libshared.la -lm -ldrm_intel
 
-weston_clock_SOURCES = 				\
-	clients/clock.c				\
-	shared/helpers.h
-weston_clock_LDADD = libtoytoolkit.la
 weston_clock_CFLAGS = $(AM_CFLAGS) $(CLIENT_CFLAGS)
 
 weston_simple_clock_SOURCES = clients/simple-clock.c
@@ -1098,6 +1096,19 @@ nodist_weston_simple_egl_SOURCES =		\
 weston_simple_egl_CFLAGS = $(AM_CFLAGS) $(SIMPLE_EGL_CLIENT_CFLAGS) -fPIE
 weston_simple_egl_LDADD = $(SIMPLE_EGL_CLIENT_LIBS) -lm
 weston_simple_egl_LDFLAGS = -pie
+
+demo_clients += weston-simple-egl-ms
+weston_simple_egl_ms_SOURCES = clients/simple-egl-ms.c
+nodist_weston_simple_egl_ms_SOURCES =		\
+	protocol/xdg-shell-unstable-v6-protocol.c		\
+	protocol/xdg-shell-unstable-v6-client-protocol.h	\
+	protocol/ivi-application-protocol.c		\
+	protocol/ivi-application-client-protocol.h	\
+	protocol/ias-shell-protocol.c		\
+	protocol/ias-shell-client-protocol.h
+weston_simple_egl_ms_CFLAGS = $(AM_CFLAGS) $(SIMPLE_EGL_CLIENT_CFLAGS) -fPIE
+weston_simple_egl_ms_LDADD = $(SIMPLE_EGL_CLIENT_LIBS) -lm
+weston_simple_egl_ms_LDFLAGS = -pie
 endif
 
 demo_clients += weston-es2gears
@@ -1485,7 +1496,7 @@ endif
 
 
 if BUILD_WCAP_TOOLS
-bin_PROGRAMS += wcap-decode
+example_PROGRAMS += wcap-decode
 
 wcap_decode_SOURCES =				\
 	wcap/main.c				\
@@ -1513,7 +1524,7 @@ desktop_shell_la_CPPFLAGS =			\
 	-DIN_WESTON
 
 desktop_shell_la_LDFLAGS = -module -avoid-version
-desktop_shell_la_LIBADD = libshared.la libweston-desktop-@LIBWESTON_MAJOR@.la $(COMPOSITOR_LIBS)
+desktop_shell_la_LIBADD = libshared.la libias-desktop-@LIBWESTON_MAJOR@.la $(COMPOSITOR_LIBS)
 desktop_shell_la_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS)
 desktop_shell_la_SOURCES =				\
 	desktop-shell/shell.h				\
@@ -1541,7 +1552,7 @@ fullscreen_shell_la_CPPFLAGS =			\
 
 fullscreen_shell_la_LDFLAGS = -module -avoid-version
 fullscreen_shell_la_LIBADD =			\
-	libweston-@LIBWESTON_MAJOR@.la		\
+	libias-@LIBWESTON_MAJOR@.la		\
 	$(COMPOSITOR_LIBS)
 fullscreen_shell_la_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS)
 fullscreen_shell_la_SOURCES =			\
@@ -1569,7 +1580,7 @@ ivi_shell = ivi-shell.la
 ivi_shell_la_LDFLAGS = -module -avoid-version
 ivi_shell_la_LIBADD =				\
 	libshared.la				\
-	libweston-@LIBWESTON_MAJOR@.la		\
+	libias-@LIBWESTON_MAJOR@.la		\
 	$(COMPOSITOR_LIBS)
 ivi_shell_la_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS)
 ivi_shell_la_SOURCES =				\
@@ -1592,7 +1603,7 @@ hmi_controller = hmi-controller.la
 hmi_controller_la_LDFLAGS = -module -avoid-version
 hmi_controller_la_LIBADD =			\
 	libshared.la				\
-	libweston-@LIBWESTON_MAJOR@.la		\
+	libias-@LIBWESTON_MAJOR@.la		\
 	$(COMPOSITOR_LIBS)
 hmi_controller_la_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS)
 hmi_controller_la_SOURCES =				\
@@ -1616,7 +1627,7 @@ screen_share_la_CPPFLAGS = $(AM_CPPFLAGS) -DBINDIR='"$(bindir)"'
 screen_share_la_LDFLAGS = -module -avoid-version
 screen_share_la_LIBADD =			\
 	libshared-cairo.la			\
-	libweston-@LIBWESTON_MAJOR@.la		\
+	libias-@LIBWESTON_MAJOR@.la		\
 	$(COMPOSITOR_LIBS)			\
 	$(SCREEN_SHARE_LIBS)
 screen_share_la_CFLAGS =			\
@@ -1648,7 +1659,7 @@ xwayland_la_CPPFLAGS =				\
 xwayland_la_LDFLAGS = -module -avoid-version
 xwayland_la_LIBADD =				\
 	libshared-cairo.la			\
-	libweston-@LIBWESTON_MAJOR@.la		\
+	libias-@LIBWESTON_MAJOR@.la		\
 	$(XWAYLAND_LIBS)
 xwayland_la_CFLAGS =				\
 	$(AM_CFLAGS)				\
@@ -1833,7 +1844,7 @@ noinst_PROGRAMS +=			\
 
 test_module_ldflags = -module -avoid-version -rpath $(libdir)
 test_module_libadd =			\
-	libweston-@LIBWESTON_MAJOR@.la	\
+	libias-@LIBWESTON_MAJOR@.la	\
 	$(COMPOSITOR_LIBS)
 
 plugin_registry_test_la_SOURCES = tests/plugin-registry-test.c
@@ -1861,7 +1872,7 @@ nodist_weston_test_la_SOURCES =			\
 	protocol/weston-test-protocol.c	\
 	protocol/weston-test-server-protocol.h
 
-weston_test_desktop_shell_la_LIBADD = libshared.la libweston-desktop-@LIBWESTON_MAJOR@.la $(COMPOSITOR_LIBS)
+weston_test_desktop_shell_la_LIBADD = libshared.la libias-desktop-@LIBWESTON_MAJOR@.la $(COMPOSITOR_LIBS)
 weston_test_desktop_shell_la_LDFLAGS = $(test_module_ldflags)
 weston_test_desktop_shell_la_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS)
 weston_test_desktop_shell_la_SOURCES = 			\
