@@ -280,7 +280,7 @@ pkgconfig_DATA = \
 	compositor/weston.pc
 
 wayland_sessiondir = $(datadir)/wayland-sessions
-dist_wayland_session_DATA = compositor/weston.desktop
+dist_wayland_session_DATA = compositor/ias-weston.desktop
 
 libwestonincludedir = $(includedir)/libias-${LIBWESTON_MAJOR}
 libwestoninclude_HEADERS =				\
