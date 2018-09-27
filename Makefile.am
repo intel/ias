@@ -1096,6 +1096,19 @@ nodist_weston_simple_egl_SOURCES =		\
 weston_simple_egl_CFLAGS = $(AM_CFLAGS) $(SIMPLE_EGL_CLIENT_CFLAGS) -fPIE
 weston_simple_egl_LDADD = $(SIMPLE_EGL_CLIENT_LIBS) -lm
 weston_simple_egl_LDFLAGS = -pie
+
+demo_clients += weston-simple-egl-ms
+weston_simple_egl_ms_SOURCES = clients/simple-egl-ms.c
+nodist_weston_simple_egl_ms_SOURCES =		\
+	protocol/xdg-shell-unstable-v6-protocol.c		\
+	protocol/xdg-shell-unstable-v6-client-protocol.h	\
+	protocol/ivi-application-protocol.c		\
+	protocol/ivi-application-client-protocol.h	\
+	protocol/ias-shell-protocol.c		\
+	protocol/ias-shell-client-protocol.h
+weston_simple_egl_ms_CFLAGS = $(AM_CFLAGS) $(SIMPLE_EGL_CLIENT_CFLAGS) -fPIE
+weston_simple_egl_ms_LDADD = $(SIMPLE_EGL_CLIENT_LIBS) -lm
+weston_simple_egl_ms_LDFLAGS = -pie
 endif
 
 demo_clients += weston-es2gears
@@ -1449,7 +1462,7 @@ BUILT_SOURCES +=					\
 	protocol/input-timestamps-unstable-v1-protocol.c		\
 	protocol/input-timestamps-unstable-v1-client-protocol.h
 
-westondatadir = $(datadir)/weston
+westondatadir = $(datadir)/ias
 dist_westondata_DATA =				\
 	data/wayland.svg			\
 	data/wayland.png			\

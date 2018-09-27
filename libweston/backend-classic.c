@@ -1097,34 +1097,41 @@ update_sprites_classic(struct ias_crtc *ias_crtc)
 			 * Based on zorder, if it is above the plane, set it
 			 * If below plane, check any
 			 */
+			#if 0
+			if (s->sprite_dirty) {
+				memset(&pipeblend, 0, sizeof(pipeblend));
+				pipeblend.plane_id = s->plane_id;
+				pipeblend.crtc_id = ias_crtc->crtc_id;
+
+				ret = drmIoctl(backend->drm.fd,
+						DRM_IOCTL_IGD_GET_PIPEBLEND, &pipeblend);
+
+				if (ret != 0) {
+					IAS_ERROR("Failed to get sprite properties");
+				}
+
+
+				if (s->sprite_dirty & SPRITE_DIRTY_CONSTANT_ALPHA) {
+					pipeblend.enable_flags |= I915_SPRITEFLAG_PIPEBLEND_CONSTALPHA;
+					pipeblend.has_const_alpha = s->constant_alpha_enabled;
+					pipeblend.const_alpha = s->constant_alpha_value * 0xff;
+				}
+
+				ret = drmIoctl(backend->drm.fd,
+						DRM_IOCTL_IGD_SET_PIPEBLEND, &pipeblend);
+
+				if (ret != 0) {
+					IAS_ERROR("Failed to change sprite properties");
+				}
+
+				s->sprite_dirty = 0;
+			}
+			#endif
+
 			if (s->sprite_dirty) {
 
 				if (s->sprite_dirty & SPRITE_DIRTY_ZORDER) {
 					IAS_ERROR("Failed to change sprite zorder property - not supported");
-				}
-
-				if (s->sprite_dirty & SPRITE_DIRTY_BLENDING) {
-					if (s->blending_enabled) {
-						drmModeAtomicAddProperty(ias_crtc->prop_set,
-								s->plane_id,
-								s->prop.blend_func,
-								(s->blending_src_factor << 16) | s->blending_dst_factor);
-
-						drmModeAtomicAddProperty(ias_crtc->prop_set,
-								s->plane_id,
-								s->prop.blend_color,
-								DRM_RGBA16161616(0, 0, 0, s->blending_value * 0xFFFF));
-					} else {
-						drmModeAtomicAddProperty(ias_crtc->prop_set,
-								s->plane_id,
-								s->prop.blend_func,
-								DRM_BLEND_FUNC(ONE, ZERO));
-
-						drmModeAtomicAddProperty(ias_crtc->prop_set,
-								s->plane_id,
-								s->prop.blend_color,
-								DRM_RGBA16161616(0, 0, 0, 0xFFFF));
-					}
 				}
 
 				s->sprite_dirty = 0;
