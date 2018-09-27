@@ -1449,7 +1449,7 @@ BUILT_SOURCES +=					\
 	protocol/input-timestamps-unstable-v1-protocol.c		\
 	protocol/input-timestamps-unstable-v1-client-protocol.h
 
-westondatadir = $(datadir)/weston
+westondatadir = $(datadir)/ias
 dist_westondata_DATA =				\
 	data/wayland.svg			\
 	data/wayland.png			\

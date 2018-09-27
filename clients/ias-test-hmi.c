@@ -142,7 +142,7 @@ struct output {
 	struct popup *popup;
 };
 
-static char *key_background_image = DATADIR "/weston/intel.png";
+static char *key_background_image = DATADIR "/ias/intel.png";
 static char *key_background_type = "center";
 static uint32_t key_background_color = 0xffffffff;
 //static int popup_priority = 0;
@@ -727,7 +727,7 @@ int main(int argc, char *argv[])
 
 	config = weston_config_parse("weston.ini");
 	section = weston_config_get_section(config, "shell", NULL, NULL);
-	weston_config_section_get_string(section, "background-image", &key_background_image, DATADIR "/weston/intel.png");
+	weston_config_section_get_string(section, "background-image", &key_background_image, DATADIR "/ias/intel.png");
 	weston_config_section_get_uint(section, "background-color", &key_background_color, 0xffffffff);
 	weston_config_section_get_string(section, "background-type", &key_background_type, "center");
 	weston_config_destroy(config);
