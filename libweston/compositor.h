@@ -2495,6 +2495,10 @@ weston_debug_compositor_create(struct weston_compositor *compositor);
 void
 weston_debug_compositor_destroy(struct weston_compositor *compositor);
 
+void
+weston_buffer_send_server_error(struct weston_buffer *buffer,
+				      const char *msg);
+
 #ifdef  __cplusplus
 }
 #endif
