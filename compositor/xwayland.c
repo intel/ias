@@ -63,7 +63,7 @@ spawn_xserver(void *user_data, const char *display, int abstract_fd, int unix_fd
 {
 	struct wet_xwayland *wxw = user_data;
 	pid_t pid;
-	char s[16], abstract_fd_str[16], unix_fd_str[16], wm_fd_str[16];
+	char s[12], abstract_fd_str[12], unix_fd_str[12], wm_fd_str[12];
 	int sv[2], wm[2], fd;
 	char *xserver = NULL;
 	struct weston_config *config = wet_get_config(wxw->compositor);
