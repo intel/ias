@@ -628,7 +628,7 @@ init(struct app_state *app_state, int *argc, char **argv)
 
 	int ret;
 	if (app_state->surfid) {
-		printf("Controlling recording from surface %d...\n", app_state->surfid);
+		printf("Controlling recording from surface %u...\n", app_state->surfid);
 		ret = get_surface_size(app_state, &app_state->src_width,
 				&app_state->src_height);
 		 if (ret != 0) {
