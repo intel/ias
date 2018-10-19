@@ -98,6 +98,8 @@ libias_@LIBWESTON_MAJOR@_la_SOURCES =			\
 	libweston/timeline-object.h			\
 	libweston/linux-dmabuf.c			\
 	libweston/linux-dmabuf.h			\
+	libweston/linux-explicit-synchronization.c	\
+	libweston/linux-explicit-synchronization.h	\
 	libweston/pixel-formats.c			\
 	libweston/pixel-formats.h			\
 	libweston/weston-debug.c			\
@@ -181,7 +183,9 @@ nodist_libias_@LIBWESTON_MAJOR@_la_SOURCES =				\
 	protocol/input-timestamps-unstable-v1-protocol.c		\
 	protocol/input-timestamps-unstable-v1-server-protocol.h		\
 	protocol/weston-touch-calibration-protocol.c			\
-	protocol/weston-touch-calibration-server-protocol.h
+	protocol/weston-touch-calibration-server-protocol.h		\
+	protocol/linux-explicit-synchronization-unstable-v1-protocol.c	\
+	protocol/linux-explicit-synchronization-unstable-v1-server-protocol.h
 
 BUILT_SOURCES += $(nodist_libias_@LIBWESTON_MAJOR@_la_SOURCES)
 
@@ -1634,7 +1638,9 @@ BUILT_SOURCES +=					\
 	protocol/input-timestamps-unstable-v1-protocol.c		\
 	protocol/input-timestamps-unstable-v1-client-protocol.h		\
 	protocol/xdg-output-unstable-v1-protocol.c			\
-	protocol/xdg-output-unstable-v1-client-protocol.h
+	protocol/xdg-output-unstable-v1-client-protocol.h		\
+	protocol/linux-explicit-synchronization-unstable-v1-protocol.c	\
+	protocol/linux-explicit-synchronization-unstable-v1-client-protocol.h
 
 westondatadir = $(datadir)/ias
 dist_westondata_DATA =				\
@@ -1981,7 +1987,8 @@ weston_tests =					\
 	subsurface.weston			\
 	subsurface-shot.weston			\
 	devices.weston				\
-	touch.weston
+	touch.weston				\
+	linux-explicit-synchronization.weston
 
 AM_TESTS_ENVIRONMENT = \
 	abs_builddir='$(abs_builddir)'; export abs_builddir; \
@@ -2174,6 +2181,14 @@ viewporter_weston_LDADD = libtest-client.la
 touch_weston_SOURCES = tests/touch-test.c
 touch_weston_CFLAGS = $(AM_CFLAGS) $(TEST_CLIENT_CFLAGS)
 touch_weston_LDADD = libtest-client.la
+
+linux_explicit_synchronization_weston_SOURCES = \
+	tests/linux-explicit-synchronization-test.c
+nodist_linux_explicit_synchronization_weston_SOURCES = \
+	protocol/linux-explicit-synchronization-unstable-v1-protocol.c	\
+	protocol/linux-explicit-synchronization-unstable-v1-client-protocol.h
+linux_explicit_synchronization_weston_CFLAGS = $(AM_CFLAGS) $(TEST_CLIENT_CFLAGS)
+linux_explicit_synchronization_weston_LDADD = libtest-client.la
 
 if ENABLE_XWAYLAND_TEST
 weston_tests +=	xwayland-test.weston
