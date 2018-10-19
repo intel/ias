@@ -296,6 +296,7 @@ struct gl_surface_state {
 	int num_images;
 
 	struct weston_buffer_reference buffer_ref;
+	struct weston_buffer_release_reference buffer_release_ref;
 	enum buffer_type buffer_type;
 	int pitch; /* in pixels */
 	int height; /* in pixels */
@@ -307,6 +308,10 @@ struct gl_surface_state {
 	int vsub[3];  /* vertical subsampling per plane */
 
 	struct weston_surface *surface;
+
+	/* Whether this surface was used in the current output repaint.
+	   Used only in the context of a gl_renderer_repaint_output call. */
+	bool used_in_output_repaint;
 
 	struct wl_listener surface_destroy_listener;
 	struct wl_listener renderer_destroy_listener;
