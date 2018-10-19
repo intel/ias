@@ -352,7 +352,9 @@ gl_renderer_la_SOURCES =			\
 	libweston/gl-renderer.c			\
 	libweston/vertex-clipping.c		\
 	libweston/vertex-clipping.h		\
-	libweston/weston-sync-file.h
+	libweston/linux-sync-file.c		\
+	libweston/linux-sync-file.h		\
+	libweston/linux-sync-file-uapi.h
 if ENABLE_VM
 gl_renderer_la_SOURCES +=			\
 	libweston/vm-shared.h				\
