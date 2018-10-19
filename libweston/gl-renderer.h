@@ -246,6 +246,10 @@ struct gl_renderer {
 	PFNEGLDESTROYSYNCKHRPROC destroy_sync;
 	PFNEGLDUPNATIVEFENCEFDANDROIDPROC dup_native_fence_fd;
 
+
+	int has_wait_sync;
+	PFNEGLWAITSYNCKHRPROC wait_sync;
+
 #ifdef USE_VM
 	void *vm_buffer_table;
 #endif // USE_VM

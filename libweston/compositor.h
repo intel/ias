@@ -1064,6 +1064,9 @@ enum weston_capability {
 
 	/* renderer supports weston_view_set_mask() clipping */
 	WESTON_CAP_VIEW_CLIP_MASK		= 0x0010,
+
+	/* renderer supports explicit synchronization */
+	WESTON_CAP_EXPLICIT_SYNC		= 0x0020,
 };
 
 /* Configuration struct for a backend.
@@ -1503,6 +1506,9 @@ struct weston_surface_state {
 	/* wp_viewport.set_source */
 	/* wp_viewport.set_destination */
 	struct weston_buffer_viewport buffer_viewport;
+
+	/* zwp_surface_synchronization_v1.set_acquire_fence */
+	int acquire_fence_fd;
 };
 
 struct weston_surface_activation_data {
@@ -1633,6 +1639,7 @@ struct weston_surface {
 
 	/* zwp_surface_synchronization_v1 resource for this surface */
 	struct wl_resource *synchronization_resource;
+	int acquire_fence_fd;
 };
 
 struct weston_subsurface {
