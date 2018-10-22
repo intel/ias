@@ -614,12 +614,12 @@ ias_crtc_set_mode(struct wl_client *client,
 }
 
 static int32_t
-ias_get_crtc_prop(int fd, uint32_t id, const char *name, uint32_t *prop_id, uint64_t *prop_value)
+ias_get_crtc_prop(int fd, uint32_t id, uint32_t object_type, const char *name, uint32_t *prop_id, uint64_t *prop_value)
 {
 	int32_t ret = -1;
 	uint32_t i;
 	drmModePropertyPtr prop;
-	drmModeObjectPropertiesPtr props = drmModeObjectGetProperties(fd, id, DRM_MODE_OBJECT_CRTC);
+	drmModeObjectPropertiesPtr props = drmModeObjectGetProperties(fd, id, object_type);
 	for (i = 0; i < props->count_props; i++) {
 		prop = drmModeGetProperty(fd, props->props[i]);
 		if (!prop) {
@@ -656,7 +656,7 @@ ias_set_crtc_lut(int fd, uint32_t crtc_id, const char *lut_name,
 		return;
 	}
 
-	ret = ias_get_crtc_prop(fd, crtc_id, lut_name, &lut_id, NULL);
+	ret = ias_get_crtc_prop(fd, crtc_id, DRM_MODE_OBJECT_CRTC, lut_name, &lut_id, NULL);
 
 	if (ret < 0) {
 		IAS_ERROR("Cannot find %s property of CRTC %d\n", lut_name, crtc_id);
@@ -714,8 +714,8 @@ update_color_correction(struct ias_crtc *ias_crtc, uint32_t atomic)
 	int32_t ret;
 	uint32_t i;
 
-	ret = ias_get_crtc_prop(backend->drm.fd, ias_crtc->crtc_id, "GAMMA_LUT_SIZE",
-				NULL, &lut_size);
+	ret = ias_get_crtc_prop(backend->drm.fd, ias_crtc->crtc_id, DRM_MODE_OBJECT_CRTC,
+			"GAMMA_LUT_SIZE", NULL, &lut_size);
 
 	if (ret < 0) {
 		IAS_ERROR("Cannot query LUT size");
@@ -898,7 +898,8 @@ ias_crtc_set_content_protection(struct wl_client *client,
 
 	backend = ias_crtc->backend;
 
-	ret = ias_get_crtc_prop(backend->drm.fd, ias_crtc->crtc_id, "Content Protection",
+	ret = ias_get_crtc_prop(backend->drm.fd, ias_crtc->crtc_id,
+			DRM_MODE_OBJECT_CONNECTOR, "Content Protection",
 			&cp_prop_id, &cp_val);
 
 	if (ret < 0) {
@@ -916,7 +917,7 @@ ias_crtc_set_content_protection(struct wl_client *client,
 
 		cp_val = (uint64_t) enabled;
 		ret = drmModeObjectSetProperty(backend->drm.fd, ias_crtc->crtc_id,
-				DRM_MODE_OBJECT_CRTC, cp_prop_id, cp_val);
+				DRM_MODE_OBJECT_CONNECTOR, cp_prop_id, cp_val);
 		if (ret < 0) {
 			IAS_ERROR("Cannot set content protection property");
 			return;
