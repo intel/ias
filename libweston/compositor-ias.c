@@ -898,7 +898,7 @@ ias_crtc_set_content_protection(struct wl_client *client,
 
 	backend = ias_crtc->backend;
 
-	ret = ias_get_crtc_prop(backend->drm.fd, ias_crtc->crtc_id,
+	ret = ias_get_crtc_prop(backend->drm.fd, ias_crtc->connector_id,
 			DRM_MODE_OBJECT_CONNECTOR, "Content Protection",
 			&cp_prop_id, &cp_val);
 
@@ -916,7 +916,7 @@ ias_crtc_set_content_protection(struct wl_client *client,
 			backend->has_nuclear_pageflip) {
 
 		cp_val = (uint64_t) enabled;
-		ret = drmModeObjectSetProperty(backend->drm.fd, ias_crtc->crtc_id,
+		ret = drmModeObjectSetProperty(backend->drm.fd, ias_crtc->connector_id,
 				DRM_MODE_OBJECT_CONNECTOR, cp_prop_id, cp_val);
 		if (ret < 0) {
 			IAS_ERROR("Cannot set content protection property");
