@@ -1294,6 +1294,20 @@ libias_hmi_la_CPPFLAGS = $(GCC_CFLAGS)		\
 			$(AM_CFLAGS) -I$(top_srcdir)/clients/wl_disp -I$(top_srcdir)/clients/wl_base \
 			-fPIC -fvisibility=default
 
+if BUILD_SIMPLE_DMABUF_EGL_CLIENT
+demo_clients += weston-simple-dmabuf-egl
+weston_simple_dmabuf_egl_SOURCES = clients/simple-dmabuf-egl.c
+nodist_weston_simple_dmabuf_egl_SOURCES =		\
+	protocol/xdg-shell-unstable-v6-protocol.c		\
+	protocol/xdg-shell-unstable-v6-client-protocol.h	\
+	protocol/fullscreen-shell-unstable-v1-protocol.c	\
+	protocol/fullscreen-shell-unstable-v1-client-protocol.h \
+	protocol/linux-dmabuf-unstable-v1-protocol.c \
+	protocol/linux-dmabuf-unstable-v1-client-protocol.h
+weston_simple_dmabuf_egl_CFLAGS = $(AM_CFLAGS) $(SIMPLE_DMABUF_EGL_CLIENT_CFLAGS)
+weston_simple_dmabuf_egl_LDADD = $(SIMPLE_DMABUF_EGL_CLIENT_LIBS) libshared.la
+endif
+
 noinst_LTLIBRARIES += libtoytoolkit.la
 
 libtoytoolkit_la_SOURCES =				\
