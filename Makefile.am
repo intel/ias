@@ -698,6 +698,12 @@ transport_plugin_tcp_la_LIBADD =  $(LIBDRM_LIBS) $(SIMPLE_CLIENT_LIBS) libshared
 transport_plugin_tcp_la_CFLAGS = $(GCC_CFLAGS) $(COMPOSITOR_CFLAGS) $(LIBDRM_CFLAGS)
 transport_plugin_tcp_la_SOURCES = clients/RemoteDisplay/transport_plugin_tcp.c
 
+module_LTLIBRARIES += transport_plugin_udp.la
+transport_plugin_udp_la_LDFLAGS = -module -avoid-version
+transport_plugin_udp_la_LIBADD =  $(LIBDRM_LIBS) $(SIMPLE_CLIENT_LIBS) libshared.la -lm -ldrm_intel
+transport_plugin_udp_la_CFLAGS = $(GCC_CFLAGS) $(COMPOSITOR_CFLAGS) $(LIBDRM_CFLAGS)
+transport_plugin_udp_la_SOURCES = clients/RemoteDisplay/transport_plugin_udp.c
+
 endif
 
 if ENABLE_VMDISPLAY
