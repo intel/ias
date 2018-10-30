@@ -299,6 +299,7 @@ libwestoninclude_HEADERS =				\
 	libweston/windowed-output-api.h		\
 	libweston/plugin-registry.h		\
 	libweston/timeline-object.h		\
+	shared/platform.h			\
 	shared/weston-egl-ext.h \
 	shared/matrix.h				\
 	shared/config-parser.h			\
