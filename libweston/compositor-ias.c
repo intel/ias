@@ -1174,7 +1174,7 @@ bind_ias_crtc(struct wl_client *client,
 			         (ias_crtc->brightness >> 8) & 0xFF,
 			         ias_crtc->brightness & 0xFF);
 
-	ias_crtc_send_id(resource, ias_crtc->crtc_id);
+	ias_crtc_send_id(resource, ias_crtc->connector_id);
 }
 
 static struct
