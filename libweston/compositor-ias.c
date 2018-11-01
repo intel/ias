@@ -3546,6 +3546,8 @@ ias_capture_fb_get_from_bo(struct gbm_bo *bo, struct weston_buffer *buffer,
 	uint64_t modifiers[4] = {0};
 	int ret;
 	int flags = 0;
+	struct linux_dmabuf_buffer *dmabuf = NULL;
+	int i;
 
 	if (fb) {
 		if (fb->fb_id) {
@@ -3566,20 +3568,37 @@ ias_capture_fb_get_from_bo(struct gbm_bo *bo, struct weston_buffer *buffer,
 	height = gbm_bo_get_height(bo);
 	format = gbm_bo_get_format(bo);
 
-	/* Special handling of RGB formats, as they may have RBC enabled */
-	if (format == GBM_FORMAT_XRGB8888 || format == GBM_FORMAT_ARGB8888) {
-		strides[0] = gbm_bo_get_stride(bo);
-		handles[0] = gbm_bo_get_handle(bo).u32;
-		offsets[0] = 0;
-	} else if (format == GBM_FORMAT_NV12) {
-		if (buffer != NULL) {
-			gl_renderer->query_buffer(backend->compositor,
-				buffer->legacy_buffer, EGL_STRIDE, (EGLint *)strides);
-			gl_renderer->query_buffer(backend->compositor,
-				buffer->legacy_buffer, EGL_OFFSET, (EGLint *)offsets);
+	if (buffer)
+		dmabuf = linux_dmabuf_buffer_get(buffer->resource);
+
+	if (dmabuf) {
+		for (i = 0; i < dmabuf->attributes.n_planes; i++) {
+			handles[i] = gbm_bo_get_handle(bo).u32;
+			strides[i] = dmabuf->attributes.stride[i];
+			offsets[i] = dmabuf->attributes.offset[i];
+			modifiers[i] = dmabuf->attributes.modifier[i];
+			if (modifiers[i] > 0) {
+				flags |= DRM_MODE_FB_MODIFIERS;
+				if (modifiers[i] == I915_FORMAT_MOD_Y_TILED_CCS	||
+				    modifiers[i] == I915_FORMAT_MOD_Yf_TILED_CCS)
+					fb->is_compressed = 1;
+			}
 		}
-		handles[0] = gbm_bo_get_handle(bo).u32;
-		handles[1] = gbm_bo_get_handle(bo).u32;
+	} else {
+		if (format == GBM_FORMAT_NV12) {
+			if (buffer != NULL) {
+				gl_renderer->query_buffer(backend->compositor,
+					buffer->legacy_buffer, EGL_STRIDE, (EGLint *)strides);
+				gl_renderer->query_buffer(backend->compositor,
+					buffer->legacy_buffer, EGL_OFFSET, (EGLint *)offsets);
+			}
+			handles[0] = gbm_bo_get_handle(bo).u32;
+			handles[1] = gbm_bo_get_handle(bo).u32;
+		} else if (format == GBM_FORMAT_XRGB8888 || format == GBM_FORMAT_ARGB8888) {
+			strides[0] = gbm_bo_get_stride(bo);
+			handles[0] = gbm_bo_get_handle(bo).u32;
+			offsets[0] = 0;
+		}
 	}
 
 	ret = drmModeAddFB2WithModifiers(backend->drm.fd, width, height,
