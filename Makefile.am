@@ -1752,7 +1752,6 @@ ivi_shell_la_SOURCES =				\
 	ivi-shell/ivi-layout-transition.c	\
 	ivi-shell/ivi-shell.h			\
 	ivi-shell/ivi-shell.c			\
-	ivi-shell/input-panel-ivi.c		\
 	shared/helpers.h
 nodist_ivi_shell_la_SOURCES =			\
 	protocol/ivi-application-protocol.c		\
