@@ -4571,11 +4571,6 @@ ias_compositor_create(struct weston_compositor *compositor,
 		}
 	}
 
-	if (compositor->renderer->import_dmabuf) {
-		if (linux_dmabuf_setup(compositor) < 0)
-			weston_log("Error: initializing dmabuf "
-				   "support failed.\n");
-	}
 
 	compositor->backend = &backend->base;
 	return backend;
