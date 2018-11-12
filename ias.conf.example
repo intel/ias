@@ -6,6 +6,9 @@
 
   <backend raw_keyboards='1' use_nuclear_flip='1'>
     <startup>
+      <crtc name='eDP1' model='classic' mode='preferred'>
+        <output name='eDP1-0' size='inherit' position='origin' />
+      </crtc>
       <crtc name='HDMI1' model='classic' mode='preferred'>
         <output name='HDMI1-0' size='inherit' position='origin' />
       </crtc>
