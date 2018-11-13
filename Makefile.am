@@ -1056,7 +1056,7 @@ nodist_remote_display_SOURCES =		\
 		protocol/ias-shell-protocol.c		\
 		protocol/ias-shell-client-protocol.h
 remote_display_CFLAGS = $(AM_CFLAGS) $(SIMPLE_CLIENT_CFLAGS) $(LIBVA_CFLAGS)
-remote_display_LDADD = $(LIBDRM_LIBS) $(SIMPLE_CLIENT_LIBS) $(LIBVA_LIBS) libshared.la -lm -ldrm_intel
+remote_display_LDADD = $(LIBDRM_LIBS) $(SIMPLE_CLIENT_LIBS) $(LIBVA_LIBS) libshared.la -lm -ldrm_intel -ldl -lpthread
 
 weston_clock_CFLAGS = $(AM_CFLAGS) $(CLIENT_CFLAGS)
 
