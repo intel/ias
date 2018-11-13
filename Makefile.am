@@ -686,12 +686,6 @@ transport_plugin_file_la_LIBADD =  $(LIBDRM_LIBS) $(SIMPLE_CLIENT_LIBS) libshare
 transport_plugin_file_la_CFLAGS = $(GCC_CFLAGS) $(COMPOSITOR_CFLAGS) $(LIBDRM_CFLAGS)
 transport_plugin_file_la_SOURCES = clients/RemoteDisplay/transport_plugin_file.c
 
-module_LTLIBRARIES += transport_plugin_avb.la
-transport_plugin_avb_la_LDFLAGS = -module -avoid-version
-transport_plugin_avb_la_LIBADD =  $(LIBDRM_LIBS) $(SIMPLE_CLIENT_LIBS) libshared.la -lm -ldrm_intel -lias-media_transport-avb_ufipc_bridge
-transport_plugin_avb_la_CFLAGS = $(GCC_CFLAGS) $(COMPOSITOR_CFLAGS) $(LIBDRM_CFLAGS)
-transport_plugin_avb_la_SOURCES = clients/RemoteDisplay/transport_plugin_avb.c
-
 module_LTLIBRARIES += transport_plugin_tcp.la
 transport_plugin_tcp_la_LDFLAGS = -module -avoid-version
 transport_plugin_tcp_la_LIBADD =  $(LIBDRM_LIBS) $(SIMPLE_CLIENT_LIBS) libshared.la -lm -ldrm_intel
