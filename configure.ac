@@ -410,6 +410,7 @@ if test x$enable_remote_display != xno; then
   fi
   AS_IF([test "x$have_libva" = "xyes" -a "x$enable_frame_capture" = "xyes"],
         [AC_DEFINE([BUILD_REMOTE_DISPLAY], [1], [Build remote display])])
+  PKG_CHECK_MODULES(GSTREAMER, [gstreamer-1.0 gstreamer-plugins-base-1.0])
 fi
 AM_CONDITIONAL(ENABLE_REMOTE_DISPLAY, test "x$have_libva" = "xyes" -a "x$enable_frame_capture" = "xyes")
 
