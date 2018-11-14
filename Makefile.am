@@ -686,6 +686,12 @@ transport_plugin_file_la_LIBADD =  $(LIBDRM_LIBS) $(SIMPLE_CLIENT_LIBS) libshare
 transport_plugin_file_la_CFLAGS = $(GCC_CFLAGS) $(COMPOSITOR_CFLAGS) $(LIBDRM_CFLAGS)
 transport_plugin_file_la_SOURCES = clients/RemoteDisplay/transport_plugin_file.c
 
+module_LTLIBRARIES += transport_plugin_avb.la
+transport_plugin_avb_la_LDFLAGS = -module -avoid-version
+transport_plugin_avb_la_LIBADD = $(LIBDRM_LIBS) $(SIMPLE_CLIENT_LIBS) libshared.la -lm -ldrm_intel -lgstreamer-1.0 -lgstbase-1.0 -lgstapp-1.0
+transport_plugin_avb_la_CFLAGS = $(GCC_CFLAGS) $(COMPOSITOR_CFLAGS) $(LIBDRM_CFLAGS) -I/usr/include/glib-2.0 -I/usr/include/gstreamer-1.0 -I/usr/lib/glib-2.0/include -I/usr/lib64/glib-2.0/include
+transport_plugin_avb_la_SOURCES = clients/RemoteDisplay/transport_plugin_avb.c
+
 module_LTLIBRARIES += transport_plugin_tcp.la
 transport_plugin_tcp_la_LDFLAGS = -module -avoid-version
 transport_plugin_tcp_la_LIBADD =  $(LIBDRM_LIBS) $(SIMPLE_CLIENT_LIBS) libshared.la -lm -ldrm_intel
