@@ -532,7 +532,7 @@ plugin_print_help(void)
 static void
 plugin_fullname_helper(void)
 {
-	char *prefix = "/usr/lib/weston/transport_plugin_";
+	char *prefix = "transport_plugin_";
 	char *suffix = ".so";
 	size_t fullnamelen = strlen(prefix)
 				+ strlen(app_state.transport_plugin)
@@ -542,8 +542,8 @@ plugin_fullname_helper(void)
 	if (app_state.plugin_fullname == NULL) {
 		fprintf(stderr, "plugin_fullname_helper : name allocation failure.\n");
 	} else {
-		snprintf(app_state.plugin_fullname, fullnamelen, "%s%s%s",
-				prefix, app_state.transport_plugin, suffix);
+		snprintf(app_state.plugin_fullname, fullnamelen, "transport_plugin_%s%s",
+				app_state.transport_plugin, suffix);
 	}
 }
 
