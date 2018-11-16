@@ -158,6 +158,18 @@ handle_surface_destroyed(void *data,
 	}
 }
 
+static void
+handle_surface_sharing_info(void *data,
+	     struct ias_hmi *ias_hmi,
+	     uint32_t id,
+	     const char *title,
+	     uint32_t shareable,
+	     uint32_t pid,
+	     const char *pname)
+{
+
+}
+
 static void *
 encoder_init_thread_function(void * const data)
 {
@@ -368,7 +380,7 @@ handle_capture_error(void *data,
 static const struct ias_hmi_listener hmi_listener = {
 	handle_surface_info,
 	handle_surface_destroyed,
-	NULL,
+	handle_surface_sharing_info,
 	handle_raw_buffer_handle,
 	handle_raw_buffer_fd,
 	handle_capture_error,
