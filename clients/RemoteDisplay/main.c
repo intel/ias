@@ -185,7 +185,8 @@ encoder_init_thread_function(void * const data)
 				app_state->encoder_tu,
 				app_state->surfid, app_state->hmi,
 				app_state->display,
-				app_state->output_number);
+				app_state->output_number,
+				app_state->fps);
 
 	if (err == 0) {
 		app_state->encoder_state = ENC_STATE_RUN;
@@ -584,6 +585,7 @@ usage(int error_code)
 		"to be captured\n");
 	printf("\t--output=<output_number>\tweston output to capture, starting"
 		" from 0 - ignored if surfid is given\n");
+	printf("\t--fps=<fps>\tapproximate frames to encode and transport\n");
 	printf("\t--x=<x_coordinate>\t\tx coordinate of region of surface"
 		" to be captured\n"
 		"\t--y=<x_coordinate>\t\ty coordinate of region of surface "
@@ -745,6 +747,7 @@ main(int argc, char **argv)
 		{ WESTON_OPTION_INTEGER, "w", 0, &app_state.w},
 		{ WESTON_OPTION_INTEGER, "h", 0, &app_state.h},
 		{ WESTON_OPTION_INTEGER, "tu", 0, &app_state.encoder_tu},
+		{ WESTON_OPTION_INTEGER, "fps", 0, &app_state.fps},
 		{ WESTON_OPTION_BOOLEAN, "help", 0, &help },
 	};
 

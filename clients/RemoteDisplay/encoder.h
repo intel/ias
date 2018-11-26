@@ -51,7 +51,8 @@ rd_encoder_init(struct rd_encoder * const encoder,
 				const int encoder_tu,
 				uint32_t surfid, struct ias_hmi * const hmi,
 				struct wl_display *display,
-				uint32_t output_number);
+				uint32_t output_number,
+				int fps);
 void
 rd_encoder_destroy(struct rd_encoder *encoder);
 int
