@@ -108,6 +108,7 @@ struct rd_encoder {
 	uint32_t surfid;
 	struct ias_hmi *hmi;
 	struct wl_display *display;
+	int fps;
 	uint32_t output_number;
 	struct {
 		int x;
@@ -1918,7 +1919,7 @@ rd_encoder_init(struct rd_encoder * const encoder,
 				const int w, const int h,
 				const int encoder_tu,
 				uint32_t surfid, struct ias_hmi * const hmi,
-				struct wl_display *display, uint32_t output_number)
+				struct wl_display *display, uint32_t output_number, int fps)
 {
 	int err;
 
@@ -1939,6 +1940,7 @@ rd_encoder_init(struct rd_encoder * const encoder,
 	encoder->hmi = hmi;
 	encoder->display = display;
 	encoder->output_number = output_number;
+	encoder->fps = fps;
 	if (setup_vpp(encoder) < 0) {
 		fprintf(stderr, "encoder: Failed to initialize VPP pipeline.\n");
 		goto err_va_dpy;
@@ -2197,7 +2199,7 @@ encoder_frame(struct rd_encoder * const encoder)
 	int frame_number;
 #ifdef PROFILE_REMOTE_DISPLAY
 	struct timespec start_spec;
-	int64_t duration, start;
+	int64_t duration, start = 0;
 
 	if (encoder->profile_level) {
 		clock_gettime(CLOCK_MONOTONIC_RAW, &start_spec);
@@ -2436,6 +2438,23 @@ transport_thread_function(void * const data)
 	return NULL;
 }
 
+static int should_skip(struct rd_encoder * const encoder)
+{
+	if(!encoder->fps || encoder->fps == 60) {
+		return 0;
+	} else {
+		float ans = (float)60/(60 - encoder->fps) * 100;
+		int mod = (encoder->frame_count * 100) % (int) ans;
+		if(encoder->fps > 30 && mod > 20) {
+			//It is under a certain threshold so don't skip
+			return 0;
+		} else if(encoder->fps <= 30 && mod < 20) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
 int
 rd_encoder_frame(struct rd_encoder * const encoder,
 		int32_t va_buffer_handle, int32_t prime_fd,
@@ -2479,10 +2498,14 @@ rd_encoder_frame(struct rd_encoder * const encoder,
 	 * scheduled between frames being submitted. In this case, we
 	 * drop the older frame. Dropping the current frame as well is too
 	 * aggressive. */
-	if (encoder->next_encode.valid) {
-		/* Drop queued frame... */
-		printf("WARNING: Dropping frame %d, since a newer frame is available to encode.\n",
-				encoder->next_encode.frame_number);
+	if (encoder->next_encode.valid || should_skip(encoder)) {
+
+		if (encoder->next_encode.valid) {
+			/* Drop queued frame... */
+			printf("WARNING: Dropping frame %d, since a newer frame is available to encode.\n",
+					encoder->next_encode.frame_number);
+		}
+
 		encoder->next_encode.valid = 0;
 		if (encoder->next_encode.va_buffer_handle) {
 			/* Shared memory surface. */
@@ -2504,6 +2527,10 @@ rd_encoder_frame(struct rd_encoder * const encoder,
 						encoder->output_number);
 			}
 		}
+
+		encoder->frame_count++;
+		pthread_mutex_unlock(&encoder->encoder_mutex);
+		return 0;
 	}
 
 	/* Add current frame to queue... */

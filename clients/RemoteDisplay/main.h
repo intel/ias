@@ -51,6 +51,7 @@ struct app_state {
 	int w;
 	int h;
 	int encoder_tu;
+	int fps;
 	int output_number;
 	int output_origin_x;
 	int output_origin_y;
