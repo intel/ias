@@ -30,14 +30,17 @@
 #include "../shared/helpers.h"
 #include <signal.h>
 
+#include <sys/time.h>
+
 #include "transport_plugin.h"
 #include <gst/gst.h>
 #include <gst/app/gstappsrc.h>
 
+#define TO_Mb(bytes) ((bytes)/1024/1024*8)
+#define BENCHMARK_INTERVAL 1
 
 struct udpSocket {
-	int sockDesc;
-	struct sockaddr_in sockAddr;
+	int sockDesc; struct sockaddr_in sockAddr;
 };
 
 
@@ -49,6 +52,7 @@ struct private_data {
 	unsigned short port;
 	GstElement *pipeline;
 	GstElement *appsrc;
+	uint32_t benchmark_time, frames, total_stream_size;
 };
 
 WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbose)
@@ -150,6 +154,8 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo,
 
 	GstBuffer *gstbuf = NULL;
 	GstMapInfo gstmap;
+	struct timeval tv;
+	uint32_t time;
 
 	if (!private_data) {
 		fprintf(stderr, "No private data!\n");
@@ -157,7 +163,22 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo,
 	}
 
 	if (private_data->verbose) {
-		printf("Sending frame over AVB...\n");
+			gettimeofday(&tv, NULL);
+			time = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+			if (private_data->frames == 0)
+				private_data->benchmark_time = time;
+			if (time - private_data->benchmark_time >= (BENCHMARK_INTERVAL * 1000)) {
+				printf("%d frames in %d seconds: %f fps, %f Mb sent\n",
+						private_data->frames,
+						BENCHMARK_INTERVAL,
+						(float) private_data->frames / BENCHMARK_INTERVAL,
+						 TO_Mb((float)(private_data->total_stream_size / BENCHMARK_INTERVAL)));
+				private_data->benchmark_time = time;
+				private_data->frames = 0;
+				private_data->total_stream_size = 0;
+			}
+			private_data->frames++;
+			private_data->total_stream_size += stream_size;
 	}
 
 	gstbuf = gst_buffer_new_and_alloc (stream_size);
