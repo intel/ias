@@ -79,7 +79,7 @@
 #include <EGL/eglext.h>
 
 #include "ias-shell-client-protocol.h"
-#include "xdg-shell-unstable-v6-client-protocol.h"
+#include "xdg-shell-client-protocol.h"
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -146,7 +146,7 @@ struct gears_data {
    struct wl_surface *surface;
 
    struct ias_shell *ias_shell;
-   struct zxdg_shell_v6 *shell;
+   struct xdg_wm_base *wm_base;
    struct wl_seat *seat;
    struct wl_keyboard *keyboard;
    struct wl_shm *shm;
@@ -964,11 +964,11 @@ keyboard_handle_key(void *data, struct wl_keyboard *keyboard,
    struct gears_data *gears = data;
 
    if (key == KEY_F11 && state) {
-      if (gears->shell) {
+      if (gears->wm_base) {
          if (gears->fullscreen)
-            zxdg_toplevel_v6_unset_fullscreen(gears->xdg_toplevel);
+			xdg_toplevel_unset_fullscreen(gears->xdg_toplevel);
          else
-            zxdg_toplevel_v6_set_fullscreen(gears->xdg_toplevel, NULL);
+			xdg_toplevel_set_fullscreen(gears->xdg_toplevel, NULL);
       } else if (gears->ias_shell) {
          if (gears->fullscreen) {
             ias_surface_set_fullscreen(gears->shell_surface,
@@ -1004,23 +1004,23 @@ static const struct wl_keyboard_listener keyboard_listener = {
 };
 
 static void
-handle_surface_configure(void *data, struct zxdg_surface_v6 *surface,
+handle_surface_configure(void *data, struct xdg_surface *surface,
 			 uint32_t serial)
 {
 
    struct gears_data *gears = data;
 
-   zxdg_surface_v6_ack_configure(surface, serial);
+   xdg_surface_ack_configure(surface, serial);
 
    gears->wait_for_configure = false;
 }
 
-static const struct zxdg_surface_v6_listener xdg_surface_listener = {
+static const struct xdg_surface_listener xdg_surface_listener = {
    handle_surface_configure,
 };
 
 static void
-handle_toplevel_configure(void *data, struct zxdg_toplevel_v6 *surface,
+handle_toplevel_configure(void *data, struct xdg_toplevel *surface,
           int32_t width, int32_t height,
           struct wl_array *states)
 {
@@ -1031,7 +1031,7 @@ handle_toplevel_configure(void *data, struct zxdg_toplevel_v6 *surface,
    wl_array_for_each(p, states) {
       uint32_t state = *p;
       switch (state) {
-      case ZXDG_TOPLEVEL_V6_STATE_FULLSCREEN:
+      case XDG_TOPLEVEL_STATE_FULLSCREEN:
          gears->fullscreen = 1;
          break;
       }
@@ -1058,12 +1058,12 @@ handle_toplevel_configure(void *data, struct zxdg_toplevel_v6 *surface,
 }
 
 static void
-handle_toplevel_close(void *data, struct zxdg_toplevel_v6 *xdg_toplevel)
+handle_toplevel_close(void *data, struct xdg_toplevel *xdg_toplevel)
 {
    running = 0;
 }
 
-static const struct zxdg_toplevel_v6_listener xdg_toplevel_listener = {
+static const struct xdg_toplevel_listener xdg_toplevel_listener = {
    handle_toplevel_configure,
    handle_toplevel_close,
 };
@@ -1099,24 +1099,23 @@ static struct ias_surface_listener ias_surface_listener = {
 };
 
 static void
-create_xdg_surface(struct gears_data *gears)
+create_xdg_surface(struct gears_data* gears)
 {
-   printf("create_xdg_surface\n");
-   gears->xdg_surface = zxdg_shell_v6_get_xdg_surface(gears->shell,
-                     gears->surface);
+	printf("create_xdg_surface\n");
+	gears->xdg_surface = xdg_wm_base_get_xdg_surface(gears->wm_base,
+			gears->surface);
+	xdg_surface_add_listener(gears->xdg_surface,
+				     &xdg_surface_listener, gears);
 
-   zxdg_surface_v6_add_listener(gears->xdg_surface,
-             &xdg_surface_listener, gears);
+	gears->xdg_toplevel =
+		xdg_surface_get_toplevel(gears->xdg_surface);
+	xdg_toplevel_add_listener(gears->xdg_toplevel,
+				  &xdg_toplevel_listener, gears);
 
-   gears->xdg_toplevel =
-	zxdg_surface_v6_get_toplevel(gears->xdg_surface);
-   zxdg_toplevel_v6_add_listener(gears->xdg_toplevel,
-				 &xdg_toplevel_listener, gears);
+	xdg_toplevel_set_title(gears->xdg_toplevel, "es2gears");
 
-   zxdg_toplevel_v6_set_title(gears->xdg_toplevel, "es2gears");
-
-   gears->wait_for_configure = true;
-   wl_surface_commit(gears->surface);
+	gears->wait_for_configure = true;
+	wl_surface_commit(gears->surface);
 }
 
 static void
@@ -1156,7 +1155,7 @@ create_surface(struct gears_data *gears)
                      gears->native, NULL);
 
 
-   if (gears->shell) {
+   if (gears->wm_base) {
       create_xdg_surface(gears);
    } else if (gears->ias_shell) {
       create_ias_surface(gears);
@@ -1185,9 +1184,9 @@ destroy_surface(struct gears_data *gears)
    wl_egl_window_destroy(gears->native);
 
    if (gears->xdg_toplevel)
-      zxdg_toplevel_v6_destroy(gears->xdg_toplevel);
+	   xdg_toplevel_destroy(gears->xdg_toplevel);
    if (gears->xdg_surface)
-      zxdg_surface_v6_destroy(gears->xdg_surface);
+	   xdg_surface_destroy(gears->xdg_surface);
    if (gears->ias_shell) {
       ias_surface_destroy(gears->shell_surface);
    }
@@ -1216,13 +1215,13 @@ static const struct wl_seat_listener seat_listener = {
 };
 
 static void
-xdg_shell_ping(void *data, struct zxdg_shell_v6 *shell, uint32_t serial)
+xdg_wm_base_ping(void *data, struct xdg_wm_base *shell, uint32_t serial)
 {
-   zxdg_shell_v6_pong(shell, serial);
+	xdg_wm_base_pong(shell, serial);
 }
 
-static const struct zxdg_shell_v6_listener xdg_shell_listener = {
-   xdg_shell_ping,
+static const struct xdg_wm_base_listener wm_base_listener = {
+	xdg_wm_base_ping,
 };
 
 static void
@@ -1252,15 +1251,15 @@ registry_handle_global(void *data, struct wl_registry *registry,
       gears->compositor =
          wl_registry_bind(registry, name,
                 &wl_compositor_interface, 1);
-   } else if (strcmp(interface, "zxdg_shell_v6") == 0) {
+   } else if (strcmp(interface, "xdg_wm_base") == 0) {
       if (!gears->ias_shell) {
-         gears->shell = wl_registry_bind(registry, name,
-                     &zxdg_shell_v6_interface, 1);
-         zxdg_shell_v6_add_listener(gears->shell, &xdg_shell_listener,
+         gears->wm_base = wl_registry_bind(registry, name,
+                     &xdg_wm_base_interface, 1);
+         xdg_wm_base_add_listener(gears->wm_base, &wm_base_listener,
             gears);
       }
    } else if (strcmp(interface, "ias_shell") == 0) {
-      if (!gears->shell) {
+      if (!gears->wm_base) {
          gears->ias_shell = wl_registry_bind(registry, name,
                &ias_shell_interface, 1);
       }
@@ -1371,7 +1370,20 @@ main(int argc, char **argv)
    destroy_surface(&gears);
    fini_egl(&gears);
 
-   wl_registry_destroy(gears.registry);
+	if (gears.cursor_theme)
+		wl_cursor_theme_destroy(gears.cursor_theme);
+
+	if (gears.wm_base)
+		xdg_wm_base_destroy(gears.wm_base);
+
+	if (gears.ias_shell) {
+		ias_shell_destroy(gears.ias_shell);
+	}
+
+	if (gears.compositor)
+		wl_compositor_destroy(gears.compositor);
+
+	wl_registry_destroy(gears.registry);
 
    wl_list_for_each_safe(iter, next, &gears.output_list, link) {
       wl_list_remove(&iter->link);
