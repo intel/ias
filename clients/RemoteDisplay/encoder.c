@@ -619,7 +619,7 @@ encoder_init_pic_parameters(struct rd_encoder * const encoder)
 		return;
 	}
 
-	pic_param->pic_init_qp = 0;
+	pic_param->pic_init_qp = 24;
 
 	/* Entropy mode is either CAVLC (0) or CABAC */
 	pic_param->pic_fields.bits.entropy_coding_mode_flag = 1;
