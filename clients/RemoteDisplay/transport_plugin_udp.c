@@ -260,31 +260,10 @@ static int send_frame_gst(void *plugin_private_data, drm_intel_bo *drm_bo,
 
 	GstBuffer *gstbuf = NULL;
 	GstMapInfo gstmap;
-	struct timeval tv;
-	uint32_t time;
 
 	if (!private_data) {
 		fprintf(stderr, "No private data!\n");
 		goto error;
-	}
-
-	if (private_data->verbose) {
-			gettimeofday(&tv, NULL);
-			time = tv.tv_sec * 1000 + tv.tv_usec / 1000;
-			if (private_data->frames == 0)
-				private_data->benchmark_time = time;
-			if (time - private_data->benchmark_time >= (BENCHMARK_INTERVAL * 1000)) {
-				printf("%d frames in %d seconds: %f fps, %f Mb sent\n",
-						private_data->frames,
-						BENCHMARK_INTERVAL,
-						(float) private_data->frames / BENCHMARK_INTERVAL,
-						 TO_Mb((float)(private_data->total_stream_size / BENCHMARK_INTERVAL)));
-				private_data->benchmark_time = time;
-				private_data->frames = 0;
-				private_data->total_stream_size = 0;
-			}
-			private_data->frames++;
-			private_data->total_stream_size += stream_size;
 	}
 
 	gstbuf = gst_buffer_new_and_alloc (stream_size);
@@ -338,8 +317,8 @@ static int send_frame_native(void *plugin_private_data, drm_intel_bo *drm_bo,
 		return -1;
 	}
 
-	if (private_data->verbose) {
-		printf("Sending frame over AVB...\n");
+	if (private_data->verbose >= 2) {
+		printf("Sending frame over UDP...\n");
 	}
 
 	/* SPS and PPS are preceded by the bytes 00 00 00 01 (in our case).
@@ -551,7 +530,7 @@ static int send_frame_native(void *plugin_private_data, drm_intel_bo *drm_bo,
 		}
 	}
 
-	if (private_data->verbose || private_data->debug_packetisation) {
+	if (private_data->verbose >= 2 || private_data->debug_packetisation) {
 		printf("Packets for frame = %d packets.\n", num_packets);
 	}
 	return 0;
@@ -561,15 +540,37 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo,
 		int32_t stream_size, uint32_t timestamp)
 {
 	struct private_data *private_data = (struct private_data *)plugin_private_data;
+	struct timeval tv;
+	uint32_t time;
 
 	if(!private_data) {
 		return -1;
 	} else {
+
+		if (private_data->verbose) {
+			gettimeofday(&tv, NULL);
+			time = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+			if (private_data->frames == 0)
+				private_data->benchmark_time = time;
+			if (time - private_data->benchmark_time >= (BENCHMARK_INTERVAL * 1000)) {
+				printf("%d frames in %d seconds: %f fps, %f Mb sent\n",
+						private_data->frames,
+						BENCHMARK_INTERVAL,
+						(float) private_data->frames / BENCHMARK_INTERVAL,
+						TO_Mb((float)(private_data->total_stream_size / BENCHMARK_INTERVAL)));
+				private_data->benchmark_time = time;
+				private_data->frames = 0;
+				private_data->total_stream_size = 0;
+			}
+			private_data->frames++;
+			private_data->total_stream_size += stream_size;
+		}
+
 		return !strcmp(private_data->tp, "gst")
-				? send_frame_gst(plugin_private_data, drm_bo,
-						stream_size, timestamp)
-				: send_frame_native(plugin_private_data, drm_bo,
-						stream_size, timestamp);
+			? send_frame_gst(plugin_private_data, drm_bo,
+					stream_size, timestamp)
+			: send_frame_native(plugin_private_data, drm_bo,
+					stream_size, timestamp);
 	}
 }
 
