@@ -117,6 +117,7 @@ struct rd_encoder {
 	} region;
 	int profile_level;
 	int encoder_tu;
+	int qp;
 
 	uint16_t frame_count;
 	int num_vsyncs;
@@ -618,7 +619,7 @@ encoder_init_pic_parameters(struct rd_encoder * const encoder)
 		return;
 	}
 
-	pic_param->pic_init_qp = 0;
+	pic_param->pic_init_qp = encoder->qp;
 
 	/* Entropy mode is either CAVLC (0) or CABAC */
 	pic_param->pic_fields.bits.entropy_coding_mode_flag = 1;
@@ -1918,7 +1919,8 @@ rd_encoder_init(struct rd_encoder * const encoder,
 				const int w, const int h,
 				const int encoder_tu,
 				uint32_t surfid, struct ias_hmi * const hmi,
-				struct wl_display *display, uint32_t output_number)
+				struct wl_display *display, uint32_t output_number,
+				const int encoder_qp)
 {
 	int err;
 
@@ -1935,6 +1937,7 @@ rd_encoder_init(struct rd_encoder * const encoder,
 	encoder->region.w = w;
 	encoder->region.h = h;
 	encoder->encoder_tu = encoder_tu;
+	encoder->qp = encoder_qp;
 	encoder->surfid = surfid;
 	encoder->hmi = hmi;
 	encoder->display = display;
