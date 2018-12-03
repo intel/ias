@@ -49,6 +49,7 @@
 #define NRI_MASK 0x60
 #define NAL_TYPE_MASK 0x1F
 #define FU_A_TYPE 28
+#define MAX_ADDRS 10
 
 struct udpSocket {
 	int sockDesc; struct sockaddr_in sockAddr;
@@ -58,10 +59,10 @@ struct udpSocket {
 struct private_data {
 	int verbose;
 	int debug_packetisation;
-	struct udpSocket socket;
+	struct udpSocket socket[MAX_ADDRS];
+	int num_addr;
 	char *ipaddr;
 	char *tp;
-	unsigned short port;
 	GstElement *pipeline;
 	GstElement *appsrc;
 	uint32_t benchmark_time, frames, total_stream_size;
@@ -76,7 +77,7 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 	GstElement *appsrc     = NULL;
 	GstElement *h264parse  = NULL;
 	GstElement *rtph264pay = NULL;
-	GstElement *udpsink = NULL;
+	GstElement *multiudpsink = NULL;
 
 	*plugin_private_data = (void *)private_data;
 	if (private_data) {
@@ -85,19 +86,22 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 		return(-ENOMEM);
 	}
 
-	int port = 0;
 	const struct weston_option options[] = {
-		{ WESTON_OPTION_STRING,  "ipaddr", 0, &private_data->ipaddr},
-		{ WESTON_OPTION_INTEGER, "port", 0, &port},
+		{ WESTON_OPTION_STRING,  "clients", 0, &private_data->ipaddr},
 		{ WESTON_OPTION_STRING,  "tp", 0, &private_data->tp},
 	};
 	parse_options(options, ARRAY_LENGTH(options), argc, argv);
-	private_data->port = port;
 
 	if ((private_data->ipaddr != NULL) && (private_data->ipaddr[0] != 0)) {
-		printf("Sending to %s:%d.\n", private_data->ipaddr, port);
+		printf("Sending to %s.\n", private_data->ipaddr);
 	} else {
 		fprintf(stderr, "Invalid network configuration.\n");
+		if(private_data->ipaddr) {
+			free(private_data->ipaddr);
+		}
+		if(private_data->tp) {
+			free(private_data->tp);
+		}
 		free(private_data);
 		*plugin_private_data = NULL;
 		return -1;
@@ -114,13 +118,13 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 		appsrc     = gst_element_factory_make ("appsrc", NULL);
 		h264parse  = gst_element_factory_make ("h264parse", NULL);
 		rtph264pay = gst_element_factory_make ("rtph264pay", NULL);
-		udpsink    = gst_element_factory_make ("udpsink", NULL);
-		if (!pipeline || !appsrc || !h264parse || !rtph264pay || !udpsink)
+		multiudpsink    = gst_element_factory_make ("multiudpsink", NULL);
+		if (!pipeline || !appsrc || !h264parse || !rtph264pay || !multiudpsink)
 			goto gst_free;
 
-		(void) g_object_set (G_OBJECT (udpsink), "host", private_data->ipaddr, "port", port, NULL);
-		(void) gst_bin_add_many(GST_BIN (pipeline), appsrc, h264parse, rtph264pay, udpsink, NULL);
-		if (!gst_element_link_many (appsrc, h264parse, rtph264pay, udpsink, NULL))
+		(void) g_object_set (G_OBJECT (multiudpsink), "clients", private_data->ipaddr, NULL);
+		(void) gst_bin_add_many(GST_BIN (pipeline), appsrc, h264parse, rtph264pay, multiudpsink, NULL);
+		if (!gst_element_link_many (appsrc, h264parse, rtph264pay, multiudpsink, NULL))
 			goto gst_free_pipeline;
 
 		if (gst_element_set_state (pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
@@ -132,17 +136,38 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 
 	} else if(!strcmp(private_data->tp, "native")) {
 
-		private_data->socket.sockDesc = socket(AF_INET, SOCK_DGRAM, 0);
-		if (private_data->socket.sockDesc < 0) {
-			fprintf(stderr, "Socket creation failed.\n");
-			free(private_data);
-			*plugin_private_data = NULL;
-			return -1;
-		}
+		char copy[256], *ptr, *ptr2;
+		strcpy(copy, private_data->ipaddr);
+		ptr = strtok(copy, ",");
+		ptr2 = strtok(NULL, "\n");
 
-		private_data->socket.sockAddr.sin_addr.s_addr = inet_addr(private_data->ipaddr);
-		private_data->socket.sockAddr.sin_family = AF_INET;
-		private_data->socket.sockAddr.sin_port = htons(private_data->port);
+		while(ptr) {
+			char *str_ipaddr = strtok(ptr, ":");
+			char *str_port = strtok(NULL, "\n");
+
+			private_data->socket[private_data->num_addr].sockDesc = socket(AF_INET, SOCK_DGRAM, 0);
+			if (!str_ipaddr || !str_port || private_data->socket[private_data->num_addr].sockDesc < 0) {
+				fprintf(stderr, "Socket creation failed.\n");
+				if(private_data->ipaddr) {
+					free(private_data->ipaddr);
+				}
+				if(private_data->tp) {
+					free(private_data->tp);
+				}
+				free(private_data);
+				*plugin_private_data = NULL;
+				return -1;
+			}
+
+			private_data->socket[private_data->num_addr].sockAddr.sin_addr.s_addr =
+					inet_addr(str_ipaddr);
+			private_data->socket[private_data->num_addr].sockAddr.sin_family = AF_INET;
+			private_data->socket[private_data->num_addr].sockAddr.sin_port = htons(atoi(str_port));
+
+			ptr = strtok(ptr2, ",");
+			ptr2 = strtok(NULL, "\n");
+			private_data->num_addr++;
+		}
 
 		printf("Using native transport\n");
 	}
@@ -156,8 +181,8 @@ gst_free:
 		gst_object_unref (GST_OBJECT (h264parse));
 	if (rtph264pay)
 		gst_object_unref (GST_OBJECT (rtph264pay));
-	if (udpsink)
-		gst_object_unref (GST_OBJECT (udpsink));
+	if (multiudpsink)
+		gst_object_unref (GST_OBJECT (multiudpsink));
 
 gst_free_pipeline:
 	if (pipeline) {
@@ -174,8 +199,8 @@ gst_free_pipeline:
 WL_EXPORT void help(void)
 {
 	printf("\tThe udp plugin uses the following parameters:\n");
-	printf("\t--ipaddr=<ip_address>\t\tIP address of receiver.\n");
-	printf("\t--port=<port_number>\t\tPort to use on receiver.\n");
+	printf("\t--clients=<ip_address:port,<ip_address:port>>\t\tIP address and port of receiver.\n");
+	printf("\t\tNote that this is a comma separated list of addresses and ports\n");
 	printf("\t--tp=<gst/native> (Optional)\t\tTransport mechanism to use."
 			" Either native (default) or gstreamer based\n");
 	printf("\n\tThe receiver should be started using:\n");
@@ -193,6 +218,7 @@ send_packet(uint8_t *payload, size_t size, uint32_t timestamp,
 	uint16_t *rtpBase16 = (uint16_t *)(payload - RTP_HEADER_SIZE);
 	uint32_t *rtpBase32 = (uint32_t *)(payload - RTP_HEADER_SIZE);
 	static uint16_t sequence_number = 1;
+	int i = 0;
 
 	if (size > RTP_PAYLOAD_SIZE) {
 		fprintf(stderr, "Payload size %d too large (>1388).\n", (int)size);
@@ -216,13 +242,18 @@ send_packet(uint8_t *payload, size_t size, uint32_t timestamp,
 		return -1;
 	}
 
-	int rval = sendto(private_data->socket.sockDesc, rtpBase8, size + RTP_HEADER_SIZE, 0,
-			(struct sockaddr *) &private_data->socket.sockAddr, sizeof(private_data->socket.sockAddr));
+	for(i = 0; i < private_data->num_addr; i++) {
+		int rval = sendto(private_data->socket[i].sockDesc,
+				rtpBase8,
+				size + RTP_HEADER_SIZE,
+				0,
+				(struct sockaddr *) &private_data->socket[i].sockAddr,
+				sizeof(private_data->socket[i].sockAddr));
 
-	if (rval <= 0) {
-		fprintf(stderr, "Send failed with %m\n");
+		if (rval <= 0) {
+			fprintf(stderr, "Send failed with %m\n");
+		}
 	}
-
 	return 0;
 }
 
@@ -579,6 +610,7 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo,
 WL_EXPORT void destroy(void **plugin_private_data)
 {
 	struct private_data *private_data = (struct private_data *)*plugin_private_data;
+	int i;
 
 	if (private_data == NULL) {
 		return;
@@ -592,17 +624,24 @@ WL_EXPORT void destroy(void **plugin_private_data)
 		(void) gst_element_set_state (private_data->pipeline, GST_STATE_NULL);
 		(void) gst_object_unref (GST_OBJECT (private_data->pipeline));
 	} else if(!strcmp(private_data->tp, "native")) {
-		close(private_data->socket.sockDesc);
-		private_data->socket.sockDesc = -1;
-		memset(&private_data->socket.sockAddr, 0, sizeof(private_data->socket.sockAddr));
+		for(i = 0; i < private_data->num_addr; i++) {
+			close(private_data->socket[i].sockDesc);
+			private_data->socket[i].sockDesc = -1;
+			memset(&private_data->socket[i].sockAddr, 0,
+					sizeof(private_data->socket[i].sockAddr));
+		}
 	}
 
 	if (private_data->verbose) {
 		fprintf(stdout, "Freeing plugin private data...\n");
 	}
 
-	free(private_data->ipaddr);
-	free(private_data->tp);
+	if(private_data->ipaddr) {
+		free(private_data->ipaddr);
+	}
+	if(private_data->tp) {
+		free(private_data->tp);
+	}
 	free(private_data);
 	*plugin_private_data = NULL;
 }
