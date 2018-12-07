@@ -1971,7 +1971,8 @@ ias_committed(struct weston_surface *surface, int32_t relx, int32_t rely)
 	 * change that requires re-mapping, do that first.
 	 */
 	if (!weston_surface_is_mapped(surface) || mapping_change) {
-		if (!(shsurf->next_behavior & SHELL_SURFACE_BEHAVIOR_HIDDEN)) {
+		if (!(shsurf->next_behavior & SHELL_SURFACE_BEHAVIOR_HIDDEN) &&
+				!(shsurf->next_behavior & IAS_HMI_INPUT_OWNER)) {
 			map(shell, surface, surface->width, surface->height,
 				sx, sy);
 			surface->is_mapped = true;

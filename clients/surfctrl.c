@@ -412,6 +412,45 @@ surface_shareable(struct wayland *wayland,
 	return 0;
 }
 
+static int
+surface_behavior(struct wayland *wayland,
+		char *surfname, int surfid, int input)
+{
+	struct surf_list *s;
+	int found;
+
+	wl_list_for_each(s, &wayland->surface_list, link) {
+		found = 0;
+
+		if(surfid != -1) {
+			if(s->surf_id == (uint32_t) surfid) {
+				fprintf(stderr, "Setting input of %d to %d\n",
+						s->surf_id, input);
+
+				found = 1;
+			}
+		} else if(strcmp(s->name, surfname) == 0) {
+			fprintf(stderr, "Setting input of %s to %d\n", s->name, input);
+
+			found = 1;
+		}
+
+		if(found) {
+			if(input) {
+				s->behavior_bits |= IAS_HMI_INPUT_OWNER;
+			} else {
+				s->behavior_bits &= ~IAS_HMI_INPUT_OWNER;
+			}
+
+			ias_hmi_set_behavior(wayland->hmi, s->surf_id,
+					s->behavior_bits);
+			break;
+		}
+	}
+
+	return 0;
+}
+
 static char *pos_str = "";
 static char *size_str = "";
 static char *surfname = 0;
@@ -426,7 +465,7 @@ main(int argc, char **argv)
 
 	/* cmdline options */
 	int zorder = -1, alpha = -1, visible = -1, surfid = -1, watch_mode = 0;
-	int shareable = -1;
+	int shareable = -1, input = -1;
 
 	const struct weston_option options[] = {
 		{ WESTON_OPTION_STRING, "surfname", 0, &surfname },
@@ -438,6 +477,8 @@ main(int argc, char **argv)
 		{ WESTON_OPTION_INTEGER, "visible", 0, &visible },
 		{ WESTON_OPTION_INTEGER, "watch", 0, &watch_mode },
 		{ WESTON_OPTION_INTEGER, "shareable", 0, &shareable },
+		{ WESTON_OPTION_INTEGER, "input", 0, &input },
+
 	};
 
 	remaining_argc = parse_options(options, ARRAY_LENGTH(options), &argc, argv);
@@ -453,6 +494,7 @@ main(int argc, char **argv)
 		printf("         [--alpha=<0 based number>]\n");
 		printf("         [--watch=1]\n");
 		printf("         [--shareable=<0-disable,1-enable>]\n");
+		printf("         [--input=<0-disable,1-enable>]\n");
 		return -1;
 	}
 
@@ -510,6 +552,10 @@ main(int argc, char **argv)
 
 	if(shareable != -1) {
 		ret = surface_shareable(&wayland, surfname, surfid, shareable);
+	}
+
+	if(input != -1) {
+		ret = surface_behavior(&wayland, surfname, surfid, input);
 	}
 
 	wl_display_roundtrip(wayland.display);

@@ -282,6 +282,11 @@
 			<arg name="visible" type="uint" />
 		</request>
 
+		<enum name="input">
+			<entry name="OWNER" value="16"
+				summary="Is the owner of any input events" />
+		</enum>
+
 		<request name="set_behavior">
 			<description summary="Set the surface's behavior bits">
 				Set the surface custom behavior bits.

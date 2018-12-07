@@ -2390,8 +2390,10 @@ notify_touch(struct weston_seat *seat, const struct timespec *time,
 		 * to that view for the remainder of the touch session i.e.
 		 * until all touch points are up again. */
 		if (touch->num_tp == 1) {
-			ev = weston_compositor_pick_view(ec, x, y, &sx, &sy);
-			weston_touch_set_focus(touch, ev);
+			if(!ec->input_view) {
+				ev = weston_compositor_pick_view(ec, x, y, &sx, &sy);
+				weston_touch_set_focus(touch, ev);
+			}
 		} else if (!touch->focus) {
 			/* Unexpected condition: We have non-initial touch but
 			 * there is no focused surface.
@@ -2401,8 +2403,10 @@ notify_touch(struct weston_seat *seat, const struct timespec *time,
 			return;
 		}
 
-		weston_compositor_run_touch_binding(ec, touch,
+		if(!ec->input_view) {
+			weston_compositor_run_touch_binding(ec, touch,
 						    time, touch_type);
+		}
 
 		grab->interface->down(grab, time, touch_id, x, y);
 		if (touch->num_tp == 1) {
@@ -2435,7 +2439,7 @@ notify_touch(struct weston_seat *seat, const struct timespec *time,
 		touch->num_tp--;
 
 		grab->interface->up(grab, time, touch_id);
-		if (touch->num_tp == 0)
+		if (touch->num_tp == 0 && !ec->input_view)
 			weston_touch_set_focus(touch, NULL);
 		break;
 	}
