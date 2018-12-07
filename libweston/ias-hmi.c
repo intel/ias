@@ -65,13 +65,26 @@ ias_hmi_set_behavior(struct wl_client *client,
 {
 	struct ias_shell *shell = shell_resource->data;
 	struct ias_surface *shsurf;
+	struct weston_seat *seat;
+	struct weston_touch *touch = NULL;
+
+	wl_list_for_each(seat, &shell->compositor->seat_list, link) {
+		touch = weston_seat_get_touch(seat);
+		break;
+	}
 
 	/* Walk the surface list looking for the requested surface.  */
 	wl_list_for_each(shsurf, &shell->client_surfaces, surface_link) {
 		if (SURFPTR2ID(shsurf) == id) {
 			shsurf->next_behavior = (behavior & 0x00ffffff) |
 				(shsurf->behavior & 0xff000000);
-			ias_committed(shsurf->surface, 0, 0);
+			if(touch && shsurf->next_behavior & IAS_HMI_INPUT_OWNER) {
+				shell->compositor->input_view = shsurf->view;
+				weston_touch_set_focus(touch, shsurf->view);
+			} else {
+				shell->compositor->input_view = NULL;
+				ias_committed(shsurf->surface, 0, 0);
+			}
 			return;
 		}
 	}

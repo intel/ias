@@ -1091,6 +1091,11 @@ struct weston_compositor {
 	 ***/
 	int normalized_rotation;
 	int damage_outputs_on_init;
+	/*
+	 * This view shouldn't be set unless all input events are meant to go to
+	 * it
+	 */
+	void *input_view;
 };
 
 struct weston_buffer {
