@@ -960,7 +960,9 @@ demo_clients +=					\
 	traceinfo
 
 if ENABLE_REMOTE_DISPLAY
-demo_clients += remote-display
+demo_clients += \
+	remote-display \
+	mediaplayer
 endif
 
 weston_simple_shm_SOURCES = clients/simple-shm.c
@@ -1063,6 +1065,11 @@ nodist_remote_display_SOURCES =		\
 		protocol/ias-shell-client-protocol.h
 remote_display_CFLAGS = $(AM_CFLAGS) $(SIMPLE_CLIENT_CFLAGS) $(LIBVA_CFLAGS)
 remote_display_LDADD = $(LIBDRM_LIBS) $(SIMPLE_CLIENT_LIBS) $(LIBVA_LIBS) libshared.la -lm -ldrm_intel -ldl -lpthread
+
+mediaplayer_SOURCES = 		\
+	clients/mediaplayer.c
+mediaplayer_CFLAGS = $(AM_CFLAGS) $(SIMPLE_CLIENT_CFLAGS) -I/usr/include/glib-2.0 -I/usr/include/gstreamer-1.0 -I/usr/lib/glib-2.0/include -I/usr/lib64/glib-2.0/include
+mediaplayer_LDADD = $(LIBDRM_LIBS) $(SIMPLE_CLIENT_LIBS) libshared.la -lm -lpthread -lgstreamer-1.0 -lgstbase-1.0 -lgstapp-1.0 -lgstvideo-1.0
 
 weston_clock_CFLAGS = $(AM_CFLAGS) $(CLIENT_CFLAGS)
 
