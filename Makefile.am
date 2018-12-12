@@ -1072,7 +1072,8 @@ mediaplayer_CFLAGS = $(AM_CFLAGS) $(SIMPLE_CLIENT_CFLAGS) -I/usr/include/glib-2.
 			-I/usr/include/gstreamer-1.0 -I/usr/lib/glib-2.0/include \
 			-I/usr/lib64/glib-2.0/include
 mediaplayer_LDADD = $(LIBDRM_LIBS) $(SIMPLE_CLIENT_LIBS) libshared.la -lm -lpthread \
-			-lgstreamer-1.0 -lgstbase-1.0 -lgstapp-1.0 -lgstvideo-1.0
+			-lgstreamer-1.0 -lgstbase-1.0 -lgstapp-1.0 -lgstvideo-1.0 \
+			-lgobject-2.0 -lglib-2.0
 
 weston_clock_CFLAGS = $(AM_CFLAGS) $(CLIENT_CFLAGS)
 
