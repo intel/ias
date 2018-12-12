@@ -486,7 +486,7 @@ main(int argc, char **argv)
 	if (remaining_argc > 1 ||
 			(surfname == 0 && surfid_str == 0 && orig_argc > 1 && !watch_mode)) {
 		printf("Usage:\n");
-		printf("  surftrl --surfname=<name of the surface> | "
+		printf("  surfctrl --surfname=<name of the surface> | "
 				"--surfid=<id of the surface>\n");
 		printf("         [--pos=XxY]\n");
 		printf("         [--size=XxY]\n");
