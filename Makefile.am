@@ -938,11 +938,10 @@ thumbnail_layout_la_LDFLAGS = -module -L$(WLD)/lib
 
 if BUILD_CLIENTS
 
-example_PROGRAMS += weston-terminal weston-info weston-debug
+example_PROGRAMS += weston-terminal weston-info weston-debug weston-screenshooter
 
 libexec_PROGRAMS +=				\
 	weston-desktop-shell			\
-	weston-screenshooter			\
 	weston-keyboard				\
 	weston-simple-im			\
 	ias-test-hmi
