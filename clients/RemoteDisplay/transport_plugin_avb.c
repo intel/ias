@@ -128,7 +128,7 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data,
 	if (!pipeline || !appsrc || !h264parse || !rtph264pay || !avbh264sink)
 		goto gst_free;
 
-	(void) g_object_set (G_OBJECT (avbh264sink), "skeleton-name", private_data->avb_channel, NULL);
+	(void) g_object_set (G_OBJECT (avbh264sink), "stream-name", private_data->avb_channel, NULL);
 	(void) gst_bin_add_many(GST_BIN (pipeline), appsrc, h264parse, rtph264pay, avbh264sink, NULL);
 	if (!gst_element_link_many (appsrc, h264parse, rtph264pay, avbh264sink, NULL))
 		goto gst_free_pipeline;
