@@ -1793,23 +1793,28 @@ print_fps(struct wl_listener *listener, void *data)
 	struct ias_shell *shell = self;
 	float time_diff_secs;
 	uint32_t curr_time_ms;
+	struct ias_surface *shsurf;
 
 	gettimeofday(&curr_time, NULL);
 	curr_time_ms = (curr_time.tv_sec * 1000 + curr_time.tv_usec / 1000);
 
 	time_diff_secs = (curr_time_ms - prev_time_ms) / 1000;
 
+	wl_list_for_each(shsurf, &shell->client_surfaces, surface_link) {
+		shsurf->flip_count++;
+	}
+
 	if (time_diff_secs >= TARGET_NUM_SECONDS) {
-		struct ias_surface *shsurf;
 		fprintf(stdout, "--------------------------------------------------------\n");
 
 		wl_list_for_each(shsurf, &shell->client_surfaces, surface_link) {
-			fprintf(stdout, "%s: %d frames in %6.3f seconds = %6.3f FPS\n",
-				shsurf->pname, shsurf->frame_count, time_diff_secs,
-				shsurf->frame_count / time_diff_secs);
+			fprintf(stdout, "%s: %d frames, %d flips in %6.3f seconds = %6.3f FPS\n",
+					shsurf->pname, shsurf->frame_count, shsurf->flip_count, time_diff_secs,
+					shsurf->frame_count / time_diff_secs);
 			fflush(stdout);
 
 			shsurf->frame_count = 0;
+			shsurf->flip_count = 0;
 		}
 
 		fprintf(stdout, "--------------------------------------------------------\n");
