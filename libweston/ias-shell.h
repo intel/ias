@@ -234,6 +234,7 @@ struct ias_surface {
 	uint32_t pid;
 	char *pname;
 	int frame_count;
+	int flip_count;
 
 	/* Was that surface created using wl_shell interface */
 	int wl_shell_interface;
