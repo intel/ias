@@ -61,7 +61,7 @@ CLEANFILES = weston.ini				\
 install-libweston_moduleLTLIBRARIES install-moduleLTLIBRARIES: install-libLTLIBRARIES
 
 lib_LTLIBRARIES = libias-@LIBWESTON_MAJOR@.la
-libias_@LIBWESTON_MAJOR@_la_CPPFLAGS = $(AM_CPPFLAGS) -DIN_WESTON
+libias_@LIBWESTON_MAJOR@_la_CPPFLAGS = $(AM_CPPFLAGS)
 libias_@LIBWESTON_MAJOR@_la_CFLAGS = $(AM_CFLAGS) \
 	$(COMPOSITOR_CFLAGS) $(EGL_CFLAGS) $(LIBDRM_CFLAGS)
 libias_@LIBWESTON_MAJOR@_la_LIBADD = $(COMPOSITOR_LIBS) \
@@ -115,7 +115,7 @@ dist_libias_@LIBWESTON_MAJOR@_data_DATA =	\
 	protocol/weston-debug.xml
 
 lib_LTLIBRARIES += libias-desktop-@LIBWESTON_MAJOR@.la
-libias_desktop_@LIBWESTON_MAJOR@_la_CPPFLAGS = $(AM_CPPFLAGS) -DIN_WESTON
+libias_desktop_@LIBWESTON_MAJOR@_la_CPPFLAGS = $(AM_CPPFLAGS)
 libias_desktop_@LIBWESTON_MAJOR@_la_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS)
 libias_desktop_@LIBWESTON_MAJOR@_la_LIBADD =		\
 	libias-@LIBWESTON_MAJOR@.la			\
@@ -188,8 +188,7 @@ BUILT_SOURCES += $(nodist_libias_@LIBWESTON_MAJOR@_la_SOURCES)
 bin_PROGRAMS += ias-weston
 
 ias_weston_LDFLAGS = -export-dynamic -pie
-ias_weston_CPPFLAGS = $(AM_CPPFLAGS) -DIN_WESTON 		\
-				 -DMODULEDIR='"$(moduledir)"' \
+ias_weston_CPPFLAGS = $(AM_CPPFLAGS) -DMODULEDIR='"$(moduledir)"' \
 				 -DXSERVER_PATH='"@XSERVER_PATH@"'
 ias_weston_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS) $(LIBINPUT_BACKEND_CFLAGS) \
 					$(PTHREAD_CFLAGS) -fPIE
@@ -1694,8 +1693,7 @@ desktop_shell_la_CPPFLAGS =			\
 	-I$(top_srcdir)/libweston		\
 	-I$(top_builddir)/desktop-shell		\
 	-DMODULEDIR='"$(moduledir)"'		\
-	-DLIBEXECDIR='"$(libexecdir)"'		\
-	-DIN_WESTON
+	-DLIBEXECDIR='"$(libexecdir)"'
 
 desktop_shell_la_LDFLAGS = -module -avoid-version
 desktop_shell_la_LIBADD = libshared.la libias-desktop-@LIBWESTON_MAJOR@.la $(COMPOSITOR_LIBS)
@@ -1721,8 +1719,7 @@ fullscreen_shell_la_CPPFLAGS =			\
 	-I$(top_builddir)/protocol		\
 	-I$(top_srcdir)/shared			\
 	-I$(top_builddir)/libweston		\
-	-I$(top_srcdir)/libweston		\
-	-DIN_WESTON
+	-I$(top_srcdir)/libweston
 
 fullscreen_shell_la_LDFLAGS = -module -avoid-version
 fullscreen_shell_la_LIBADD =			\
