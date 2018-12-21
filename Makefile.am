@@ -1167,6 +1167,63 @@ weston_simple_dmabuf_v4l_LDADD = $(SIMPLE_DMABUF_V4L_CLIENT_LIBS) libshared.la
 weston_simple_dmabuf_v4l_LDFLAGS = -pie
 endif
 
+module_LTLIBRARIES += libwl_base.la
+
+libwl_base_la_SOURCES =				\
+	clients/wl_base/global_wayland.cpp		\
+	clients/wl_base/global_wayland.h
+
+nodist_libwl_base_la_SOURCES = \
+	protocol/ias-backend-client-protocol.h		\
+	protocol/ias-backend-protocol.c			\
+	protocol/ias-shell-protocol.c			\
+	protocol/ias-shell-client-protocol.h	\
+	protocol/xdg-shell-unstable-v6-protocol.c			\
+	protocol/xdg-shell-unstable-v6-client-protocol.h		\
+	protocol/ivi-application-protocol.c		\
+	protocol/ivi-application-client-protocol.h
+
+BUILT_SOURCES += $(nodist_libwl_base_la_SOURCES)
+
+libwl_base_la_LDFLAGS = -module -avoid-version
+libwl_base_la_LIBADD =  	\
+			libshared.la -lm -ldrm_intel -lwayland-client
+libwl_base_la_CPPFLAGS = 	\
+			$(LIBDRM_CFLAGS)	\
+			$(AM_CFLAGS) -fPIC -fvisibility=default
+
+module_LTLIBRARIES += libwl_disp.la
+
+libwl_disp_la_SOURCES =				\
+	clients/wl_disp/display_wayland.cpp		\
+	clients/wl_disp/display_wayland.h
+
+libwl_disp_la_LDFLAGS = -module -avoid-version
+libwl_disp_la_LIBADD =  $(GLIB_LIBS)		\
+			$(LIBDRM_LIBS)		\
+			libshared.la
+libwl_disp_la_CPPFLAGS = $(GCC_CFLAGS)		\
+			$(LIBDRM_CFLAGS)	\
+			$(GLIB_CFLAGS)		\
+			$(AM_CFLAGS) -I$(top_srcdir)/clients/wl_base -DWL_EGL_PLATFORM \
+			-fPIC -fvisibility=default
+
+module_LTLIBRARIES += libias_hmi.la
+
+libias_hmi_la_SOURCES =				\
+	clients/ias_hmi/ias_hmi_reg.cpp		\
+	clients/ias_hmi/ias_hmi_reg.h
+
+libias_hmi_la_LDFLAGS = -module -avoid-version
+libias_hmi_la_LIBADD =  $(GLIB_LIBS)		\
+			$(LIBDRM_LIBS)		\
+			libshared.la
+libias_hmi_la_CPPFLAGS = $(GCC_CFLAGS)		\
+			$(LIBDRM_CFLAGS)	\
+			$(GLIB_CFLAGS)		\
+			$(AM_CFLAGS) -I$(top_srcdir)/clients/wl_disp -I$(top_srcdir)/clients/wl_base \
+			-fPIC -fvisibility=default
+
 noinst_LTLIBRARIES += libtoytoolkit.la
 
 libtoytoolkit_la_SOURCES =				\
