@@ -30,6 +30,7 @@
 #include <sys/time.h>
 #include <gst/gst.h>
 #include <gst/app/gstappsrc.h>
+#include <fcntl.h>
 
 #include "../shared/config-parser.h"
 #include "../shared/helpers.h"
@@ -144,6 +145,7 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 		while(ptr) {
 			char *str_ipaddr = strtok(ptr, ":");
 			char *str_port = strtok(NULL, "\n");
+            int flags = 0;
 
 			private_data->socket[private_data->num_addr].sockDesc = socket(AF_INET, SOCK_DGRAM, 0);
 			if (!str_ipaddr || !str_port || private_data->socket[private_data->num_addr].sockDesc < 0) {
@@ -159,10 +161,15 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 				return -1;
 			}
 
+            flags = fcntl(private_data->socket[private_data->num_addr].sockDesc,F_GETFL);
+            flags |= O_NONBLOCK;
+
 			private_data->socket[private_data->num_addr].sockAddr.sin_addr.s_addr =
 					inet_addr(str_ipaddr);
 			private_data->socket[private_data->num_addr].sockAddr.sin_family = AF_INET;
 			private_data->socket[private_data->num_addr].sockAddr.sin_port = htons(atoi(str_port));
+
+            fcntl(private_data->socket[private_data->num_addr].sockDesc, F_SETFL, flags);
 
 			ptr = strtok(ptr2, ",");
 			ptr2 = strtok(NULL, "\n");
@@ -251,7 +258,12 @@ send_packet(uint8_t *payload, size_t size, uint32_t timestamp,
 				sizeof(private_data->socket[i].sockAddr));
 
 		if (rval <= 0) {
-			fprintf(stderr, "Send failed with %m\n");
+            if (EAGAIN == errno || EWOULDBLOCK == errno) {
+                if (private_data->verbose >= 2)
+                    fprintf(stderr, "Send failed with %m\n");
+            } else {
+                fprintf(stderr, "Send failed with %m\n");
+            }
 		}
 	}
 	return 0;
