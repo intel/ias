@@ -30,6 +30,7 @@
 #include <sys/time.h>
 #include <gst/gst.h>
 #include <gst/app/gstappsrc.h>
+#include <stdbool.h>
 
 #include "../shared/config-parser.h"
 #include "../shared/helpers.h"
@@ -52,7 +53,9 @@
 #define MAX_ADDRS 10
 
 struct udpSocket {
-	int sockDesc; struct sockaddr_in sockAddr;
+	int sockDesc;
+	struct sockaddr_in sockAddr;
+	bool available;
 };
 
 
@@ -144,8 +147,10 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 		while(ptr) {
 			char *str_ipaddr = strtok(ptr, ":");
 			char *str_port = strtok(NULL, "\n");
+			int sockfd;
+			struct timeval optTime = {0, 10}; /* {sec, msec} */
 
-			private_data->socket[private_data->num_addr].sockDesc = socket(AF_INET, SOCK_DGRAM, 0);
+			sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 			if (!str_ipaddr || !str_port || private_data->socket[private_data->num_addr].sockDesc < 0) {
 				fprintf(stderr, "Socket creation failed.\n");
 				if(private_data->ipaddr) {
@@ -159,10 +164,16 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 				return -1;
 			}
 
+			if (setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &optTime, sizeof(optTime)) < 0) {
+				fprintf(stderr, "sendto timeout configuration failed\n");
+			}
+
+			private_data->socket[private_data->num_addr].sockDesc = sockfd;
 			private_data->socket[private_data->num_addr].sockAddr.sin_addr.s_addr =
 					inet_addr(str_ipaddr);
 			private_data->socket[private_data->num_addr].sockAddr.sin_family = AF_INET;
 			private_data->socket[private_data->num_addr].sockAddr.sin_port = htons(atoi(str_port));
+			private_data->socket[private_data->num_addr].available = true;
 
 			ptr = strtok(ptr2, ",");
 			ptr2 = strtok(NULL, "\n");
@@ -243,15 +254,21 @@ send_packet(uint8_t *payload, size_t size, uint32_t timestamp,
 	}
 
 	for(i = 0; i < private_data->num_addr; i++) {
-		int rval = sendto(private_data->socket[i].sockDesc,
-				rtpBase8,
-				size + RTP_HEADER_SIZE,
-				0,
-				(struct sockaddr *) &private_data->socket[i].sockAddr,
-				sizeof(private_data->socket[i].sockAddr));
+		if (private_data->socket[i].available) {
+			int rval = sendto(private_data->socket[i].sockDesc,
+					rtpBase8,
+					size + RTP_HEADER_SIZE,
+					0,
+					(struct sockaddr *) &private_data->socket[i].sockAddr,
+					sizeof(private_data->socket[i].sockAddr));
 
-		if (rval <= 0) {
-			fprintf(stderr, "Send failed with %m\n");
+			if (rval <= 0) {
+				/*TODO - add more detailed error handles */
+				private_data->socket[i].available = false;
+				if (private_data->verbose >= 2) {
+					fprintf(stderr, "Socket(%d) - Send failed with %m \n", i);
+				}
+			}
 		}
 	}
 	return 0;
@@ -340,6 +357,7 @@ static int send_frame_native(void *plugin_private_data, drm_intel_bo *drm_bo,
 	uint8_t *bufdata;
 	volatile sig_atomic_t send_packages;
 	int err = 0;
+	int i;
 
 	struct private_data *private_data = (struct private_data *)plugin_private_data;
 
@@ -559,6 +577,10 @@ static int send_frame_native(void *plugin_private_data, drm_intel_bo *drm_bo,
 
 			send_packages = 0;
 		}
+	}
+
+	for(i = 0; i < private_data->num_addr; i++) {
+		private_data->socket[i].available = true;
 	}
 
 	if (private_data->verbose >= 2 || private_data->debug_packetisation) {
