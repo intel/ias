@@ -726,7 +726,8 @@ vmdisplay_wayland_LDADD = $(COMPOSITOR_LIBS) $(GLIB_LIBS) $(EGL_LIBS) $(SIMPLE_C
 	libshared.la libvmdisplay.la -lm -ldrm_intel \
 	$(WAYLAND_COMPOSITOR_EGL_LIBS)		\
 	$(WAYLAND_COMPOSITOR_LIBS)		\
-	$(SIMPLE_EGL_CLIENT_LIBS)
+	$(SIMPLE_EGL_CLIENT_LIBS)               \
+	libias-@LIBWESTON_MAJOR@.la
 
 vmdisplay_server_SOURCES = clients/vmdisplay/vmdisplay-server.cpp	\
 		clients/vmdisplay/vmdisplay-server-network.cpp		\
