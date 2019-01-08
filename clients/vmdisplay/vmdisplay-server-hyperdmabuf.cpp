@@ -141,13 +141,13 @@ int HyperDMABUFCommunicator::recv_metadata(void **buffer)
 			last_counter = -1;
 		}
 
-		len = recv_data(metadata,
-				sizeof(struct vm_header) +
-				sizeof(struct vm_buffer_info) +
-				sizeof(struct hyper_dmabuf_event_hdr));
+		do {
+			len = recv_data(metadata,
+					sizeof(struct vm_header) +
+					sizeof(struct vm_buffer_info) +
+					sizeof(struct hyper_dmabuf_event_hdr));
 
-		if (len < 0)
-			continue;
+		} while(len < 0)
 
 		event_hdr = (struct hyper_dmabuf_event_hdr *)&metadata[0];
 
@@ -184,7 +184,7 @@ int HyperDMABUFCommunicator::recv_metadata(void **buffer)
 			 * all buffers for current frame, send out new frame metadata to clients.
 			 */
 			if (hdr->counter != last_counter ||
-			    num_buffers == hdr->n_buffers) {
+			    num_buffers >= hdr->n_buffers) {
 				last_hdr.n_buffers = num_buffers;
 				memcpy(buffer[last_hdr.output],
 				       &last_hdr, sizeof(struct vm_header));
