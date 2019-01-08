@@ -30,6 +30,7 @@
 #include <sys/time.h>
 #include <gst/gst.h>
 #include <gst/app/gstappsrc.h>
+#include <stdbool.h>
 
 #include "../shared/config-parser.h"
 #include "../shared/helpers.h"
