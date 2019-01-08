@@ -734,13 +734,13 @@ vmdisplay_server_SOURCES = clients/vmdisplay/vmdisplay-server.cpp	\
 		clients/vmdisplay/vmdisplay-server-hyperdmabuf.cpp
 vmdisplay_server_CFLAGS = $(AM_CFLAGS) $(GCC_CFLAGS)
 vmdisplay_server_LDADD =  $(GLIB_LIBS) \
-	libshared.la libvmdisplay.la -lm
+	libshared.la libvmdisplay.la -lpthread -lm
 
 vmdisplay_input_SOURCES = clients/vmdisplay/vmdisplay-input.cpp
 nodist_vmdisplay_input_SOURCES = clients/vmdisplay/vmdisplay-server-network.cpp
 vmdisplay_input_CFLAGS = $(AM_CFLAGS) $(GCC_CFLAGS)
 vmdisplay_input_LDADD =  $(GLIB_LIBS) \
-	libshared.la libvmdisplay.la -lm
+	libshared.la libvmdisplay.la -lpthread -lm
 endif
 
 # Stick a copy of compositor.h and the public plugin framework headers under
