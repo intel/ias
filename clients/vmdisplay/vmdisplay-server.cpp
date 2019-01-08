@@ -290,11 +290,9 @@ int VMDisplayServer::init(int domid,
 
 int VMDisplayServer::cleanup()
 {
-	if (running) {
-		pthread_join(metadata_thread, NULL);
-		pthread_join(input_thread, NULL);
-		pthread_mutex_destroy(&mutex);
-	}
+	pthread_join(metadata_thread, NULL);
+	pthread_join(input_thread, NULL);
+	pthread_mutex_destroy(&mutex);
 
 	if (hyper_comm_metadata) {
 		hyper_comm_metadata->cleanup();
