@@ -1119,6 +1119,12 @@ weston_es2gears_CFLAGS = $(AM_CFLAGS) $(CLIENT_CFLAGS) -fPIE
 weston_es2gears_LDADD = $(SIMPLE_EGL_CLIENT_LIBS) -lm libtoytoolkit.la
 weston_es2gears_LDFLAGS = -pie
 
+demo_clients += eglinfo
+eglinfo_SOURCES = clients/eglinfo.c
+eglinfo_CFLAGS = $(AM_CFLAGS) $(CLIENT_CFLAGS) -fPIE
+eglinfo_LDADD = $(SIMPLE_EGL_CLIENT_LIBS) -lm
+eglinfo_LDFLAGS = -pie
+
 if BUILD_IVI_SHARE_ENABLE
 demo_clients += weston-simple-ivi-share
 weston_simple_ivi_share_SOURCES = clients/simple-ivi-share.c
