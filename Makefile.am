@@ -348,7 +348,7 @@ vm_comm_xen_la_SOURCES = libweston/vm_xen.c
 endif
 
 module_LTLIBRARIES += vm-comm-network.la
-vm_comm_network_la_LDFLAGS = -module -avoid-version
+vm_comm_network_la_LDFLAGS = -module -avoid-version -pthread
 vm_comm_network_la_SOURCES = libweston/vm_network.c
 endif
 
@@ -734,13 +734,13 @@ vmdisplay_server_SOURCES = clients/vmdisplay/vmdisplay-server.cpp	\
 		clients/vmdisplay/vmdisplay-server-hyperdmabuf.cpp
 vmdisplay_server_CFLAGS = $(AM_CFLAGS) $(GCC_CFLAGS)
 vmdisplay_server_LDADD =  $(GLIB_LIBS) \
-	libshared.la libvmdisplay.la -lm
+	libshared.la libvmdisplay.la -lm -lpthread
 
 vmdisplay_input_SOURCES = clients/vmdisplay/vmdisplay-input.cpp
 nodist_vmdisplay_input_SOURCES = clients/vmdisplay/vmdisplay-server-network.cpp
 vmdisplay_input_CFLAGS = $(AM_CFLAGS) $(GCC_CFLAGS)
 vmdisplay_input_LDADD =  $(GLIB_LIBS) \
-	libshared.la libvmdisplay.la -lm
+	libshared.la libvmdisplay.la -lm -lpthread
 endif
 
 # Stick a copy of compositor.h and the public plugin framework headers under
