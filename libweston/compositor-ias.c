@@ -1903,16 +1903,26 @@ ias_update_cursor(struct ias_crtc *ias_crtc)
 		if (ias_crtc->output_model->hw_cursor) {
 			if (!c->has_nuclear_pageflip) {
 				drmModeSetCursor(c->drm.fd, ias_crtc->crtc_id, 0, 0, 0);
-			} else {
+			} else if(!ias_crtc->disable_cursor_once) {
+				/*
+				 * If a cursor has been disabled once already, then don't waste
+				 * time disabling it again
+				 */
 				drmModeAtomicAddProperty(ias_crtc->prop_set, s->plane_id,
 					s->prop.fb_id, 0);
 				drmModeAtomicAddProperty(ias_crtc->prop_set, s->plane_id,
 					s->prop.crtc_id, 0);
+				ias_crtc->disable_cursor_once = 1;
 			}
 		}
 		return;
 	}
 
+	/*
+	 * Looks like a cursor has been set. So if later it ever gets removed, then
+	 * disable it only once
+	 */
+	ias_crtc->disable_cursor_once = 0;
 	buffer = ev->surface->buffer_ref.buffer;
 
 	/*

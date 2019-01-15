@@ -1158,7 +1158,9 @@ update_sprites_classic(struct ias_crtc *ias_crtc)
 						s->prop.rotation,
 						rotation);
 			}
-		} else if (!s->locked) {
+			s->disable_sprite_once = 0;
+
+		} else if (!s->locked && !s->disable_sprite_once) {
 			/*
 			 * If a surface was not assigned to this sprite, disable it.
 			 */
@@ -1173,6 +1175,7 @@ update_sprites_classic(struct ias_crtc *ias_crtc)
 					0);
 
 			s->locked = 0;
+			s->disable_sprite_once = 1;
 		}
 	}
 }

@@ -334,6 +334,7 @@ struct ias_crtc {
 
 	struct wl_event_source *cp_timer;
 	int cp_timer_index;
+	int disable_cursor_once;
 };
 
 enum ias_fb_type {
@@ -381,6 +382,7 @@ struct ias_sprite {
 	int locked;
 	enum sprite_dirty_bit sprite_dirty;
 	int zorder;
+	int disable_sprite_once;
 
 	int blending_enabled;
 	float constant_alpha;
