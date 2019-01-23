@@ -886,7 +886,7 @@ cp_handler(void *data)
 	/*
 	 * We have set a limit of 10 for cp_handler to be called. Either
 	 * CP has been enabled by the driver by then or there is some problem
-	 * and we should unnecessarily wait for the driver to turn on CP so we
+	 * and we shouldn't unnecessarily wait for the driver to turn on CP so we
 	 * will turn this timer off.
 	 */
 	if(++ias_crtc->cp_timer_index < 10 && !cp_val) {

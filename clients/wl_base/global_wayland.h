@@ -41,6 +41,7 @@ struct crtc {
 	struct ias_crtc *ias_crtc;
 	uint32_t id;
 	struct wl_list link;
+	bool cp_status;
 };
 
 class global_wl {
@@ -67,6 +68,7 @@ class global_wl {
 		virtual void registry_handle_global_remove(void *data,
 				struct wl_registry *registry, uint32_t name);
 		virtual void set_content_protection(int crtc, int cp);
+		virtual bool content_protection_status(int crtc);
 		static void xdg_shell_ping(void *data, struct zxdg_shell_v6 *shell,
 				uint32_t serial);
 		static void modelist_event(void *data,

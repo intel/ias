@@ -120,7 +120,9 @@ void global_wl::id_event(void *data,
 
 void global_wl::cp_enabled_event(void *data, struct ias_crtc *ias_crtc)
 {
+	struct crtc *crtc = (struct crtc *) data;
 
+	crtc->cp_status = true;
 }
 
 static const struct ias_crtc_listener ias_crtc_listener = {
@@ -356,7 +358,7 @@ void global_wl::dispatch_pending()
  *	whether to turn content protection on or off.
  * Parameters
  *	int crtc_id - The CRTC to set content protection for
- *	int cp - 0/1 flag indicating to turn contention protection off/on 
+ *	int cp - 0/1 flag indicating to turn contention protection off/on
  *		respectively.
  * Return val
  *	void
@@ -368,8 +370,42 @@ void global_wl::set_content_protection(int crtc_id, int cp)
 	wl_list_for_each(crtc, &crtc_list, link) {
 		if(crtc->id == (uint32_t) crtc_id) {
 			ias_crtc_set_content_protection(crtc->ias_crtc, cp);
+			/*
+			 * If the caller wanted to turn off content protection, then we can
+			 * set the status immediately. If they wanted to turn it on, then
+			 * we have to wait for the compositor to let us know that it was
+			 * successfully able to do so and we will set the cp_status later
+			 */
+			if(!cp) {
+				crtc->cp_status = false;
+			}
 			break;
 		}
 	}
 	wl_display_flush(display);
+}
+
+/*******************************************************************************
+ * Description
+ *	This function finds out the current content protection status. Note that it
+ *	is only a cached version of the status and it may change at any time upon
+ *	receiving an event from the compositor. So this function may have to be
+ *	called multiple times to see the desired result.
+ * Parameters:
+ *	None
+ * Return val
+ *	bool - status true/false = enabled/disabled
+ ******************************************************************************/
+bool global_wl::content_protection_status(int crtc_id)
+{
+	struct crtc *crtc;
+	bool status = false;
+
+	wl_list_for_each(crtc, &crtc_list, link) {
+		if(crtc->id == (uint32_t) crtc_id) {
+			status = crtc->cp_status;
+			break;
+		}
+	}
+	return status;
 }
