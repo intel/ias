@@ -36,6 +36,7 @@ enum _caps {
 };
 
 #define MAKE_LEVEL(lvl, caps) (lvl<<4 | caps)
+#define MAX_ITER_TO_WAIT 10
 
 struct crtc {
 	struct ias_crtc *ias_crtc;
@@ -67,7 +68,7 @@ class global_wl {
 				const char *interface, uint32_t version);
 		virtual void registry_handle_global_remove(void *data,
 				struct wl_registry *registry, uint32_t name);
-		virtual void set_content_protection(int crtc, int cp);
+		virtual bool set_content_protection(int crtc, int cp);
 		virtual bool content_protection_status(int crtc);
 		static void xdg_shell_ping(void *data, struct zxdg_shell_v6 *shell,
 				uint32_t serial);

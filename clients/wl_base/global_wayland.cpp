@@ -361,11 +361,15 @@ void global_wl::dispatch_pending()
  *	int cp - 0/1 flag indicating to turn contention protection off/on
  *		respectively.
  * Return val
- *	void
+ *	bool -
+ *		true = success in setting the content protection value
+ *		false = failure in setting the content protection value
  ******************************************************************************/
-void global_wl::set_content_protection(int crtc_id, int cp)
+bool global_wl::set_content_protection(int crtc_id, int cp)
 {
 	struct crtc *crtc;
+	bool retval = false;
+	int counter = 0;
 
 	wl_list_for_each(crtc, &crtc_list, link) {
 		if(crtc->id == (uint32_t) crtc_id) {
@@ -383,6 +387,31 @@ void global_wl::set_content_protection(int crtc_id, int cp)
 		}
 	}
 	wl_display_flush(display);
+
+	/*
+	 * If the user wanted to turn on content protection, then check the status
+	 * for up to 10 Vblanks to see if it has been turned on. If still not, then
+	 * return failure. This is a sane choice because if by 10 iterations, we
+	 * still haven't seen the content protection status change, then something
+	 * is really wrong and it isn't changing anymore.
+	 */
+	if(cp) {
+		while(!retval && counter++ < MAX_ITER_TO_WAIT) {
+			retval = content_protection_status(crtc_id);
+			/* If status is not set, wait for a VBlank and try again */
+			if(!retval) {
+				usleep(16666);
+			}
+		}
+	} else {
+		/*
+		 * If the user wanted to turn off content protection, then we return
+		 * success immediately.
+		 */
+		retval = true;
+	}
+
+	return retval;
 }
 
 /*******************************************************************************
