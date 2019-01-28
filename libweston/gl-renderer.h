@@ -141,6 +141,8 @@ struct gl_renderer_interface {
 			           struct wl_resource *buffer,
 				   EGLint attribute, EGLint *value);
 
+	int rbc;
+
 #ifdef USE_VM
 	int vm_exec;
 	int vm_dbg;

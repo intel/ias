@@ -4554,6 +4554,11 @@ ias_compositor_create(struct weston_compositor *compositor,
 	centre_pointer(backend);
 
 	if (backend->has_nuclear_pageflip) {
+		/*
+		 * The renderer needs to know if it should filter out RBC modes so provide a
+		 * flag to it.
+		 */
+		gl_renderer->rbc = use_rbc;
 		backend->rbc_supported = render_buffer_compression_supported(backend);
 		backend->rbc_enabled = backend->rbc_supported && use_rbc && !has_overlapping_outputs(backend);
 		if (backend->rbc_debug) {

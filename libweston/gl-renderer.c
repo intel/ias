@@ -2021,7 +2021,8 @@ gl_renderer_query_dmabuf_modifiers(struct weston_compositor *wc, int format,
 					int *num_modifiers)
 {
 	struct gl_renderer *gr = get_renderer(wc);
-	int num;
+	int num, i, j;
+	uint64_t *temp_modifiers;
 
 	assert(gr->has_dmabuf_import);
 
@@ -2032,19 +2033,40 @@ gl_renderer_query_dmabuf_modifiers(struct weston_compositor *wc, int format,
 		return;
 	}
 
-	*modifiers = calloc(num, sizeof(uint64_t));
-	if (*modifiers == NULL) {
+	temp_modifiers = calloc(num, sizeof(uint64_t));
+	if (temp_modifiers == NULL) {
 		*num_modifiers = 0;
 		return;
 	}
 	if (!gr->query_dmabuf_modifiers(gr->egl_display, format,
-				num, *modifiers, NULL, &num)) {
+				num, temp_modifiers, NULL, &num)) {
 		*num_modifiers = 0;
-		free(*modifiers);
+		free(temp_modifiers);
 		return;
 	}
 
-	*num_modifiers = num;
+	*modifiers = calloc(num, sizeof(uint64_t));
+	if (*modifiers == NULL) {
+		*num_modifiers = 0;
+		free(temp_modifiers);
+		return;
+	}
+
+	for(i = 0, j = 0; i < num; i++) {
+		/*
+		 * Either the rbc flag is turned on, in which case we shouldn't filter
+		 * out RBC modifiers. OR if it is turned off, then we should filter
+		 * them out.
+		 */
+		if(gl_renderer_interface.rbc ||
+			(temp_modifiers[i] != I915_FORMAT_MOD_Y_TILED_CCS &&
+			temp_modifiers[i] != I915_FORMAT_MOD_Yf_TILED_CCS)) {
+			(*modifiers)[j++] = temp_modifiers[i];
+		}
+	}
+
+	*num_modifiers = j;
+	free(temp_modifiers);
 }
 
 static bool
