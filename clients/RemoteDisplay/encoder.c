@@ -1964,7 +1964,10 @@ rd_encoder_init(struct rd_encoder * const encoder,
 	}
 
 	if (encoder->verbose) {
-		printf("Recorder created...\n");
+		printf("Recorder created... %dx%d R(%d,%d %dx%d)\n",
+				encoder->width, encoder->height,
+				encoder->region.x, encoder->region.y,
+				encoder->region.w, encoder->region.h);
 	}
 
 	return 0;

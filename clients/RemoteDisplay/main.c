@@ -222,7 +222,10 @@ init_encoder(struct app_state *app_state)
 		|| (app_state->w < 0) || (app_state->h < 0)
 		|| (app_state->x + app_state->w > app_state->src_width)
 		|| (app_state->y + app_state->h > app_state->src_height)) {
-		fprintf(stderr, "Bad region values.\n");
+		fprintf(stderr, "Bad region values (%d %d/%d %d/%d %d)\n",
+					app_state->x, app_state->y,
+					app_state->w, app_state->h,
+					app_state->src_width, app_state->src_height);
 		return -1;
 	}
 
@@ -495,7 +498,7 @@ get_output_size(struct app_state *app_state, int *width, int *height)
 	struct output *output;
 	int output_num = 0;
 
-	wl_list_for_each(output, &app_state->output_list, link) {
+	wl_list_for_each_reverse(output, &app_state->output_list, link) {
 		if (app_state->output_number == output_num) {
 			app_state->output_origin_x = output->x;
 			app_state->output_origin_y = output->y;
