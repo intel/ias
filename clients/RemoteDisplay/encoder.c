@@ -1995,8 +1995,6 @@ rd_encoder_destroy(struct rd_encoder *encoder)
 		printf("Transport plugin destroyed...\n");
 	}
 
-	encoder_destroy_encode_session(encoder);
-	vpp_destroy(encoder);
 	for (i = 0; i < MAX_FRAMES; i++) {
 		if (encoder->out_buf[i].bufferID != VA_INVALID_ID) {
 			status = vaDestroyBuffer(encoder->va_dpy, encoder->out_buf[i].bufferID);
@@ -2009,6 +2007,8 @@ rd_encoder_destroy(struct rd_encoder *encoder)
 			}
 		}
 	}
+	encoder_destroy_encode_session(encoder);
+	vpp_destroy(encoder);
 	vaTerminate(encoder->va_dpy);
 	if (encoder->verbose) {
 		printf("libva context destroyed...\n");
