@@ -274,7 +274,7 @@ surface_set_xy(struct wayland *wayland,
 	wl_list_for_each(s, &wayland->surface_list, link) {
 		if(surfid != -1) {
 			if(s->surf_id == (uint32_t) surfid) {
-				fprintf(stderr, "Moving %d to %d, %d\n", s->surf_id, x, y);
+				fprintf(stderr, "Moving %u to %d, %d\n", s->surf_id, x, y);
 				ias_hmi_move_surface(wayland->hmi, s->surf_id, x, y);
 			}
 		} else if(strcmp(s->name, surfname) == 0) {
@@ -295,7 +295,7 @@ surface_resize(struct wayland *wayland,
 	wl_list_for_each(s, &wayland->surface_list, link) {
 		if(surfid != -1) {
 			if(s->surf_id == (uint32_t) surfid) {
-				fprintf(stderr, "Resizing %d to %d, %d\n", s->surf_id, x, y);
+				fprintf(stderr, "Resizing %u to %d, %d\n", s->surf_id, x, y);
 				ias_hmi_resize_surface(wayland->hmi, s->surf_id, x, y);
 			}
 		} else if(strcmp(s->name, surfname) == 0) {
@@ -316,7 +316,7 @@ surface_visible(struct wayland *wayland,
 	wl_list_for_each(s, &wayland->surface_list, link) {
 		if(surfid != -1) {
 			if(s->surf_id == (uint32_t) surfid) {
-				fprintf(stderr, "Setting visibility of %d to %d\n",
+				fprintf(stderr, "Setting visibility of %u to %d\n",
 						s->surf_id, visible);
 				ias_hmi_set_visible(wayland->hmi, s->surf_id,
 						visible
@@ -344,7 +344,7 @@ surface_alpha(struct wayland *wayland,
 	wl_list_for_each(s, &wayland->surface_list, link) {
 		if(surfid != -1) {
 			if(s->surf_id == (uint32_t) surfid) {
-				fprintf(stderr, "Setting constant alpha of %d to %d\n",
+				fprintf(stderr, "Setting constant alpha of %u to %d\n",
 						s->surf_id, alpha);
 				ias_hmi_set_constant_alpha(wayland->hmi, s->surf_id, alpha);
 			}
@@ -366,7 +366,7 @@ surface_zorder(struct wayland *wayland,
 	wl_list_for_each(s, &wayland->surface_list, link) {
 		if(surfid != -1) {
 			if(s->surf_id == (uint32_t) surfid) {
-				fprintf(stderr, "Zordering %d to %d\n", s->surf_id, zorder);
+				fprintf(stderr, "Zordering %u to %d\n", s->surf_id, zorder);
 				ias_hmi_zorder_surface(wayland->hmi, s->surf_id, zorder);
 			}
 		} else if(strcmp(s->name, surfname) == 0) {
@@ -387,7 +387,7 @@ surface_shareable(struct wayland *wayland,
 	wl_list_for_each(s, &wayland->surface_list, link) {
 		if(surfid != -1) {
 			if(s->surf_id == (uint32_t) surfid) {
-				fprintf(stderr, "Setting shareable flag of %d to %d\n",
+				fprintf(stderr, "Setting shareable flag of %u to %d\n",
 						s->surf_id, shareable);
 				if (wayland->hmi) {
 					ias_hmi_set_shareable(wayland->hmi, s->surf_id,	shareable);
@@ -424,7 +424,7 @@ surface_behavior(struct wayland *wayland,
 
 		if(surfid != -1) {
 			if(s->surf_id == (uint32_t) surfid) {
-				fprintf(stderr, "Setting input of %d to %d\n",
+				fprintf(stderr, "Setting input of %u to %d\n",
 						s->surf_id, input);
 
 				found = 1;

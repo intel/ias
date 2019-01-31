@@ -462,14 +462,14 @@ get_surface_size(struct app_state *app_state, int *width, int *height)
 				*height = s->height;
 
 				if (app_state->verbose > 1) {
-					printf("Surface %d found %dx%d\n",
+					printf("Surface %u found %dx%d\n",
 						app_state->surfid, *width, *height);
 				}
 
 				return 0;
 			}
 		} else {
-			fprintf(stderr, "Invalid surfid %d\n", app_state->surfid);
+			fprintf(stderr, "Invalid surfid %u\n", app_state->surfid);
 			return -1;
 		}
 	}
