@@ -421,13 +421,37 @@ touch_create(int width, int height)
 	return touch;
 }
 
+
+static void
+usage(int error_code)
+{
+	fprintf(stderr, "Usage: simple-touch [OPTIONS]\n\n"
+			"  -w <size> Width\n"
+			"  -h <size> Height\n"
+			"  -?        This help text\n\n");
+
+	exit(error_code);
+}
+
 int
 main(int argc, char **argv)
 {
 	struct touch *touch;
 	int ret = 0;
+	int w = 600;
+	int h = 500;
+	for (int i = 1; i < argc; i++) {
+		if (strcmp("-w", argv[i]) == 0 && i+1 < argc)
+			w = atoi(argv[++i]);
+		else if (strcmp("-h", argv[i]) == 0 && i+1 < argc)
+			h = atoi(argv[++i]);
+		else if (strcmp("-?", argv[i]) == 0)
+			usage(EXIT_SUCCESS);
+		else
+			usage(EXIT_FAILURE);
+	}
 
-	touch = touch_create(600, 500);
+	touch = touch_create(w, h);
 
 	while (ret != -1)
 		ret = wl_display_dispatch(touch->display);
