@@ -31,6 +31,9 @@
 #include <gst/gst.h>
 #include <gst/app/gstappsrc.h>
 #include <stdbool.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
 
 #include "../shared/config-parser.h"
 #include "../shared/helpers.h"
@@ -58,6 +61,7 @@ struct udpSocket {
 	bool available;
 };
 
+enum plugin_tp_mode { tp_mode_none=0, tp_mode_gst, tp_mode_native };
 
 struct private_data {
 	int verbose;
@@ -66,10 +70,79 @@ struct private_data {
 	int num_addr;
 	char *ipaddr;
 	char *tp;
+	enum plugin_tp_mode tp_mode;
 	GstElement *pipeline;
 	GstElement *appsrc;
 	uint32_t benchmark_time, frames, total_stream_size;
+	char *fifo_name;
+	int fifo_handle;
 };
+
+static int add_one_client(struct private_data *pdata, char *str_ipaddr, char *str_port)
+{
+	int sockfd;
+	struct timeval optTime = {0, 10}; /* {sec, msec} */
+	struct sockaddr_in s;
+	s.sin_addr.s_addr = inet_addr(str_ipaddr);
+	s.sin_port = htons(atoi(str_port));
+	if (pdata->num_addr == MAX_ADDRS) {
+		fprintf(stderr, "MAX_ADDRS !\n");
+		return -1;
+	}
+	for (int i=0; i<pdata->num_addr; i++ ) {
+		if ((s.sin_port == pdata->socket[i].sockAddr.sin_port)  &&
+			(s.sin_addr.s_addr == pdata->socket[i].sockAddr.sin_addr.s_addr)) {
+			return 0; /* Already exist */
+		}
+	}
+	sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (sockfd<0) {
+		return -1;
+	}
+	if (setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &optTime, sizeof(optTime)) < 0) {
+		fprintf(stderr, "sendto timeout configuration failed\n");
+	}
+	pdata->socket[pdata->num_addr].sockDesc = sockfd;
+	pdata->socket[pdata->num_addr].sockAddr.sin_addr.s_addr = s.sin_addr.s_addr;
+	pdata->socket[pdata->num_addr].sockAddr.sin_family = AF_INET;
+	pdata->socket[pdata->num_addr].sockAddr.sin_port = s.sin_port;
+	pdata->socket[pdata->num_addr].available = true;
+	if (pdata->verbose) {
+		printf("%s: %s:%s at %d\n", __FUNCTION__, str_ipaddr, str_port, pdata->num_addr);
+	}
+	pdata->num_addr++;
+	return 0;
+}
+
+static int remove_one_client(struct private_data *pdata, char *str_ipaddr, char *str_port)
+{
+	int found = -1;
+	struct sockaddr_in s;
+	s.sin_addr.s_addr = inet_addr(str_ipaddr);
+	s.sin_port = htons(atoi(str_port));
+	for (int i=0; i<pdata->num_addr; i++ ) {
+		if ((s.sin_port == pdata->socket[i].sockAddr.sin_port)  &&
+			 (s.sin_addr.s_addr == pdata->socket[i].sockAddr.sin_addr.s_addr)) {
+			found = i;
+			if (pdata->verbose) {
+				printf("%s: %s:%s at %d\n", __FUNCTION__, str_ipaddr, str_port, found);
+			}
+			close(pdata->socket[i].sockDesc);
+			pdata->socket[i].sockDesc = -1;
+			memset(&pdata->socket[i].sockAddr, 0,
+                                        sizeof(pdata->socket[i].sockAddr));
+			break;
+		}
+	}
+	if (found != -1) {
+		if (found != pdata->num_addr-1) {
+			memcpy(&pdata->socket[found], &pdata->socket[pdata->num_addr-1], sizeof(struct udpSocket));
+		}
+		pdata->num_addr--;
+	}
+	return 0;
+}
+
 
 WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbose)
 {
@@ -92,6 +165,7 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 	const struct weston_option options[] = {
 		{ WESTON_OPTION_STRING,  "clients", 0, &private_data->ipaddr},
 		{ WESTON_OPTION_STRING,  "tp", 0, &private_data->tp},
+		{ WESTON_OPTION_STRING,  "fifo", 0, &private_data->fifo_name},
 	};
 	parse_options(options, ARRAY_LENGTH(options), argc, argv);
 
@@ -116,6 +190,7 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 
 	if(!strcmp(private_data->tp, "gst")) {
 		(void) gst_init (NULL, NULL);
+		private_data->tp_mode = tp_mode_gst;
 
 		pipeline   = gst_pipeline_new ("pipeline");
 		appsrc     = gst_element_factory_make ("appsrc", NULL);
@@ -140,18 +215,20 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 	} else if(!strcmp(private_data->tp, "native")) {
 
 		char copy[256], *ptr, *ptr2;
+		private_data->tp_mode = tp_mode_native;
 		strcpy(copy, private_data->ipaddr);
 		ptr = strtok(copy, ",");
 		ptr2 = strtok(NULL, "\n");
 
 		while(ptr) {
+			int err = 0;
 			char *str_ipaddr = strtok(ptr, ":");
 			char *str_port = strtok(NULL, "\n");
-			int sockfd;
-			struct timeval optTime = {0, 10}; /* {sec, msec} */
-
-			sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-			if (!str_ipaddr || !str_port || private_data->socket[private_data->num_addr].sockDesc < 0) {
+			if (!str_ipaddr || !str_port) err = 1;
+			if (!err) {
+				err = add_one_client(private_data, str_ipaddr, str_port);
+			}
+			if (err) {
 				fprintf(stderr, "Socket creation failed.\n");
 				if(private_data->ipaddr) {
 					free(private_data->ipaddr);
@@ -163,26 +240,27 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 				*plugin_private_data = NULL;
 				return -1;
 			}
-
-			if (setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &optTime, sizeof(optTime)) < 0) {
-				fprintf(stderr, "sendto timeout configuration failed\n");
-			}
-
-			private_data->socket[private_data->num_addr].sockDesc = sockfd;
-			private_data->socket[private_data->num_addr].sockAddr.sin_addr.s_addr =
-					inet_addr(str_ipaddr);
-			private_data->socket[private_data->num_addr].sockAddr.sin_family = AF_INET;
-			private_data->socket[private_data->num_addr].sockAddr.sin_port = htons(atoi(str_port));
-			private_data->socket[private_data->num_addr].available = true;
-
 			ptr = strtok(ptr2, ",");
 			ptr2 = strtok(NULL, "\n");
-			private_data->num_addr++;
 		}
-
 		printf("Using native transport\n");
 	}
-
+	if (private_data->fifo_name) {
+		struct stat status;
+		printf("Creating fifo: %s\n", private_data->fifo_name);
+		mkfifo(private_data->fifo_name, 0666);
+		private_data->fifo_handle = open(private_data->fifo_name, O_RDONLY | O_NONBLOCK);
+		if (fstat(private_data->fifo_handle, &status) == -1) {
+			printf("fstat error!\n");
+			close(private_data->fifo_handle);
+			return -1;
+		}
+		if(!S_ISFIFO(status.st_mode)) {
+			printf("not a fifo!\n");
+			close(private_data->fifo_handle);
+			return -1;
+		}
+	}
 	return 0;
 
 gst_free:
@@ -210,10 +288,11 @@ gst_free_pipeline:
 WL_EXPORT void help(void)
 {
 	printf("\tThe udp plugin uses the following parameters:\n");
-	printf("\t--clients=<ip_address:port,<ip_address:port>>\t\tIP address and port of receiver.\n");
+	printf("\t--clients=<ip_address:port,<ip_address:port>> IP address and port of receiver.\n");
 	printf("\t\tNote that this is a comma separated list of addresses and ports\n");
-	printf("\t--tp=<gst/native> (Optional)\t\tTransport mechanism to use."
+	printf("\t--tp=<gst/native> (Optional) Transport mechanism to use."
 			" Either native (default) or gstreamer based\n");
+	printf("\t--fifo=<path/filename> (Optional) Fifo to create.\n");
 	printf("\n\tThe receiver should be started using:\n");
 	printf("\t\"gst-launch-1.0 udpsrc port=<port_number>"
 			"! h264parse ! mfxdecode live-mode=true ! mfxsinkelement\"\n");
@@ -586,6 +665,68 @@ static int send_frame_native(void *plugin_private_data, drm_intel_bo *drm_bo,
 	if (private_data->verbose >= 2 || private_data->debug_packetisation) {
 		printf("Packets for frame = %d packets.\n", num_packets);
 	}
+	if (private_data->fifo_handle) {
+		char buffer[255];
+		int rd;
+		do {
+			rd=read(private_data->fifo_handle, buffer, 255);
+			if(rd>0) {
+				char *arg = NULL;
+				buffer[rd] = 0;
+				char *ptr = buffer;
+				while (*ptr) {
+					if (*ptr == '\n') {
+						*ptr = 0;
+					}
+					if (*ptr == ':') {
+						if (!arg) {
+							*ptr = 0;
+							arg = ptr+1;
+						}
+					}
+					ptr++;
+				}
+				ptr = buffer;
+				if (ptr) {
+					printf("%s/%s\n", ptr, arg);
+					if (strcmp(ptr,"verbose")==0) {
+						private_data->verbose=atoi(arg);
+						printf("Set verbose to %d\n", private_data->verbose);
+					} else if (strcmp(ptr,"dbgp")==0) {
+						private_data->debug_packetisation=atoi(arg);
+						printf("Set debug_packetisation to %d\n", private_data->debug_packetisation);
+					} else if ((strcmp(ptr,"add")==0) || (strcmp(ptr,"remove")==0)) {
+						int mode = 0; /* add */
+						if (strcmp(ptr,"remove")==0) mode=1;
+						char *str_ipaddr = strtok(arg, ":");
+						if (str_ipaddr) {
+							char *str_port = strtok(NULL, ":");
+							if (str_port) {
+								if (mode) {
+									printf("Do rem: %s %s\n", str_ipaddr, str_port);
+									remove_one_client(private_data, str_ipaddr, str_port);
+								} else {
+									printf("Do add: %s %s\n", str_ipaddr, str_port);
+									add_one_client(private_data, str_ipaddr, str_port);
+								}
+							}
+						}
+					} if (strcmp(ptr,"dump")==0) {
+						printf("V=%d DP=%d NUM=%d FR=%d TSZ=%d\n",
+								private_data->verbose,
+								private_data->debug_packetisation,
+								private_data->num_addr,
+								private_data->frames,
+								private_data->total_stream_size);
+						for (int i=0; i< private_data->num_addr; i++) {
+							struct sockaddr_in *a_addr = &private_data->socket[i].sockAddr;
+							printf("%d: IP4: %s:%d\n", i, inet_ntoa(a_addr->sin_addr), htons(a_addr->sin_port));
+						}
+					}
+				}
+			}
+		} while (rd>0);
+	}
 	return 0;
 }
 
@@ -619,7 +760,7 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo,
 			private_data->total_stream_size += stream_size;
 		}
 
-		return !strcmp(private_data->tp, "gst")
+		return (private_data->tp_mode==tp_mode_gst)
 			? send_frame_gst(plugin_private_data, drm_bo,
 					stream_size, timestamp)
 			: send_frame_native(plugin_private_data, drm_bo,
@@ -663,6 +804,13 @@ WL_EXPORT void destroy(void **plugin_private_data)
 	}
 	if(private_data->tp) {
 		free(private_data->tp);
+	}
+	if(private_data->fifo_name) {
+		if (private_data->fifo_handle) {
+			close(private_data->fifo_handle);
+		}
+		unlink(private_data->fifo_name);
+		free(private_data->fifo_name);
 	}
 	free(private_data);
 	*plugin_private_data = NULL;
