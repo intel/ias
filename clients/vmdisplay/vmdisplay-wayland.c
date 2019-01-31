@@ -1088,7 +1088,7 @@ registry_handle_global(void *data, struct wl_registry *registry, uint32_t name,
 	} else if (strcmp(interface, "zwp_linux_dmabuf_v1") == 0) {
 		d->wl_dmabuf =
 		    wl_registry_bind(registry, name,
-				     &zwp_linux_dmabuf_v1_interface, 3);
+				     &zwp_linux_dmabuf_v1_interface, 2);
 		wl_dmabuf = d->wl_dmabuf;
 	}
 }
