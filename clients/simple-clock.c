@@ -32,6 +32,7 @@
 #include <assert.h>
 #include <signal.h>
 #include <sys/mman.h>
+#include <sys/timeb.h>
 
 #include <linux/input.h>
 
@@ -107,7 +108,9 @@ struct display {
 	struct window *window;
 	struct ivi_application *ivi_application;
 	struct wl_list output_list;
-
+	int zorder;
+	int x;
+	int y;
 	PFNEGLSWAPBUFFERSWITHDAMAGEEXTPROC swap_buffers_with_damage;
 };
 
@@ -128,10 +131,17 @@ struct window {
 	int fullscreen, output, cur_buf_num;
 	cairo_surface_t *cairo_surface[NUM_BUFS];
 	bool wait_for_configure;
+	float bgnd_alpha;
+	float bgnd_r;
+	float bgnd_g;
+	float bgnd_b;
+	float wr_r;
+	float wr_g;
+	float wr_b;
 };
 
 static int running = 1;
-
+static int time_mode = 0;
 
 static struct output *
 get_default_output(struct display *display)
@@ -166,8 +176,11 @@ draw_string(cairo_t *cr, const char *fmt, ...)
 	cairo_select_font_face(cr, "sans",
 				CAIRO_FONT_SLANT_NORMAL,
 				CAIRO_FONT_WEIGHT_NORMAL);
-	cairo_set_font_size(cr, 96);
-
+	if (time_mode) {
+		cairo_set_font_size(cr, 200);
+	} else {
+		cairo_set_font_size(cr, 96);
+	}
 	cairo_font_extents(cr, &font_extents);
 
 	va_start(argp, fmt);
@@ -199,7 +212,8 @@ draw_string(cairo_t *cr, const char *fmt, ...)
 static void
 set_window_background_colour(cairo_t *cr, struct window *window)
 {
-	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+	cairo_set_source_rgba(cr, window->bgnd_r , window->bgnd_g,
+			window->bgnd_b, window->bgnd_alpha);
 }
 
 static void
@@ -353,7 +367,7 @@ create_ias_surface(struct window *window, struct display *display)
 	} else {
 		ias_surface_unset_fullscreen(display->window->shell_surface, 1200, 400);
 		ias_shell_set_zorder(display->ias_shell,
-				window->shell_surface, 0);
+				window->shell_surface, display->zorder);
 	}
 }
 
@@ -659,19 +673,35 @@ redraw(void *data, struct wl_callback *callback, uint32_t time)
 	cairo_rectangle(cr, 0, 0, window->geometry.width, window->geometry.height);
 	cairo_fill(cr);
 
-	/* Get the current time... */
-	clock_gettime(CLOCK_REALTIME, &spec);
-	seconds  = spec.tv_sec;
-	milliseconds = round(spec.tv_nsec / (double)NS_IN_MS);
-
 	/* Print the time... */
-	cairo_move_to(cr, 5, 100);
-	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+	cairo_set_source_rgb(cr, window->wr_r, window->wr_g, window->wr_b);
 
-	draw_string(cr,
+	switch(time_mode) {
+	case 0:
+		{
+		/* Get the current time... */
+		cairo_move_to(cr, 5, 100);
+		clock_gettime(CLOCK_REALTIME, &spec);
+		seconds  = spec.tv_sec;
+		milliseconds = round(spec.tv_nsec / (double)NS_IN_MS);
+		draw_string(cr,
 			"Time since the Epoch:\n"
 			"%"PRIdMAX".%03ld s\n",
 			(intmax_t)seconds, milliseconds);
+		}
+		break;
+	case 1:
+		{
+		struct timeb t_Time;
+		struct tm *t_Local;
+		ftime(&t_Time);
+		t_Local = localtime(&t_Time.time);
+		cairo_move_to(cr, 5, 150);
+		draw_string(cr,
+			"%02d:%02d:%02d.%03d", t_Local->tm_hour, t_Local->tm_min, t_Local->tm_sec, t_Time.millitm);
+		}
+		break;
+	}
 
 	d = cairo_surface_get_user_data(
 			window->cairo_surface[window->cur_buf_num++ % NUM_BUFS],
@@ -781,6 +811,34 @@ signal_int(int signum)
 	running = 0;
 }
 
+static void
+usage(int error_code)
+{
+	fprintf(stderr, "Usage: simple-clock [OPTIONS]\n\n"
+			"  Background color (0..255)\n"
+			"   -a <color>\n"
+			"   -r <color>\n"
+			"   -g <color>\n"
+			"   -b <color>\n"
+			"  Text color:\n"
+			"   -wr <color>\n"
+			"   -wg <color>\n"
+			"   -wb <color>\n"
+			"  Other options:\n"
+			"  -t <mode>    0: Epoch 1: TimeStamp\n"
+			"  -z <zorder>  Default zorder\n"
+			"  -x <posx>    Pos X\n"
+			"  -y <posy>    Pos Y\n"
+			"  -h           This help text\n\n");
+	exit(error_code);
+}
+
+static float cnv_color(uint32_t v)
+{
+	v &= 0xff;
+	return (float)((float)v/(float)0xFF);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -795,6 +853,40 @@ main(int argc, char **argv)
 	window.geometry.width  = 1200;
 	window.geometry.height = 400;
 	window.window_size = window.geometry;
+	window.bgnd_alpha = 1.0;
+	window.wr_r = 1.0;
+	window.wr_g = 1.0;
+	window.wr_b = 1.0;
+
+	for (int i = 1; i < argc; i++) {
+		if (strcmp("-a", argv[i]) == 0 && i+1 < argc) {
+			window.bgnd_alpha = cnv_color(atoi(argv[++i]));
+		} else if (strcmp("-r", argv[i]) == 0 && i+1 < argc) {
+			window.bgnd_r = cnv_color(atoi(argv[++i]));
+		} else if (strcmp("-g", argv[i]) == 0 && i+1 < argc) {
+			window.bgnd_g = cnv_color(atoi(argv[++i]));
+		} else if (strcmp("-b", argv[i]) == 0 && i+1 < argc) {
+			window.bgnd_b = cnv_color(atoi(argv[++i]));
+		} else if (strcmp("-wr", argv[i]) == 0 && i+1 < argc) {
+			window.wr_r = cnv_color(atoi(argv[++i]));
+		} else if (strcmp("-wg", argv[i]) == 0 && i+1 < argc) {
+			window.wr_g = cnv_color(atoi(argv[++i]));
+		} else if (strcmp("-wb", argv[i]) == 0 && i+1 < argc) {
+			window.wr_b = cnv_color(atoi(argv[++i]));
+		} else if (strcmp("-z", argv[i]) == 0 && i+1 < argc) {
+			display.zorder = atoi(argv[++i]);
+		} else if (strcmp("-x", argv[i]) == 0 && i+1 < argc) {
+			display.x = atoi(argv[++i]);
+		} else if (strcmp("-y", argv[i]) == 0 && i+1 < argc) {
+			display.y = atoi(argv[++i]);
+		} else if (strcmp("-t", argv[i]) == 0) {
+			time_mode = 1;
+			window.geometry.height = 200;
+		} else if (strcmp("-h", argv[i]) == 0)
+			usage(EXIT_SUCCESS);
+		else
+			usage(EXIT_FAILURE);
+	}
 
 	display.display = wl_display_connect(NULL);
 	assert(display.display);
