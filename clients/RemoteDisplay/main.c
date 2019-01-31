@@ -150,6 +150,12 @@ handle_surface_destroyed(void *data,
 	/* Find the surface and remove it from our surface list */
 	wl_list_for_each_safe(s, tmp, &app_state->surface_list, link) {
 		if (s->surf_id == id) {
+			if (app_state->surfid == id && app_state->recording) {
+				app_state->recording = 0;
+				if (app_state->verbose > 0) {
+					printf("Our recording surface is being destroyed\n");
+				}
+			}
 			wl_list_remove(&s->link);
 			free(s->name);
 			free(s);
