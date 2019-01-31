@@ -32,6 +32,7 @@
 #include <dlfcn.h>
 #include <errno.h>
 #include <pthread.h>
+#include <sys/poll.h>
 
 #include <va/va_drm.h>
 #include <wayland-client.h>
@@ -744,6 +745,7 @@ main(int argc, char **argv)
 	int state = INVALID_DISPLAY_STATE;
 	int help = 0;
 	int err = 0;
+	struct pollfd pfd;
 
 	const struct weston_option options[] = {
 		{ WESTON_OPTION_INTEGER, "state", 0, &state},
@@ -818,7 +820,11 @@ main(int argc, char **argv)
 		wl_display_roundtrip(app_state.display);
 
 		while (app_state.recording) {
-			wl_display_dispatch(app_state.display);
+			wl_display_roundtrip(app_state.display);
+			pfd.fd =  wl_display_get_fd(app_state.display);
+			pfd.events = POLLIN;
+			pfd.revents = 0;
+			poll(&pfd, 1, 500);
 		}
 	}
 
