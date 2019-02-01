@@ -14,7 +14,7 @@ BUILT_SOURCES = plugins
 exampledir = $(bindir)/../share/ias/examples
 example_PROGRAMS =
 
-AM_DISTCHECK_CONFIGURE_FLAGS = --disable-setuid-install
+AM_DISTCHECK_CONFIGURE_FLAGS = --disable-setuid-install --enable-autotools
 
 EXTRA_DIST = weston.ini.in ivi-shell/weston.ini.in
 
