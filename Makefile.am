@@ -1766,6 +1766,7 @@ ivi_shell_la_LDFLAGS = -module -avoid-version
 ivi_shell_la_LIBADD =				\
 	libshared.la				\
 	libias-@LIBWESTON_MAJOR@.la		\
+	libias-desktop-@LIBWESTON_MAJOR@.la  \
 	$(COMPOSITOR_LIBS)
 ivi_shell_la_CFLAGS = $(AM_CFLAGS) $(COMPOSITOR_CFLAGS)
 ivi_shell_la_SOURCES =				\
