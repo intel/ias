@@ -262,6 +262,7 @@ if test x$enable_text_backend = xyes; then
   AC_DEFINE([TEXT_BACKEND], [1], [Text backend for onscreen keyboard])
 fi
 
+PKG_CHECK_MODULES(LIBEVDEV, [libevdev])
 PKG_CHECK_MODULES(LIBINPUT_BACKEND, [libinput >= 0.8.0])
 PKG_CHECK_MODULES(COMPOSITOR, [$COMPOSITOR_MODULES])
 
