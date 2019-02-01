@@ -102,6 +102,7 @@ handle_surface_info(void *data,
 {
 	struct surf_list *s, *existing;
 	struct app_state *app_state = data;
+	int attempt_start = 0;
 
 	wl_list_for_each_reverse(existing, &app_state->surface_list, link) {
 		if(id == existing->surf_id) {
@@ -134,6 +135,31 @@ handle_surface_info(void *data,
 
 	if (!existing) {
 		wl_list_insert(&app_state->surface_list, &s->link);
+	}
+	if (app_state->surfid) {
+		return;
+	}
+	fprintf(stderr, "S='%s' id=%u  %4dx%4d (%4d,%4d)"
+			" Z=0x%02x a=%3d P=%4d N='%s' B=0x%02x f=%d\n",
+			name,
+			id, width, height, x, y, zorder, alpha, pid, pname, behavior_bits, flipped);
+	if (id == app_state->tracksurfid) {
+		attempt_start = 1;
+	}
+	if (app_state->surfname) {
+		if (strcmp(app_state->surfname, name) == 0) {
+			attempt_start = 1;
+		}
+	}
+	if (app_state->pname) {
+		if (strcmp(app_state->pname, pname) == 0) {
+			attempt_start = 1;
+		}
+	}
+	if (attempt_start) {
+		if (s->width && s->height) { /* check valid */
+			app_state->surfid = id;
+		}
 	}
 }
 
@@ -456,7 +482,7 @@ on_term_signal(int signal_number)
 		printf("\nCaught signal %d, stopping recording.\n",
 				signal_number);
 		}
-
+	app_state.term_signal = 1;
 	app_state.recording = 0;
 }
 
@@ -619,7 +645,7 @@ usage(int error_code)
 }
 
 static int
-init(struct app_state *app_state, int *argc, char **argv)
+init_wl(struct app_state *app_state)
 {
 	wl_list_init(&app_state->surface_list);
 	wl_list_init(&app_state->output_list);
@@ -636,7 +662,12 @@ init(struct app_state *app_state, int *argc, char **argv)
 			app_state);
 	wl_display_dispatch(app_state->display);
 	wl_display_roundtrip(app_state->display);
+	return 0;
+}
 
+static int
+init_enc(struct app_state *app_state, int *argc, char **argv)
+{
 	int ret;
 	if (app_state->surfid) {
 		printf("Controlling recording from surface %u...\n", app_state->surfid);
@@ -739,20 +770,33 @@ destroy(struct app_state *app_state)
 	return 0;
 }
 
+static
+void our_wl_poll(void)
+{
+	struct pollfd pfd;
+	wl_display_roundtrip(app_state.display);
+	pfd.fd =  wl_display_get_fd(app_state.display);
+	pfd.events = POLLIN;
+	pfd.revents = 0;
+	poll(&pfd, 1, 500);
+}
+
 int
 main(int argc, char **argv)
 {
 	int state = INVALID_DISPLAY_STATE;
 	int help = 0;
 	int err = 0;
-	struct pollfd pfd;
-
+	memset(&app_state, 0 ,sizeof(app_state));
+	app_state.output_number = -1;
 	const struct weston_option options[] = {
 		{ WESTON_OPTION_INTEGER, "state", 0, &state},
 		{ WESTON_OPTION_INTEGER, "verbose", 0, &app_state.verbose},
 		{ WESTON_OPTION_INTEGER, "profile", 0, &app_state.profile},
 		{ WESTON_OPTION_STRING,  "plugin", 0, &app_state.transport_plugin},
-		{ WESTON_OPTION_UNSIGNED_INTEGER, "surfid", 0, &app_state.surfid},
+		{ WESTON_OPTION_STRING,  "surfname", 0, &app_state.surfname},
+		{ WESTON_OPTION_STRING,  "pname", 0, &app_state.pname},
+		{ WESTON_OPTION_UNSIGNED_INTEGER, "surfid", 0, &app_state.tracksurfid},
 		{ WESTON_OPTION_INTEGER, "output", 0, &app_state.output_number},
 		{ WESTON_OPTION_INTEGER, "x", 0, &app_state.x},
 		{ WESTON_OPTION_INTEGER, "y", 0, &app_state.y},
@@ -805,26 +849,34 @@ main(int argc, char **argv)
 		app_state.encoder_qp = 51;
 	}
 
-	err = init(&app_state, &argc, argv);
-	if ((err == 0) && state) {
+	err = init_wl(&app_state);
+	if (err == 0) {
 		/* Catch SIGINT / Ctrl+C to stop recording. */
 		signal(SIGINT, on_term_signal);
 		/* Catch SIGTERM (pkill) to stop recording. */
 		signal(SIGTERM, on_term_signal);
+	
+		if (app_state.output_number == -1) {
+			/* surf id mode */
+			while (!app_state.term_signal && app_state.surfid == 0) {
+				our_wl_poll();
+			}
+			if (app_state.term_signal) err = 1; /* don't let it go */
+		} else {
+			/* output mode - nothing to do... */
 
-		printf("Starting event listener...\n");
-		start_event_listener(&app_state, &argc, argv);
-
-		printf("Starting recording...\n");
-		start_recording(&app_state);
-		wl_display_roundtrip(app_state.display);
-
-		while (app_state.recording) {
-			wl_display_roundtrip(app_state.display);
-			pfd.fd =  wl_display_get_fd(app_state.display);
-			pfd.events = POLLIN;
-			pfd.revents = 0;
-			poll(&pfd, 1, 500);
+		}
+		if (err == 0) {
+			err = init_enc(&app_state, &argc, argv);
+		}
+		if ((err == 0) && state) {
+			printf("Starting event listener...\n");
+			start_event_listener(&app_state, &argc, argv);
+			printf("Starting recording...\n");
+			start_recording(&app_state);
+			while (app_state.recording) {
+				our_wl_poll();
+			}
 		}
 	}
 

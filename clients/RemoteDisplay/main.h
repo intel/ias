@@ -41,9 +41,11 @@ struct app_state {
 	struct ias_hmi *hmi;
 	struct ias_relay_input *ias_in;
 	int recording;
+	int term_signal;
 	int verbose;
 	int profile;
 	uint32_t surfid;
+	uint32_t tracksurfid;
 	int src_width;
 	int src_height;
 	int x;
@@ -69,6 +71,8 @@ struct app_state {
 
 	/* Encoder init thread */
 	pthread_t encoder_init_thread;
+	char *surfname;
+	char *pname;
 };
 
 struct surf_list {
