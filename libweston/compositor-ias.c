@@ -3962,8 +3962,7 @@ start_capture(struct wl_client *client,
 		capture_proxy_item->capture_surface = surface;
 		capture_proxy_item->cp =
 					create_capture_proxy(ias_backend, client);
-		capture_proxy_set_size(capture_proxy_item->cp,
-								output->width, output->height);
+		capture_proxy_set_size(capture_proxy_item->cp, surface->width, surface->height);
 		if (!capture_proxy_item->cp) {
 			weston_log("Failed to create capture proxy.\n");
 			free(capture_proxy_item);
