@@ -440,6 +440,7 @@ encoder_init_seq_parameters(struct rd_encoder * const encoder)
 	int width_in_mbs, height_in_mbs;
 	int frame_cropping_flag = 0;
 	int frame_crop_bottom_offset = 0;
+	int frame_crop_right_offset = 0;
 	VAStatus status;
 	VABufferID seq_buf;
 	VAEncSequenceParameterBufferH264 *seq_param;
@@ -490,13 +491,18 @@ encoder_init_seq_parameters(struct rd_encoder * const encoder)
 	}
 	encoder->encoder.param.delta_t_total = MV_AV_WIN_SIZE * encoder->encoder.param.delta_t[0];
 
-	if (height_in_mbs * 16 - encoder->height > 0) {
+	if (height_in_mbs * 16 - encoder->region.h > 0) {
 		frame_cropping_flag = 1;
-		frame_crop_bottom_offset = (height_in_mbs * 16 - encoder->height) / 2;
+		frame_crop_bottom_offset = ((height_in_mbs * 16) - encoder->region.h)/ 2;
+	}
+	if (width_in_mbs * 16 - encoder->region.w >0) {
+		frame_cropping_flag = 1;
+		frame_crop_right_offset = (((width_in_mbs * 16) - encoder->region.w)+1)/2;
 	}
 
 	seq_param->frame_cropping_flag = frame_cropping_flag;
 	seq_param->frame_crop_bottom_offset = frame_crop_bottom_offset;
+	seq_param->frame_crop_right_offset = frame_crop_right_offset;
 
 	seq_param->seq_fields.bits.log2_max_pic_order_cnt_lsb_minus4 = 2;
 
