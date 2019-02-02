@@ -36,6 +36,7 @@
 #include <string.h>
 #include <linux/limits.h>
 #include <sys/time.h>
+#include <signal.h>
 
 #include "../shared/config-parser.h"
 #include "../shared/helpers.h"
@@ -56,6 +57,8 @@ struct private_data {
 	char *file_path;
 	char *frame_path;
 	uint32_t benchmark_time, frames, total_stream_size;
+	uint32_t frames_cnt;
+	uint32_t max_frames;
 };
 
 
@@ -77,6 +80,7 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 		{ WESTON_OPTION_INTEGER, "file_flush", 0, &private_data->file_flush},
 		{ WESTON_OPTION_STRING,  "frame_path", 0, &private_data->frame_path},
 		{ WESTON_OPTION_INTEGER, "frame_files", 0, &private_data->dump_frames},
+		{ WESTON_OPTION_UNSIGNED_INTEGER, "max_frames", 0, &private_data->max_frames},
 	};
 
 	parse_options(options, ARRAY_LENGTH(options), argc, argv);
@@ -93,6 +97,7 @@ WL_EXPORT void help(void)
 	printf("\t--file_mode=<mode>\t\tfile mode: 0: rewrite 1: append\n");
 	printf("\t--frame_path=<frame_path>\tset path to a folder for capture of frames into separate files\n");
 	printf("\t--frame_files=1\t\t\tdump each frame to a separate numbered file in <frame_path>\n");
+	printf("\t--max_frames=<max frames>\tStop recording after <max frames>\n");
 	printf("\n\tNote that if file_path does not include a filename then it will default to 'capture.mp4'.\n");
 	printf("\n\tFile can be played back using (for example):\n");
 	printf("\t\"gst-launch-1.0 filesrc location=/var/cap.h264 ! h264parse ! mfxdecode ! mfxsink\"\n");
@@ -201,6 +206,13 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo, int32_
 					stream_size, count);
 		}
 		fclose(fp);
+	}
+	if (private_data->max_frames) {
+		private_data->frames_cnt++;
+		if (private_data->frames_cnt >= private_data->max_frames) {
+			printf("force stop after %u frames\n", private_data->frames_cnt);
+			raise(SIGTERM);
+		}
 	}
 	return 0;
 }
