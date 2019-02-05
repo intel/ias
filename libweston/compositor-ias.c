@@ -2755,6 +2755,7 @@ create_outputs_for_crtc(struct ias_backend *backend, struct ias_crtc *ias_crtc)
 	struct ias_output *ias_output;
 	struct ias_configured_output *cfg;
 	int i, scale;
+	char *temp_name = NULL;
 
 	for (i = 0; i < ias_crtc->num_outputs; i++) {
 		if (ias_crtc->configuration == NULL) {
@@ -2844,24 +2845,31 @@ create_outputs_for_crtc(struct ias_backend *backend, struct ias_crtc *ias_crtc)
 
 		/* Setup the output name.  Use CRTC's name if not configured */
 		if (cfg->name) {
-			ias_output->base.name = strdup(cfg->name);
+			temp_name = strdup(cfg->name);
 		} else if (ias_crtc->num_outputs == 1) {
-			ias_output->base.name = strdup(ias_crtc->name);
+			temp_name = strdup(ias_crtc->name);
 		} else {
-			ias_output->base.name = calloc(1, strlen(ias_crtc->name) + 3);
-			if (!ias_output->base.name) {
+			temp_name = calloc(1, strlen(ias_crtc->name) + 3);
+			if (!temp_name) {
 				IAS_ERROR("Failed to allocate output name: out of memory");
 				exit(1);
 			}
-			sprintf(ias_output->base.name, "%s-%d", ias_crtc->name, i+1);
+			sprintf(temp_name, "%s-%d", ias_crtc->name, i+1);
 		}
+
+		/*
+		 * Sending temp_name to weston_output_init so that it can set
+		 * ias_output->base.name
+		 */
+		weston_output_init(&ias_output->base, backend->compositor, temp_name);
+		/* No use of temp_name anymore so free it */
+		free(temp_name);
 
 		ias_output->name = ias_output->base.name;
 		ias_output->base.enable = ias_backend_output_enable;
 		ias_output->base.destroy = ias_output_destroy;
 		ias_output->base.disable = ias_backend_output_disable;
 
-		weston_output_init(&ias_output->base, backend->compositor, "unknown");
 
 		ias_output->base.make = "unknown";
 		ias_output->base.model = "unknown";
