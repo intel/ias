@@ -3670,6 +3670,8 @@ gl_renderer_setup_egl_extensions(struct weston_compositor *ec)
 		(void *) eglGetProcAddress("eglUnbindWaylandDisplayWL");
 	gr->query_buffer =
 		(void *) eglGetProcAddress("eglQueryWaylandBufferWL");
+	gr->set_damage_region =
+		(void *) eglGetProcAddress("eglSetDamageRegionKHR");
 
 	extensions =
 		(const char *) eglQueryString(gr->egl_display, EGL_EXTENSIONS);
@@ -3691,6 +3693,9 @@ gl_renderer_setup_egl_extensions(struct weston_compositor *ec)
 
 	if (weston_check_egl_extension(extensions, "EGL_EXT_buffer_age"))
 		gr->has_egl_buffer_age = true;
+
+	if (weston_check_egl_extension(extensions, "EGL_KHR_partial_update"))
+		gr->has_egl_partial_update = true;
 
 	for (i = 0; i < ARRAY_LENGTH(swap_damage_ext_to_entrypoint); i++) {
 		if (weston_check_egl_extension(extensions,

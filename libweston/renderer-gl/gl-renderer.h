@@ -213,6 +213,8 @@ struct gl_renderer {
 	bool has_egl_image_external;
 
 	bool has_egl_buffer_age;
+	bool has_egl_partial_update;
+	PFNEGLSETDAMAGEREGIONKHRPROC set_damage_region;
 
 	bool has_configless_context;
 
