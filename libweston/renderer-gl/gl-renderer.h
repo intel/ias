@@ -175,8 +175,8 @@ struct gl_shader {
 
 struct gl_renderer {
 	struct weston_renderer base;
-	int fragment_shader_debug;
-	int fan_debug;
+	bool fragment_shader_debug;
+	bool fan_debug;
 	struct weston_binding *fragment_binding;
 	struct weston_binding *fan_binding;
 
@@ -300,7 +300,7 @@ struct gl_surface_state {
 	enum buffer_type buffer_type;
 	int pitch; /* in pixels */
 	int height; /* in pixels */
-	int y_inverted;
+	bool y_inverted;
 
 	/* Extension needed for SHM YUV texture */
 	int offset[3]; /* offset per plane */
