@@ -3632,18 +3632,18 @@ gl_renderer_setup_egl_extensions(struct weston_compositor *ec)
 	}
 
 	if (weston_check_egl_extension(extensions, "EGL_IMG_context_priority"))
-		gr->has_context_priority = 1;
+		gr->has_context_priority = true;
 
 	if (weston_check_egl_extension(extensions, "EGL_WL_bind_wayland_display"))
-		gr->has_bind_display = 1;
+		gr->has_bind_display = true;
 	if (gr->has_bind_display) {
 		ret = gr->bind_display(gr->egl_display, ec->wl_display);
 		if (!ret)
-			gr->has_bind_display = 0;
+			gr->has_bind_display = false;
 	}
 
 	if (weston_check_egl_extension(extensions, "EGL_EXT_buffer_age"))
-		gr->has_egl_buffer_age = 1;
+		gr->has_egl_buffer_age = true;
 
 	for (i = 0; i < ARRAY_LENGTH(swap_damage_ext_to_entrypoint); i++) {
 		if (weston_check_egl_extension(extensions,
@@ -3657,13 +3657,13 @@ gl_renderer_setup_egl_extensions(struct weston_compositor *ec)
 
 	if (weston_check_egl_extension(extensions, "EGL_KHR_no_config_context") ||
 	    weston_check_egl_extension(extensions, "EGL_MESA_configless_context"))
-		gr->has_configless_context = 1;
+		gr->has_configless_context = true;
 
 	if (weston_check_egl_extension(extensions, "EGL_KHR_surfaceless_context"))
-		gr->has_surfaceless_context = 1;
+		gr->has_surfaceless_context = true;
 
 	if (weston_check_egl_extension(extensions, "EGL_EXT_image_dma_buf_import"))
-		gr->has_dmabuf_import = 1;
+		gr->has_dmabuf_import = true;
 
 	if (weston_check_egl_extension(extensions,
 				"EGL_EXT_image_dma_buf_import_modifiers")) {
@@ -3671,7 +3671,7 @@ gl_renderer_setup_egl_extensions(struct weston_compositor *ec)
 			(void *) eglGetProcAddress("eglQueryDmaBufFormatsEXT");
 		gr->query_dmabuf_modifiers =
 			(void *) eglGetProcAddress("eglQueryDmaBufModifiersEXT");
-		gr->has_dmabuf_import_modifiers = 1;
+		gr->has_dmabuf_import_modifiers = true;
 	}
 
 	if (weston_check_egl_extension(extensions, "EGL_KHR_fence_sync") &&
@@ -3682,7 +3682,7 @@ gl_renderer_setup_egl_extensions(struct weston_compositor *ec)
 			(void *) eglGetProcAddress("eglDestroySyncKHR");
 		gr->dup_native_fence_fd =
 			(void *) eglGetProcAddress("eglDupNativeFenceFDANDROID");
-		gr->has_native_fence_sync = 1;
+		gr->has_native_fence_sync = true;
 	} else {
 		weston_log("warning: Disabling render GPU timeline and explicit "
 			   "synchronization due to missing "
@@ -3691,7 +3691,7 @@ gl_renderer_setup_egl_extensions(struct weston_compositor *ec)
 
 	if (weston_check_egl_extension(extensions, "EGL_KHR_wait_sync")) {
 		gr->wait_sync = (void *) eglGetProcAddress("eglWaitSyncKHR");
-		gr->has_wait_sync = 1;
+		gr->has_wait_sync = true;
 	} else {
 		weston_log("warning: Disabling explicit synchronization due"
 			   "to missing EGL_KHR_wait_sync extension\n");
@@ -4205,14 +4205,14 @@ gl_renderer_setup(struct weston_compositor *ec, EGLSurface egl_surface)
 
 	if (gr->gl_version >= GR_GL_VERSION(3, 0) ||
 	    weston_check_egl_extension(extensions, "GL_EXT_unpack_subimage"))
-		gr->has_unpack_subimage = 1;
+		gr->has_unpack_subimage = true;
 
 	if (gr->gl_version >= GR_GL_VERSION(3, 0) ||
 	    weston_check_egl_extension(extensions, "GL_EXT_texture_rg"))
-		gr->has_gl_texture_rg = 1;
+		gr->has_gl_texture_rg = true;
 
 	if (weston_check_egl_extension(extensions, "GL_OES_EGL_image_external"))
-		gr->has_egl_image_external = 1;
+		gr->has_egl_image_external = true;
 
 	if (strstr(extensions, "GL_OES_get_program_binary")) {
 

@@ -201,27 +201,27 @@ struct gl_renderer {
 
 	PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC create_platform_window;
 
-	int has_unpack_subimage;
+	bool has_unpack_subimage;
 
 	PFNEGLBINDWAYLANDDISPLAYWL bind_display;
 	PFNEGLUNBINDWAYLANDDISPLAYWL unbind_display;
 	PFNEGLQUERYWAYLANDBUFFERWL query_buffer;
-	int has_bind_display;
+	bool has_bind_display;
 
-	int has_context_priority;
+	bool has_context_priority;
 
-	int has_egl_image_external;
+	bool has_egl_image_external;
 
-	int has_egl_buffer_age;
+	bool has_egl_buffer_age;
 
-	int has_configless_context;
+	bool has_configless_context;
 
-	int has_surfaceless_context;
+	bool has_surfaceless_context;
 
-	int has_dmabuf_import;
+	bool has_dmabuf_import;
 	struct wl_list dmabuf_images;
 
-	int has_gl_texture_rg;
+	bool has_gl_texture_rg;
 
 	struct gl_shader texture_shader_rgba;
 	struct gl_shader texture_shader_rgbx;
@@ -237,17 +237,17 @@ struct gl_renderer {
 
 	struct wl_listener output_destroy_listener;
 
-	int has_dmabuf_import_modifiers;
+	bool has_dmabuf_import_modifiers;
 	PFNEGLQUERYDMABUFFORMATSEXTPROC query_dmabuf_formats;
 	PFNEGLQUERYDMABUFMODIFIERSEXTPROC query_dmabuf_modifiers;
 
-	int has_native_fence_sync;
+	bool has_native_fence_sync;
 	PFNEGLCREATESYNCKHRPROC create_sync;
 	PFNEGLDESTROYSYNCKHRPROC destroy_sync;
 	PFNEGLDUPNATIVEFENCEFDANDROIDPROC dup_native_fence_fd;
 
 
-	int has_wait_sync;
+	bool has_wait_sync;
 	PFNEGLWAITSYNCKHRPROC wait_sync;
 
 #ifdef HYPER_DMABUF
