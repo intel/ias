@@ -124,11 +124,11 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data,
 	appsrc     = gst_element_factory_make ("appsrc", NULL);
 	h264parse  = gst_element_factory_make ("h264parse", NULL);
 	rtph264pay = gst_element_factory_make ("rtph264pay", NULL);
-	avbh264sink  = gst_element_factory_make ("avbh264sink", NULL);
+	avbh264sink  = gst_element_factory_make ("avbvideosink", NULL);
 	if (!pipeline || !appsrc || !h264parse || !rtph264pay || !avbh264sink)
 		goto gst_free;
 
-	(void) g_object_set (G_OBJECT (avbh264sink), "skeleton-name", private_data->avb_channel, NULL);
+	(void) g_object_set (G_OBJECT (avbh264sink), "stream-name", private_data->avb_channel, NULL);
 	(void) gst_bin_add_many(GST_BIN (pipeline), appsrc, h264parse, rtph264pay, avbh264sink, NULL);
 	if (!gst_element_link_many (appsrc, h264parse, rtph264pay, avbh264sink, NULL))
 		goto gst_free_pipeline;
@@ -172,6 +172,9 @@ WL_EXPORT void help(void)
 	printf("\t--channel=<avb_channel>\t\tufipc channel over which to send"
 		" the image stream (e.g. 'media_transport.avb_streaming.3')\n");
 	printf("\n\tNote that the default avb_channel is 'media_transport.avb_streaming.1'.\n\n");
+	printf("\n\tThe receiver should be started using:\n");
+	printf("\t\"gst-launch-1.0 avbvideosrc stream-type=\"rtp-h264\" stream-name=\"media_transport.avb_streaming.7 "
+			"! rtph264depay ! h264parse ! mfxdecode live-mode=true ! mfxsinkelement\"\n");
 }
 
 
