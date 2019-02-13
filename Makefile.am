@@ -214,8 +214,11 @@ ias_weston_LDADD = libshared.la libias-@LIBWESTON_MAJOR@.la \
 ias_weston_SOURCES = 					\
 	compositor/main.c				\
 	compositor/weston-screenshooter.c		\
-	compositor/text-backend.c			\
+	compositor/text-backend.c
+if ENABLE_XWAYLAND
+ias_weston_SOURCES += 					\
 	compositor/xwayland.c
+endif
 
 # Track this dependency explicitly instead of using BUILT_SOURCES.  We
 # add BUILT_SOURCES to CLEANFILES, but we want to keep git-version.h
