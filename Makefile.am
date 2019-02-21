@@ -965,7 +965,8 @@ demo_clients +=					\
 if ENABLE_REMOTE_DISPLAY
 demo_clients += \
 	remote-display \
-	mediaplayer
+	mediaplayer \
+	remote-display-show
 endif
 
 weston_simple_shm_SOURCES = clients/simple-shm.c
@@ -1068,6 +1069,16 @@ nodist_remote_display_SOURCES =		\
 		protocol/ias-shell-client-protocol.h
 remote_display_CFLAGS = $(AM_CFLAGS) $(SIMPLE_CLIENT_CFLAGS) $(LIBVA_CFLAGS)
 remote_display_LDADD = $(LIBDRM_LIBS) $(SIMPLE_CLIENT_LIBS) $(LIBVA_LIBS) libshared.la -lm -ldrm_intel -ldl -lpthread
+
+remote_display_show_SOURCES = \
+	clients/RemoteDisplay/remote-display-show.c
+nodist_remote_display_show_SOURCES = \
+	protocol/ias-shell-protocol.c \
+	protocol/ias-shell-server-protocol.h \
+	protocol/ivi-application-protocol.c \
+	protocol/ivi-application-client-protocol.h
+remote_display_show_CFLAGS = $(AM_CFLAGS) $(SIMPLE_CLIENT_CFLAGS)
+remote_display_show_LDADD = $(LIBDRM_LIBS) $(SIMPLE_EGL_CLIENT_LIBS) libshared.la -lm -ldrm_intel -ldl -lpthread
 
 mediaplayer_SOURCES = 		\
 	clients/mediaplayer.c
