@@ -1,51 +1,3 @@
-The Intel(R) Automotive Solutions Wayland compositor package
-Release EC #1.7.0.03
-December 4, 2015
-
-New Features or Behavior in this Release
-----------------------------------------
-
-- There are no new features introduced in this release.
-
-Temporary Workarounds in this Release
--------------------------------------
-
-- There are no temporary workarounds introduced in this release.
-
-
-Fixed Issues
-------------
-
-- ASD100015037 - Added ias-spug.h to weston includes
-
-Known Issues, Limitations & Restrictions
------------------------------------------
-
-- Flexible output model is not supported as i915 driver does not support atomic 
-pageflip currently
-
-Previous Features or Behavior
-----------------------------------------
-
-- ASD100008795 - Exit Compositor if unable to load Plugin
-- ASD100007119 - Performance improvement when there is only one app running
-- 214 Klockworks issues resolved
-- ASD100006680 - IVI-shell is being added to IAS compositor.
-- ASD100005362 - event notification when ias_crtc_set_* called
-
-
-Previous Bug Fixes
-----------------------------------------
-
-- ASD100007437 - Several sample clients seg fault when they are started up
-	due to a Klockworks identified issue where the tool incorrectly marked
-	an area of code as leaking memory when it really wasn't.
-- ASD100006244 - Fixed an issue where assigning a surface to sprite
-	plane always failed and stoped rendering.
-- ASD100006315 - Fixed an issue where some header files weren't being
-	copied to the sysroot.
-- ASD100005955 - Fixed an issue where we couldn't run Weston on SnB.
-
 Intel(R) Automotive Solutions Compositor Overview
 -------------------------------------------------
 A standard Wayland compositor has 3 high level components:
@@ -329,6 +281,3 @@ sample source code
       on the main display pane.
 
     test-randr.c - A client that tests output control.
-
-
-
