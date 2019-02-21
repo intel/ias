@@ -27,6 +27,7 @@
 #define _REMOTE_DISPLAY_MAIN_H_
 
 struct input_receiver_private_data;
+struct encoder_options;
 
 enum encoder_state {
 	ENC_STATE_ERROR = -1,
@@ -52,9 +53,6 @@ struct app_state {
 	int y;
 	int w;
 	int h;
-	int encoder_tu;
-	int encoder_qp;
-	int fps;
 	int output_number;
 	int output_origin_x;
 	int output_origin_y;
@@ -73,6 +71,7 @@ struct app_state {
 	pthread_t encoder_init_thread;
 	char *surfname;
 	char *pname;
+	struct encoder_options *enc_options;
 };
 
 struct surf_list {

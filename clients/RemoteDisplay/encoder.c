@@ -1924,10 +1924,9 @@ rd_encoder_init(struct rd_encoder * const encoder,
 				const int width, const int height,
 				const int x, const int y,
 				const int w, const int h,
-				const int encoder_tu,
 				uint32_t surfid, struct ias_hmi * const hmi,
-				struct wl_display *display, uint32_t output_number, int fps,
-				const int encoder_qp)
+				struct wl_display *display, uint32_t output_number,
+				struct encoder_options *options)
 {
 	int err;
 
@@ -1943,13 +1942,13 @@ rd_encoder_init(struct rd_encoder * const encoder,
 	encoder->region.y = y;
 	encoder->region.w = w;
 	encoder->region.h = h;
-	encoder->encoder_tu = encoder_tu;
-	encoder->qp = encoder_qp;
+	encoder->encoder_tu = options->encoder_tu;
+	encoder->qp = options->encoder_qp;
 	encoder->surfid = surfid;
 	encoder->hmi = hmi;
 	encoder->display = display;
 	encoder->output_number = output_number;
-	encoder->fps = fps;
+	encoder->fps = options->fps;
 	if (setup_vpp(encoder) < 0) {
 		fprintf(stderr, "encoder: Failed to initialize VPP pipeline.\n");
 		goto err_va_dpy;

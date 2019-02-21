@@ -41,6 +41,13 @@ enum rd_encoder_format {
 	RD_FORMAT_NV12,
 };
 
+struct encoder_options {
+	int encoder_tu;
+	int fps;
+	int encoder_qp;
+};
+
+
 struct rd_encoder *
 rd_encoder_create(const int verbose, char *plugin, int *argc, char **argv);
 int
@@ -48,11 +55,10 @@ rd_encoder_init(struct rd_encoder * const encoder,
 				const int width, const int height,
 				const int x, const int y,
 				const int w, const int h,
-				const int encoder_tu,
 				uint32_t surfid, struct ias_hmi * const hmi,
 				struct wl_display *display,
 				uint32_t output_number,
-				int fps, const int encoder_qp);
+				struct encoder_options *options);
 void
 rd_encoder_destroy(struct rd_encoder *encoder);
 int
