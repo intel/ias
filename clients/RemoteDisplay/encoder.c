@@ -205,6 +205,7 @@ struct rd_encoder {
 			uint32_t timestamp);
 
 	drm_intel_bufmgr *drm_bufmgr;
+	FILE *nv12;
 };
 
 static void *
@@ -1967,7 +1968,12 @@ rd_encoder_init(struct rd_encoder * const encoder,
 	if (err != 0) {
 		goto err_vpp;
 	}
-
+	if (options->nv12_filename) {
+		encoder->nv12 = fopen(options->nv12_filename, "wb");
+		if (encoder->nv12) {
+			fprintf(stderr, "*** QUALITY CHECK - Dumping NV12 to %s ***\n", options->nv12_filename);
+		}
+	}
 	if (encoder->verbose) {
 		printf("Recorder created... %dx%d R(%d,%d %dx%d)\n",
 				encoder->width, encoder->height,
@@ -2021,7 +2027,9 @@ rd_encoder_destroy(struct rd_encoder *encoder)
 	if (encoder->verbose) {
 		printf("libva context destroyed...\n");
 	}
-
+	if (encoder->nv12) {
+		fclose(encoder->nv12);
+	}
 	close(encoder->drm_fd);
 
 	free(encoder);
@@ -2197,6 +2205,61 @@ convert_rgb_to_yuv(struct rd_encoder * const encoder, const VASurfaceID src_surf
 		return status;
 	}
 
+	if (encoder->nv12) {
+		VAImage image;
+		void *pbuffer=NULL;
+		status = vaDeriveImage(encoder->va_dpy, encoder->vpp.output, &image);
+		if (status != VA_STATUS_SUCCESS) {
+			fprintf(stderr, "vaDeriveImage failed\n");
+		}
+		status = vaMapBuffer(encoder->va_dpy, image.buf, &pbuffer);
+		if (status != VA_STATUS_SUCCESS) {
+			fprintf(stderr, "vaMapBuffer failed\n");
+		}
+		if (image.format.fourcc == VA_FOURCC_NV12) {
+			uint32_t row;
+			int ret;
+			if (encoder->verbose) {
+				printf("NV12: %d %d - [%d/%d]\n", image.width, image.height, image.pitches[0], image.pitches[1] );
+			}
+			unsigned char *data = (unsigned char*)pbuffer;
+			data += image.offsets[0];
+			uint32_t height = image.height;
+			if (height & 1) {
+				 height++; /* ex: encoded image is 1086x1953 */
+			}
+			for (row = 0; row < height; row++) {
+				ret = fwrite(data, image.width, 1, encoder->nv12);
+				if (ret != 1) {
+					printf("error writing nv12 - stop dumping\n");
+					fclose(encoder->nv12);
+					encoder->nv12 = NULL;
+				}
+				data += image.pitches[0];
+			}
+			if (encoder->nv12) {
+				data = (unsigned char*)pbuffer;
+				data += image.offsets[1];
+				for (row = 0; row < height/2; row++) {
+					ret = fwrite(data, image.width, 1, encoder->nv12);
+					if (ret != 1) {
+						printf("error writing nv12 - stop dumping\n");
+						fclose(encoder->nv12);
+						encoder->nv12 = NULL;
+					}
+					data += image.pitches[1];
+				}
+			}
+		}
+		status = vaUnmapBuffer(encoder->va_dpy, image.buf);
+		if (status != VA_STATUS_SUCCESS) {
+			fprintf(stderr, "vaUnmapBuffer failed\n");
+		}
+		status = vaDestroyImage(encoder->va_dpy, image.image_id);
+		if (status != VA_STATUS_SUCCESS) {
+			fprintf(stderr, "vaDestroyImagefailed\n");
+		}
+	}
 	return status;
 }
 

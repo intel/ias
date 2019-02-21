@@ -45,6 +45,7 @@ struct encoder_options {
 	int encoder_tu;
 	int fps;
 	int encoder_qp;
+	char *nv12_filename;
 };
 
 

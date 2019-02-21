@@ -629,6 +629,9 @@ usage(int error_code)
 		"\t--w=<width>\t\t\twidth of region of surface to be captured\n"
 		"\t--h=<height>\t\t\theight of region of surface "
 		"to be captured\n");
+	printf("\t--nv12=<filename>\t\tDump nv12 data to file (quality check only !!)\n"
+		"\t\t\t\t\tThis will generate huge data flow and significanly slow\n"
+		"\t\t\t\t\tdown the encoder process.\n");
 	printf("\t--help\t\t\t\tshow this help text and exit\n\n");
 	printf("Note that all options other than state default to zero.\n"
 		"A width or height of zero is taken to mean that the entire "
@@ -805,6 +808,7 @@ main(int argc, char **argv)
 		{ WESTON_OPTION_INTEGER, "tu", 0, &app_state.enc_options->encoder_tu},
 		{ WESTON_OPTION_INTEGER, "fps", 0, &app_state.enc_options->fps},
 		{ WESTON_OPTION_INTEGER, "qp", 0, &app_state.enc_options->encoder_qp},
+		{ WESTON_OPTION_STRING,  "nv12", 0, &enc_options.nv12_filename},
 		{ WESTON_OPTION_BOOLEAN, "help", 0, &help },
 	};
 
