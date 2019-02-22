@@ -31,6 +31,8 @@
 #include <glib/gi18n.h>
 #include <gst/video/videooverlay.h>
 #include <gst/video/gstvideosink.h>
+#include <gst/allocators/allocators.h>
+#include <gst/base/gstbasesrc.h>
 
 #define CLOCK_START_TIME 5 // seconds
 #define CLOCK_INTERVAL 2   // seconds
@@ -186,6 +188,86 @@ static void usage (void)
 	exit(-1);
 }
 
+static gboolean pad_support_dmabuf (GstElement *element)
+{
+	gboolean ret = FALSE;
+	GstPad *pad = NULL;
+	GstCaps *caps = NULL;
+	guint i;
+
+	pad = gst_element_get_static_pad (element, "src");
+	if (!pad) {
+		g_printerr ("[%s] Could not retrieve pad\n", __FUNCTION__);
+		goto exit;
+	}
+
+	/* Retrieve negotiated caps (or acceptable caps if negotiation is not finished yet) */
+	caps = gst_pad_get_current_caps (pad);
+	if (!caps)
+		caps = gst_pad_query_caps (pad, NULL);
+
+	if (!gst_caps_is_any (caps) && !gst_caps_is_empty (caps)) {
+		for (i = 0; i < gst_caps_get_size (caps); i++) {
+			GstCapsFeatures *features = gst_caps_get_features (caps, i);
+
+			if (gst_caps_features_is_any (features) ||
+					gst_caps_features_contains (features,
+						GST_CAPS_FEATURE_MEMORY_DMABUF)) {
+				ret = TRUE;
+				break;
+			}
+		}
+	}
+
+exit:
+	if (caps)
+		gst_caps_unref (caps);
+	if (pad)
+		gst_object_unref (pad);
+
+	return ret;
+}
+
+static gboolean video_pipeline_link(gpointer data)
+{
+	AppData *appdata = (AppData *) data;
+	GstCaps *caps = NULL;
+	gboolean ret = FALSE;
+
+	if (appdata->audio) {
+		if (gst_element_link_many (appdata->videoqueue, appdata->parser, \
+					appdata->decoder, appdata->textoverlay, appdata->videosink, NULL) != TRUE) {
+			g_printerr("Error: video linking with audio\n");
+			goto exit;
+		}
+	} else {
+		if (gst_element_link_many (appdata->parser, \
+					appdata->decoder, appdata->textoverlay, appdata->videosink, NULL) != TRUE) {
+			g_printerr("Error: video linking w/o audio\n");
+			goto exit;
+		}
+	}
+
+	if (pad_support_dmabuf(appdata->decoder) == TRUE) {
+		caps = gst_caps_new_simple ("video/x-raw",
+				"format", G_TYPE_STRING, "NV12",
+				NULL);
+		gst_element_unlink(appdata->decoder, appdata->textoverlay);
+		gst_caps_set_features (caps, 0,
+				gst_caps_features_new (GST_CAPS_FEATURE_MEMORY_DMABUF, NULL));
+		ret = gst_element_link_filtered(appdata->decoder, appdata->textoverlay, caps);
+	}
+	else {
+		ret = TRUE;
+	}
+
+exit:
+	if (caps)
+		gst_caps_unref (caps);
+
+	return ret;
+}
+
 int main (int argc, char *argv[])
 {
 	AppData appdata = {0,};
@@ -215,8 +297,8 @@ int main (int argc, char *argv[])
 	};
 
 	/* Initialisation */
-	appdata.looping = 0;
-	appdata.audio = 0;
+	appdata.looping = FALSE;
+	appdata.audio = FALSE;
 	ctx = g_option_context_new ("ARGUMENTS");
 	g_option_context_add_main_entries (ctx, options, NULL);
 	g_option_context_add_group (ctx, gst_init_get_option_group ());
@@ -316,9 +398,7 @@ int main (int argc, char *argv[])
 
 	if (appdata.audio) {
 		/* Link#2 - video : queue -> parse -> decode -> sink */
-		if (gst_element_link_many (appdata.videoqueue, appdata.parser, \
-					appdata.decoder, appdata.textoverlay, appdata.videosink, NULL) != TRUE) {
-			g_printerr("Error: video linking\n");
+		if (video_pipeline_link(&appdata) != TRUE) {
 			goto exit;
 		}
 
@@ -336,9 +416,7 @@ int main (int argc, char *argv[])
 		}
 	} else {
 		/* Link#2 - video : parse -> decode -> sink */
-		if (gst_element_link_many (appdata.parser, \
-					appdata.decoder, appdata.textoverlay, appdata.videosink, NULL) != TRUE) {
-			g_printerr("Error: video linking\n");
+		if (video_pipeline_link(&appdata) != TRUE) {
 			goto exit;
 		}
 	}
