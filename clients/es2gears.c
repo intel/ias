@@ -83,8 +83,6 @@
 
 #include <sys/types.h>
 #include <unistd.h>
-#include "protocol/ivi-application-client-protocol.h"
-#define IVI_SURFACE_ID 9000
 
 #include "shared/platform.h"
 
@@ -155,12 +153,10 @@ struct gears_data {
    struct wl_cursor_theme *cursor_theme;
    struct wl_cursor *default_cursor;
    EGLSurface egl_surface;
-   struct ivi_application *ivi_application;
    struct wl_list output_list;
    struct ias_surface *shell_surface;
    struct zxdg_surface_v6 *xdg_surface;
    struct zxdg_toplevel_v6 *xdg_toplevel;
-   struct ivi_surface *ivi_surface;
    bool wait_for_configure;
 
    PFNEGLSWAPBUFFERSWITHDAMAGEEXTPROC swap_buffers_with_damage;
@@ -1103,27 +1099,6 @@ static struct ias_surface_listener ias_surface_listener = {
 };
 
 static void
-handle_ivi_surface_configure(void *data, struct ivi_surface *ivi_surface,
-                             int32_t width, int32_t height)
-{
-   struct gears_data *gears = data;
-
-   wl_egl_window_resize(gears->native, width, height, 0, 0);
-
-   gears->geometry_width = width;
-   gears->geometry_height = height;
-	if (!gears->fullscreen) {
-      gears->window_width = gears->geometry_width;
-      gears->window_height = gears->geometry_height;
-   }
-   gears_reshape(width, height);
-}
-
-static const struct ivi_surface_listener ivi_surface_listener = {
-   handle_ivi_surface_configure,
-};
-
-static void
 create_xdg_surface(struct gears_data *gears)
 {
    printf("create_xdg_surface\n");
@@ -1142,24 +1117,6 @@ create_xdg_surface(struct gears_data *gears)
 
    gears->wait_for_configure = true;
    wl_surface_commit(gears->surface);
-}
-
-static void
-create_ivi_surface(struct gears_data *gears)
-{
-   uint32_t id_ivisurf = IVI_SURFACE_ID + (uint32_t)getpid();
-   printf("create_ivi_surface\n");
-   gears->ivi_surface =
-      ivi_application_surface_create(gears->ivi_application,
-                      id_ivisurf, gears->surface);
-
-   if (gears->ivi_surface == NULL) {
-      fprintf(stderr, "Failed to create ivi_client_surface\n");
-      abort();
-   }
-
-   ivi_surface_add_listener(gears->ivi_surface,
-             &ivi_surface_listener, gears);
 }
 
 static void
@@ -1201,8 +1158,6 @@ create_surface(struct gears_data *gears)
 
    if (gears->shell) {
       create_xdg_surface(gears);
-   } else if (gears->ivi_application ) {
-      create_ivi_surface(gears);
    } else if (gears->ias_shell) {
       create_ias_surface(gears);
    }
@@ -1233,8 +1188,6 @@ destroy_surface(struct gears_data *gears)
       zxdg_toplevel_v6_destroy(gears->xdg_toplevel);
    if (gears->xdg_surface)
       zxdg_surface_v6_destroy(gears->xdg_surface);
-   if (gears->ivi_application)
-      ivi_surface_destroy(gears->ivi_surface);
    if (gears->ias_shell) {
       ias_surface_destroy(gears->shell_surface);
    }
@@ -1331,10 +1284,6 @@ registry_handle_global(void *data, struct wl_registry *registry,
          fprintf(stderr, "unable to load default left pointer\n");
          // TODO: abort ?
       }
-   } else if (strcmp(interface, "ivi_application") == 0) {
-      gears->ivi_application =
-         wl_registry_bind(registry, name,
-                &ivi_application_interface, 1);
    }
 }
 

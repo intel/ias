@@ -37,8 +37,6 @@
 #include "shared/helpers.h"
 #include "shared/os-compatibility.h"
 #include "ias-shell-client-protocol.h"
-#include "protocol/ivi-application-client-protocol.h"
-#define IVI_SURFACE_ID 9000
 
 struct seat {
 	struct touch *touch;
@@ -51,14 +49,12 @@ struct touch {
 	struct wl_registry *registry;
 	struct wl_compositor *compositor;
 	struct ias_shell *ias_shell;
-	struct ivi_application *ivi_application;
 	struct wl_shell *shell;
 	struct wl_shm *shm;
 	struct wl_pointer *pointer;
 	struct wl_keyboard *keyboard;
 	struct wl_surface *surface;
 	struct ias_surface *ias_surface;
-	struct ivi_surface *ivi_surface;
 	struct wl_shell_surface *shell_surface;
 	struct wl_buffer *buffer;
 	int has_argb;
@@ -265,16 +261,6 @@ static const struct ias_surface_listener ias_surface_listener = {
 };
 
 static void
-handle_ivi_surface_configure(void *data, struct ivi_surface *ivi_surface,
-                             int32_t width, int32_t height)
-{
-}
-
-static const struct ivi_surface_listener ivi_surface_listener = {
-        handle_ivi_surface_configure,
-};
-
-static void
 handle_ping(void *data, struct wl_shell_surface *shell_surface,
 	    uint32_t serial)
 {
@@ -309,13 +295,13 @@ handle_global(void *data, struct wl_registry *registry,
 			wl_registry_bind(registry, name,
 					 &wl_compositor_interface, 1);
 	} else if (strcmp(interface, "ias_shell") == 0) {
-		if(!touch->shell && !touch->ivi_application) {
+		if(!touch->shell) {
 			touch->ias_shell =
 				wl_registry_bind(registry, name,
 						&ias_shell_interface, 1);
 		}
 	} else if (strcmp(interface, "wl_shell") == 0) {
-		if(!touch->ias_shell && !touch->ivi_application) {
+		if(!touch->ias_shell) {
 			touch->shell =
 					wl_registry_bind(registry, name,
 							&wl_shell_interface, 1);
@@ -326,13 +312,7 @@ handle_global(void *data, struct wl_registry *registry,
 		wl_shm_add_listener(touch->shm, &shm_listener, touch);
 	} else if (strcmp(interface, "wl_seat") == 0) {
 		add_seat(touch, name, version);
-	} else if (strcmp(interface, "ivi_application") == 0) {
-		if (!touch->shell && !touch->ias_shell) {
-			touch->ivi_application =
-				wl_registry_bind(registry, name,
-					&ivi_application_interface, 1);
-		}
-        }
+	}
 }
 
 static void
@@ -374,19 +354,6 @@ touch_create(int width, int height)
 		touch->ias_surface = ias_shell_get_ias_surface(touch->ias_shell,
 							  touch->surface, "simple-touch");
 	}
-	if (touch->ivi_application) {
-                uint32_t id_ivisurf = IVI_SURFACE_ID + (uint32_t)getpid();
-                touch->ivi_surface =
-                        ivi_application_surface_create(touch->ivi_application,
-                                                        id_ivisurf, touch->surface);
-                if (touch->ivi_surface == NULL) {
-                        fprintf(stderr, "Failed to create ivi_client_surface\n");
-                        abort();
-                }
-
-                ivi_surface_add_listener(touch->ivi_surface,
-                                        &ivi_surface_listener, touch);
-        }
 
 	if (touch->shell) {
 		touch->shell_surface = wl_shell_get_shell_surface(touch->shell,

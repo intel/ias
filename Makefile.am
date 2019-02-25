@@ -1039,9 +1039,7 @@ weston_simple_touch_SOURCES = 			\
 	shared/helpers.h
 nodist_weston_simple_touch_SOURCES =			\
 	protocol/ias-shell-protocol.c			\
-	protocol/ias-shell-client-protocol.h 		\
-	protocol/ivi-application-protocol.c             \
-	protocol/ivi-application-client-protocol.h
+	protocol/ias-shell-client-protocol.h
 weston_simple_touch_CFLAGS = $(AM_CFLAGS) $(SIMPLE_CLIENT_CFLAGS) -fPIE
 weston_simple_touch_LDADD = $(SIMPLE_CLIENT_LIBS) libshared.la
 weston_simple_touch_LDFLAGS = -pie
