@@ -2398,7 +2398,6 @@ on_ias_input(int fd, uint32_t mask, void *data)
 	memset(&evctx, 0, sizeof evctx);
 	evctx.version = DRM_EVENT_CONTEXT_VERSION;
 	evctx.page_flip_handler = page_flip_handler;
-	evctx.page_flip_handler = page_flip_handler;
 	evctx.vblank_handler = vblank_handler;
 	drmHandleEvent(fd, &evctx);
 
@@ -2759,6 +2758,7 @@ create_outputs_for_crtc(struct ias_backend *backend, struct ias_crtc *ias_crtc)
 	struct ias_configured_output *cfg;
 	int i, scale;
 	char *temp_name = NULL;
+	struct timeval curr_time;
 
 	for (i = 0; i < ias_crtc->num_outputs; i++) {
 		if (ias_crtc->configuration == NULL) {
@@ -2875,6 +2875,8 @@ create_outputs_for_crtc(struct ias_backend *backend, struct ias_crtc *ias_crtc)
 		ias_output->base.destroy = ias_output_destroy;
 		ias_output->base.disable = ias_backend_output_disable;
 
+		gettimeofday(&curr_time, NULL);
+		ias_output->prev_time_ms = (curr_time.tv_sec * 1000 + curr_time.tv_usec / 1000);
 
 		weston_head_set_monitor_strings(&ias_output->head,
 						"unknown", "unknown", "unknown");

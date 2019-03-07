@@ -183,6 +183,8 @@ struct ias_output {
 
 	struct wl_signal printfps_signal;
 	struct wl_listener printfps_listener;
+	int32_t flip_count;
+	uint32_t prev_time_ms;
 
 #if defined(BUILD_VAAPI_RECORDER) || defined(BUILD_REMOTE_DISPLAY)
 	struct wl_signal next_scanout_ready_signal;

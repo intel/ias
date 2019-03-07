@@ -642,6 +642,10 @@ flip_handler_classic(struct ias_crtc *ias_crtc,
 	uint32_t flags = WP_PRESENTATION_FEEDBACK_KIND_VSYNC |
 			WP_PRESENTATION_FEEDBACK_KIND_HW_COMPLETION |
 			WP_PRESENTATION_FEEDBACK_KIND_HW_CLOCK;
+	struct ias_output *ias_output = ias_crtc->output[0];
+
+	/* Increment the flip count for this output */
+	ias_output->flip_count++;
 
 	/* If obj_id == 0, then legacy pageflip code is being used */
 	if ((obj_id == ias_crtc->crtc_id) || (obj_id == 0)) {

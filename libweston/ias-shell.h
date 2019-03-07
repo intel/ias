@@ -51,6 +51,13 @@ void
 ias_committed(struct weston_surface *surface, int32_t relx, int32_t rely);
 
 
+struct frame_data {
+	int frame_count;
+	int flip_count;
+	int output_id;
+	struct wl_list output_link;
+};
+
 /*
  * Singleton data structure to hold all shell-specific data.
  */
@@ -233,8 +240,11 @@ struct ias_surface {
 	 */
 	uint32_t pid;
 	char *pname;
-	int frame_count;
-	int flip_count;
+	/*
+	 * List of output that this surface is on. Need this for frame count
+	 * purpose
+	 */
+	struct wl_list output_list;
 
 	/* Was that surface created using wl_shell interface */
 	int wl_shell_interface;

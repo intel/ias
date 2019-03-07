@@ -49,7 +49,6 @@ static struct ias_shell *self;
 static void (*renderer_attach)(struct weston_surface *es, struct weston_buffer *buffer);
 
 static struct timeval curr_time;
-static uint32_t prev_time_ms;
 
 /*
  * Custom zorder (layer).
@@ -1277,6 +1276,7 @@ ias_surface_destructor(struct ias_surface *shsurf)
 	struct ias_shell *shell = shsurf->shell;
 	struct ias_surface *child;
 	struct hmi_callback *cb;
+	struct frame_data *fd, *fd_tmp;
 
 	/* remove destroyed surface from prev_focus_list */
 	surface_remove_prev_focus_list(shsurf, shell);
@@ -1336,6 +1336,11 @@ ias_surface_destructor(struct ias_surface *shsurf)
 		}
 	}
 
+	wl_list_for_each_safe(fd, fd_tmp, &shsurf->output_list, output_link) {
+		wl_list_remove(&fd->output_link);
+		free(fd);
+	}
+
 	/*
 	 * No need for NULL checks here, as pname and title
 	 * are initialized to empty strings in ias_surface_constructor
@@ -1386,6 +1391,8 @@ ias_surface_constructor(void *shellptr,
 {
 	struct ias_shell *shell = shellptr;
 	struct ias_surface *shsurf;
+	struct weston_output *output;
+	struct frame_data *fd;
 
 	/*
 	 * Make sure no shell surface has already been created for this
@@ -1437,6 +1444,14 @@ ias_surface_constructor(void *shellptr,
 	wl_list_init(&shsurf->special_link);
 
 	wl_list_init(&shsurf->surface_link);
+	wl_list_init(&shsurf->output_list);
+
+	wl_list_for_each(output, &surface->compositor->output_list, link) {
+		fd = calloc(1, sizeof *fd);
+		fd->output_id = output->id;
+		wl_list_init(&fd->output_link);
+		wl_list_insert(&shsurf->output_list, &fd->output_link);
+	}
 
 	/*
 	 * Initialize process id and name for the client app associated with this
@@ -1750,11 +1765,16 @@ static void
 update_frame_count_and_attach(struct weston_surface *es, struct weston_buffer *buffer)
 {
 	struct ias_surface *shsurf = get_ias_surface(es);
+	struct frame_data *fd;
 
 	(*renderer_attach)(es, buffer);
 
 	if (shsurf) {
-		shsurf->frame_count++;
+		wl_list_for_each(fd, &shsurf->output_list, output_link) {
+			if (es->output_mask & (1u << fd->output_id)) {
+				fd->frame_count++;
+			}
+		}
 	}
 }
 
@@ -1795,32 +1815,53 @@ print_fps(struct wl_listener *listener, void *data)
 	float time_diff_secs;
 	uint32_t curr_time_ms;
 	struct ias_surface *shsurf;
+	struct ias_output *ias_output = data;
+	struct frame_data *fd;
 
 	gettimeofday(&curr_time, NULL);
 	curr_time_ms = (curr_time.tv_sec * 1000 + curr_time.tv_usec / 1000);
 
-	time_diff_secs = (curr_time_ms - prev_time_ms) / 1000;
-
-	wl_list_for_each(shsurf, &shell->client_surfaces, surface_link) {
-		shsurf->flip_count++;
-	}
+	time_diff_secs = (curr_time_ms - ias_output->prev_time_ms) / 1000;
 
 	if (time_diff_secs >= TARGET_NUM_SECONDS) {
 		fprintf(stdout, "--------------------------------------------------------\n");
 
-		wl_list_for_each(shsurf, &shell->client_surfaces, surface_link) {
-			fprintf(stdout, "%s: %d frames, %d flips in %6.3f seconds = %6.3f FPS\n",
-					shsurf->pname, shsurf->frame_count, shsurf->flip_count, time_diff_secs,
-					shsurf->frame_count / time_diff_secs);
-			fflush(stdout);
+		fprintf(stdout, "%s: output %d flips\n", ias_output->name,
+				ias_output->flip_count);
+	}
 
-			shsurf->frame_count = 0;
-			shsurf->flip_count = 0;
+	wl_list_for_each(shsurf, &shell->client_surfaces, surface_link) {
+		/* We only show those surfaces that are on this particular output */
+		if (!(shsurf->view->output_mask & (1 << ias_output->base.id)))
+			continue;
+
+		/*
+		 * Since a surface could be on multiple outputs, we now need to show
+		 * the frame count for a particular output only
+		 */
+		wl_list_for_each(fd, &shsurf->output_list, output_link) {
+			if (ias_output->base.id == fd->output_id) {
+				fd->flip_count++;
+
+				if (time_diff_secs >= TARGET_NUM_SECONDS) {
+
+					fprintf(stdout, "%s: %d frames, %d flips in %6.3f seconds = %6.3f FPS\n",
+							shsurf->pname, fd->frame_count, fd->flip_count, time_diff_secs,
+							fd->frame_count / time_diff_secs);
+					fflush(stdout);
+
+					fd->frame_count = 0;
+					fd->flip_count = 0;
+
+					ias_output->prev_time_ms = curr_time_ms;
+				}
+			}
 		}
+	}
 
+	if (time_diff_secs >= TARGET_NUM_SECONDS) {
 		fprintf(stdout, "--------------------------------------------------------\n");
-
-		prev_time_ms = curr_time_ms;
+		fflush(stdout);
 	}
 }
 
@@ -2581,9 +2622,6 @@ WL_EXPORT int wet_shell_init(struct weston_compositor *compositor,
 
 	/* Load configuration file */
 	ias_shell_configuration(shell);
-
-	gettimeofday(&curr_time, NULL);
-	prev_time_ms = (curr_time.tv_sec * 1000 + curr_time.tv_usec / 1000);
 
 	/*
 	 * Create global objects for ias_shell, ias_hmi, and layout manager.
