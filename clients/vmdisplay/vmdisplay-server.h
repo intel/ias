@@ -33,12 +33,17 @@
 #ifndef _VMDISPLAY_SERVER_H_
 #define _VMDISPLAY_SERVER_H_
 
+#ifndef UNUSED
+#define UNUSED(a) (void) a
+#endif
+
 class HyperCommunicatorInterface {
 public:
 	enum HyperCommunicatorDirection {
 		Sender = 0,
 		Receiver,
 	};
+	virtual ~HyperCommunicatorInterface() { }
 
 	virtual int init(int dom_id, HyperCommunicatorDirection direction,
 			 const char *args) = 0;

@@ -65,6 +65,7 @@ int NetworkCommunicator::init(int domid, HyperCommunicatorDirection dir,
 	char *port;
 	int enable = 1;
 
+	UNUSED(domid);
 	strncpy(args_tmp, args, 255);
 
 	addr = strtok(args_tmp, ":");

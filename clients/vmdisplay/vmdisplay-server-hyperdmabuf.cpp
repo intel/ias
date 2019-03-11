@@ -43,6 +43,9 @@ int HyperDMABUFCommunicator::init(int domid,
 				  HyperCommunicatorDirection dir,
 				  const char *args)
 {
+	UNUSED(domid);
+	UNUSED(args);
+
 	if (dir == HyperCommunicatorInterface::Receiver) {
 		hyper_dmabuf_fd = open("/dev/hyper_dmabuf", O_RDWR);
 		if (hyper_dmabuf_fd < 0)
@@ -110,6 +113,9 @@ int HyperDMABUFCommunicator::recv_data(void *buffer, int max_len)
 
 int HyperDMABUFCommunicator::send_data(const void *buffer, int len)
 {
+	UNUSED(buffer);
+	UNUSED(len);
+
 	return -1;
 }
 

@@ -68,29 +68,29 @@ static inline double wl_fixed_to_double(wl_fixed_t f)
 }
 
 class VMDisplayInput {
-public:
-	VMDisplayInput():hyper_comm_input(NULL),
-	    running(false),
-	    uinput_touch_fd(-1), uinput_keyboard_fd(-1), uinput_pointer_fd(-1) {
-	};
-	int init(int domid, CommunicationChannelType comm_type,
-		 const char *comm_arg);
-	int cleanup();
-	int run();
-	void stop();
-private:
-	void handle_touch_event(const vmdisplay_touch_event & event);
-	void handle_key_event(const vmdisplay_key_event & event);
-	void handle_pointer_event(const vmdisplay_pointer_event & event);
-	int init_touch();
-	int init_keyboard();
-	int inti_pointer();
+	public:
+		VMDisplayInput():hyper_comm_input(NULL),
+		running(false),
+		uinput_touch_fd(-1), uinput_keyboard_fd(-1), uinput_pointer_fd(-1) {
+		};
+		int init(int domid, CommunicationChannelType comm_type,
+				const char *comm_arg);
+		int cleanup();
+		int run();
+		void stop();
+	private:
+		void handle_touch_event(const vmdisplay_touch_event & event);
+		void handle_key_event(const vmdisplay_key_event & event);
+		void handle_pointer_event(const vmdisplay_pointer_event & event);
+		int init_touch();
+		int init_keyboard();
+		int inti_pointer();
 
-	HyperCommunicatorInterface *hyper_comm_input;
-	bool running;
-	int uinput_touch_fd;
-	int uinput_keyboard_fd;
-	int uinput_pointer_fd;
+		HyperCommunicatorInterface *hyper_comm_input;
+		bool running;
+		int uinput_touch_fd;
+		int uinput_keyboard_fd;
+		int uinput_pointer_fd;
 };
 
 int VMDisplayInput::init_touch()
@@ -221,16 +221,20 @@ static int init_pointer()
 }
 
 int VMDisplayInput::init(int domid, CommunicationChannelType comm_type,
-			 const char *comm_args)
+		const char *comm_args)
 {
 	switch (comm_type) {
-	case CommunicationChannelNetwork:
-		hyper_comm_input = new NetworkCommunicator();
-		break;
+		case CommunicationChannelNetwork:
+			hyper_comm_input = new NetworkCommunicator();
+			break;
+		default:
+			printf("Only Network communication channel is supported\n");
+			cleanup();
+			return -1;
 	}
 
 	if (hyper_comm_input->init(domid, HyperCommunicatorInterface::Receiver,
-				   comm_args)) {
+				comm_args)) {
 		printf("client init failed\n");
 		delete hyper_comm_input;
 		hyper_comm_input = NULL;
@@ -293,188 +297,184 @@ int VMDisplayInput::cleanup()
 void VMDisplayInput::handle_touch_event(const vmdisplay_touch_event & event)
 {
 	struct input_event ev;
-	float x, y;
-        ssize_t ret;
+	ssize_t ret = -1;
 
 	switch (event.type) {
-	case VMDISPLAY_TOUCH_DOWN:
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_ABS;
-		ev.code = ABS_MT_SLOT;
-		ev.value = event.id;
-		ret = write(uinput_touch_fd, &ev, sizeof(ev));
+		case VMDISPLAY_TOUCH_DOWN:
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_ABS;
+			ev.code = ABS_MT_SLOT;
+			ev.value = event.id;
+			ret = write(uinput_touch_fd, &ev, sizeof(ev));
 
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_ABS;
-		ev.code = ABS_MT_TRACKING_ID;
-		ev.value = event.id;
-		ret = write(uinput_touch_fd, &ev, sizeof(ev));
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_ABS;
+			ev.code = ABS_MT_TRACKING_ID;
+			ev.value = event.id;
+			ret = write(uinput_touch_fd, &ev, sizeof(ev));
 
-		x = wl_fixed_to_double(event.x);
-		y = wl_fixed_to_double(event.y);
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_ABS;
+			ev.code = ABS_MT_POSITION_X;
+			ev.value = wl_fixed_to_double(event.x);
+			ret = write(uinput_touch_fd, &ev, sizeof(ev));
 
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_ABS;
-		ev.code = ABS_MT_POSITION_X;
-		ev.value = wl_fixed_to_double(event.x);
-		ret = write(uinput_touch_fd, &ev, sizeof(ev));
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_ABS;
+			ev.code = ABS_MT_POSITION_Y;
+			ev.value = wl_fixed_to_double(event.y);
+			ret = write(uinput_touch_fd, &ev, sizeof(ev));
 
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_ABS;
-		ev.code = ABS_MT_POSITION_Y;
-		ev.value = wl_fixed_to_double(event.y);
-		ret = write(uinput_touch_fd, &ev, sizeof(ev));
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_SYN;
+			ev.code = 0;
+			ev.value = 0;
+			ret = write(uinput_touch_fd, &ev, sizeof(ev));
 
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_SYN;
-		ev.code = 0;
-		ev.value = 0;
-		ret = write(uinput_touch_fd, &ev, sizeof(ev));
+			break;
 
-		break;
+		case VMDISPLAY_TOUCH_UP:
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_ABS;
+			ev.code = ABS_MT_SLOT;
+			ev.value = event.id;
+			ret = write(uinput_touch_fd, &ev, sizeof(ev));
 
-	case VMDISPLAY_TOUCH_UP:
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_ABS;
-		ev.code = ABS_MT_SLOT;
-		ev.value = event.id;
-		ret = write(uinput_touch_fd, &ev, sizeof(ev));
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_ABS;
+			ev.code = ABS_MT_TRACKING_ID;
+			ev.value = -1;
+			ret = write(uinput_touch_fd, &ev, sizeof(ev));
 
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_ABS;
-		ev.code = ABS_MT_TRACKING_ID;
-		ev.value = -1;
-		ret = write(uinput_touch_fd, &ev, sizeof(ev));
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_SYN;
+			ev.code = 0;
+			ev.value = 0;
+			ret = write(uinput_touch_fd, &ev, sizeof(ev));
 
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_SYN;
-		ev.code = 0;
-		ev.value = 0;
-		ret = write(uinput_touch_fd, &ev, sizeof(ev));
+			break;
 
-		break;
+		case VMDISPLAY_TOUCH_MOTION:
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_ABS;
+			ev.code = ABS_MT_SLOT;
+			ev.value = event.id;
+			ret = write(uinput_touch_fd, &ev, sizeof(ev));
 
-	case VMDISPLAY_TOUCH_MOTION:
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_ABS;
-		ev.code = ABS_MT_SLOT;
-		ev.value = event.id;
-		ret = write(uinput_touch_fd, &ev, sizeof(ev));
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_ABS;
+			ev.code = ABS_MT_POSITION_X;
+			ev.value = wl_fixed_to_double(event.x);
+			ret = write(uinput_touch_fd, &ev, sizeof(ev));
 
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_ABS;
-		ev.code = ABS_MT_POSITION_X;
-		ev.value = wl_fixed_to_double(event.x);
-		ret = write(uinput_touch_fd, &ev, sizeof(ev));
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_ABS;
+			ev.code = ABS_MT_POSITION_Y;
+			ev.value = wl_fixed_to_double(event.y);
+			ret = write(uinput_touch_fd, &ev, sizeof(ev));
 
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_ABS;
-		ev.code = ABS_MT_POSITION_Y;
-		ev.value = wl_fixed_to_double(event.y);
-		ret = write(uinput_touch_fd, &ev, sizeof(ev));
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_SYN;
+			ev.code = 0;
+			ev.value = 0;
+			ret = write(uinput_touch_fd, &ev, sizeof(ev));
 
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_SYN;
-		ev.code = 0;
-		ev.value = 0;
-		ret = write(uinput_touch_fd, &ev, sizeof(ev));
-
-		break;
+			break;
 	}
-    if (ret < 0)
-        printf("failed to handle input touch event\n");
+	if (ret < 0)
+		printf("failed to handle input touch event\n");
 }
 
 void VMDisplayInput::handle_key_event(const vmdisplay_key_event & event)
 {
 	struct input_event ev;
-        ssize_t ret;
+	ssize_t ret = -1;
 
 	switch (event.type) {
-	case VMDISPLAY_KEY_KEY:
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_KEY;
-		ev.code = event.key;
-		ev.value = event.state;
-		ret = write(uinput_keyboard_fd, &ev, sizeof(ev));
+		case VMDISPLAY_KEY_KEY:
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_KEY;
+			ev.code = event.key;
+			ev.value = event.state;
+			ret = write(uinput_keyboard_fd, &ev, sizeof(ev));
 
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_SYN;
-		ev.code = 0;
-		ev.value = 0;
-		ret = write(uinput_keyboard_fd, &ev, sizeof(ev));
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_SYN;
+			ev.code = 0;
+			ev.value = 0;
+			ret = write(uinput_keyboard_fd, &ev, sizeof(ev));
 
-		break;
+			break;
 	}
-        if (ret < 0)
-            printf("failed to handle input key event\n");
+	if (ret < 0)
+		printf("failed to handle input key event\n");
 
 }
 
 void VMDisplayInput::handle_pointer_event(const vmdisplay_pointer_event & event)
 {
 	struct input_event ev;
-        ssize_t ret = 0;
+	ssize_t ret = 0;
 
 	switch (event.type) {
-	case VMDISPLAY_POINTER_BUTTON:
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_MSC;
-		ev.code = MSC_SCAN;
-		ev.value = 90001;
-		ret = write(uinput_pointer_fd, &ev, sizeof(ev));
+		case VMDISPLAY_POINTER_BUTTON:
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_MSC;
+			ev.code = MSC_SCAN;
+			ev.value = 90001;
+			ret = write(uinput_pointer_fd, &ev, sizeof(ev));
 
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_KEY;
-		ev.code = event.button;
-		ev.value = event.state;
-		ret = write(uinput_pointer_fd, &ev, sizeof(ev));
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_KEY;
+			ev.code = event.button;
+			ev.value = event.state;
+			ret = write(uinput_pointer_fd, &ev, sizeof(ev));
 
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_SYN;
-		ev.code = 0;
-		ev.value = 0;
-		ret = write(uinput_pointer_fd, &ev, sizeof(ev));
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_SYN;
+			ev.code = 0;
+			ev.value = 0;
+			ret = write(uinput_pointer_fd, &ev, sizeof(ev));
 
-		break;
+			break;
 
-	case VMDISPLAY_POINTER_MOTION:
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_ABS;
-		ev.code = ABS_X;
-		ev.value = wl_fixed_to_double(event.x);
-		ret = write(uinput_pointer_fd, &ev, sizeof(ev));
+		case VMDISPLAY_POINTER_MOTION:
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_ABS;
+			ev.code = ABS_X;
+			ev.value = wl_fixed_to_double(event.x);
+			ret = write(uinput_pointer_fd, &ev, sizeof(ev));
 
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_ABS;
-		ev.code = ABS_Y;
-		ev.value = wl_fixed_to_double(event.y);
-		ret = write(uinput_pointer_fd, &ev, sizeof(ev));
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_ABS;
+			ev.code = ABS_Y;
+			ev.value = wl_fixed_to_double(event.y);
+			ret = write(uinput_pointer_fd, &ev, sizeof(ev));
 
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_SYN;
-		ev.code = 0;
-		ev.value = 0;
-		ret = write(uinput_pointer_fd, &ev, sizeof(ev));
-		break;
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_SYN;
+			ev.code = 0;
+			ev.value = 0;
+			ret = write(uinput_pointer_fd, &ev, sizeof(ev));
+			break;
 
-	case VMDISPLAY_POINTER_AXIS:
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_REL;
-		ev.code = REL_WHEEL;
-		ev.value = event.value;
-		ret = write(uinput_pointer_fd, &ev, sizeof(ev));
+		case VMDISPLAY_POINTER_AXIS:
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_REL;
+			ev.code = REL_WHEEL;
+			ev.value = event.value;
+			ret = write(uinput_pointer_fd, &ev, sizeof(ev));
 
-		memset(&ev, 0, sizeof(ev));
-		ev.type = EV_SYN;
-		ev.code = 0;
-		ev.value = 0;
-		ret = write(uinput_pointer_fd, &ev, sizeof(ev));
+			memset(&ev, 0, sizeof(ev));
+			ev.type = EV_SYN;
+			ev.code = 0;
+			ev.value = 0;
+			ret = write(uinput_pointer_fd, &ev, sizeof(ev));
 
-		break;
+			break;
 	}
-    if (ret < 0)
-        printf("failed to handle input pointer event\n");
+	if (ret < 0)
+		printf("failed to handle input pointer event\n");
 }
 
 int VMDisplayInput::run()
@@ -488,8 +488,8 @@ int VMDisplayInput::run()
 	while (running) {
 		if (hyper_comm_input) {
 			ret =
-			    hyper_comm_input->recv_data(&header,
-							sizeof(header));
+				hyper_comm_input->recv_data(&header,
+						sizeof(header));
 
 			if (ret < 0) {
 				printf("Lost connection with server\n");
@@ -498,27 +498,27 @@ int VMDisplayInput::run()
 			}
 
 			switch (header.type) {
-			case VMDISPLAY_TOUCH_EVENT:
-				ret =
-				    hyper_comm_input->recv_data(&touch_event,
+				case VMDISPLAY_TOUCH_EVENT:
+					ret =
+						hyper_comm_input->recv_data(&touch_event,
 								header.size);
-				handle_touch_event(touch_event);
-				break;
-			case VMDISPLAY_KEY_EVENT:
-				ret =
-				    hyper_comm_input->recv_data(&key_event,
+					handle_touch_event(touch_event);
+					break;
+				case VMDISPLAY_KEY_EVENT:
+					ret =
+						hyper_comm_input->recv_data(&key_event,
 								header.size);
-				handle_key_event(key_event);
-				break;
-			case VMDISPLAY_POINTER_EVENT:
-				ret =
-				    hyper_comm_input->recv_data(&pointer_event,
+					handle_key_event(key_event);
+					break;
+				case VMDISPLAY_POINTER_EVENT:
+					ret =
+						hyper_comm_input->recv_data(&pointer_event,
 								header.size);
-				handle_pointer_event(pointer_event);
-				break;
-			default:
-				printf("Unknown event type\n");
-				break;
+					handle_pointer_event(pointer_event);
+					break;
+				default:
+					printf("Unknown event type\n");
+					break;
 			}
 		}
 	}
@@ -535,6 +535,7 @@ static VMDisplayInput *input_server = NULL;
 
 static void signal_int(int signum)
 {
+	UNUSED(signum);
 	if (input_server)
 		input_server->stop();
 }
@@ -548,9 +549,9 @@ void print_usage(const char *path)
 {
 	printf("Usage: %s <dom_id> <comm_type> <comm_arg>\n", path);
 	printf
-	    ("       dom_id if of remote domain that will be sharing input\n");
+		("       dom_id if of remote domain that will be sharing input\n");
 	printf
-	    ("       comm_type type of communication channel used by remote domain to share input\n");
+		("       comm_type type of communication channel used by remote domain to share input\n");
 	printf("       comm_arg communication channel specific arguments\n\n");
 	printf("e.g.:\n");
 	printf("%s 2 --xen \"shared_input\"\n", path);

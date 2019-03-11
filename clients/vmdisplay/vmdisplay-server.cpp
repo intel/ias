@@ -75,7 +75,7 @@ struct output_data {
 class VMDisplayServer {
 public:
 	VMDisplayServer():hyper_comm_metadata(NULL), hyper_comm_input(NULL),
-	    running(false), domid(-1), current_buf(NULL) {
+	    running(false), current_buf(NULL), domid(-1) {
 	} int init(int domid,
 		   CommunicationChannelType surf_comm_type,
 		   const char *surf_comm_args,
@@ -241,6 +241,10 @@ int VMDisplayServer::init(int domid,
 	case CommunicationChannelNetwork:
 		hyper_comm_input = new NetworkCommunicator();
 		break;
+	default:
+		printf("Only Network communication channel is supported\n");
+		cleanup();
+		return -1;
 	}
 
 	if (hyper_comm_input->init(domid, HyperCommunicatorInterface::Sender,
@@ -548,6 +552,8 @@ static VMDisplayServer *vm_display_server = NULL;
 
 static void signal_int(int signum)
 {
+	UNUSED(signum);
+
 	if (vm_display_server)
 		vm_display_server->stop();
 }
