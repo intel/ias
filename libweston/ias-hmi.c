@@ -309,7 +309,7 @@ ias_hmi_start_capture(struct wl_client *client,
 		int profile,
 		int verbose)
 {
-#ifdef BUILD_FRAME_CAPTURE
+#ifdef BUILD_REMOTE_DISPLAY
 	struct ias_shell *ias_shell = shell_resource->data;
 	struct ias_backend *ias_backend =
 			(struct ias_backend *)ias_shell->compositor->backend;
@@ -364,7 +364,7 @@ ias_hmi_stop_capture(struct wl_client *client,
 		uint32_t surfid,
 		uint32_t output_number)
 {
-#ifdef BUILD_FRAME_CAPTURE
+#ifdef BUILD_REMOTE_DISPLAY
 	pid_t pid;
 	struct ias_shell *ias_shell = shell_resource->data;
 	struct ias_backend *ias_backend =
@@ -419,7 +419,7 @@ ias_hmi_release_buffer_handle(struct wl_client *client,
 		uint32_t shm_surf_id, uint32_t bufid, uint32_t imageid,
 		uint32_t surfid, uint32_t output_number)
 {
-#ifdef BUILD_FRAME_CAPTURE
+#ifdef BUILD_REMOTE_DISPLAY
 	struct ias_shell *ias_shell = (struct ias_shell *)shell_resource->data;
 	struct ias_backend *ias_backend =
 			(struct ias_backend *)ias_shell->compositor->backend;

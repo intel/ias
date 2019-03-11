@@ -429,20 +429,6 @@ if test x$enable_vaapi_recorder != xno; then
 fi
 AM_CONDITIONAL(ENABLE_VAAPI_RECORDER, test "x$have_libva" = xyes)
 
-AC_ARG_ENABLE(frame-capture, [  --enable-frame-capture],,
-	      enable_frame_capture=no)
-if test x$enable_frame_capture != xno; then
-  PKG_CHECK_MODULES(LIBVA, [libva >= 0.99.0 libva-drm >= 0.99.0],
-                    [have_libva=yes], [have_libva=no])
-  if test "x$have_libva" = "xno" -a "x$enable_frame_capture" = "xyes"; then
-    AC_MSG_ERROR([frame-capture explicitly enabled, but libva couldn't be found])
-  fi
-  AS_IF([test "x$have_libva" = "xyes" -a "x$enable_frame_capture" = "xyes"],
-        [AC_DEFINE([BUILD_FRAME_CAPTURE], [1], [Build with frame capture support])])
-fi
-AM_CONDITIONAL(ENABLE_FRAME_CAPTURE, test "x$have_libva" = "xyes" -a "x$enable_frame_capture" = "xyes")
-
-
 AC_ARG_ENABLE(remote-display, [  --enable-remote-display],,
 	      enable_remote_display=no)
 if test x$enable_remote_display != xno; then
@@ -451,14 +437,10 @@ if test x$enable_remote_display != xno; then
   if test "x$have_libva" = "xno" -a "x$enable_remote_display" = "xyes"; then
     AC_MSG_ERROR([remote-display explicitly enabled, but libva couldn't be found])
   fi
-  if test "x$enable_frame_capture" = "xno" -a "x$enable_remote_display" = "xyes"; then
-    AC_MSG_ERROR([remote-display explicitly enabled, but frame capture is not])
-  fi
-  AS_IF([test "x$have_libva" = "xyes" -a "x$enable_frame_capture" = "xyes"],
+  AS_IF([test "x$have_libva" = "xyes" -a "x$enable_remote_display" = "xyes"],
         [AC_DEFINE([BUILD_REMOTE_DISPLAY], [1], [Build remote display])])
-  PKG_CHECK_MODULES(GSTREAMER, [gstreamer-1.0 gstreamer-plugins-base-1.0])
 fi
-AM_CONDITIONAL(ENABLE_REMOTE_DISPLAY, test "x$have_libva" = "xyes" -a "x$enable_frame_capture" = "xyes")
+AM_CONDITIONAL(ENABLE_REMOTE_DISPLAY, test "x$have_libva" = "xyes" -a "x$enable_remote_display" = "xyes")
 
 
 AC_ARG_ENABLE(profile-remote-display, [  --profile-remote-display],,

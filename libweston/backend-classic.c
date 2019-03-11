@@ -385,7 +385,7 @@ generate_crtc_scanout_classic(struct ias_crtc *ias_crtc,
 				return 0;
 			}
 
-#if defined(BUILD_VAAPI_RECORDER) || defined(BUILD_FRAME_CAPTURE)
+#if defined(BUILD_VAAPI_RECORDER) || defined(BUILD_REMOTE_DISPLAY)
 			wl_signal_emit(&output->next_scanout_ready_signal, output);
 #endif
 		}

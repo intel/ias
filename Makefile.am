@@ -495,7 +495,7 @@ ias_backend_la_SOURCES =                       \
        libweston/ias-backend.h						\
        libweston/backend-classic.c					\
        libweston/backend-flexible.c
-if ENABLE_FRAME_CAPTURE
+if ENABLE_REMOTE_DISPLAY
 ias_backend_la_SOURCES +=  \
        libweston/capture-proxy.c						\
        libweston/capture-proxy.h						\

@@ -74,7 +74,7 @@
 #define EGL_PLATFORM_GBM_KHR 0x31D7
 #endif
 
-#ifdef BUILD_FRAME_CAPTURE
+#ifdef BUILD_REMOTE_DISPLAY
 #include "capture-proxy.h"
 #include "../shared/timespec-util.h"
 #include "ias-shell-server-protocol.h"
@@ -2810,10 +2810,10 @@ create_outputs_for_crtc(struct ias_backend *backend, struct ias_crtc *ias_crtc)
 
 		wl_signal_init(&ias_output->update_signal);
 		wl_signal_init(&ias_output->printfps_signal);
-#if defined(BUILD_VAAPI_RECORDER) || defined(BUILD_FRAME_CAPTURE)
+#if defined(BUILD_VAAPI_RECORDER) || defined(BUILD_REMOTE_DISPLAY)
 		wl_signal_init(&ias_output->next_scanout_ready_signal);
 #endif
-#ifdef BUILD_FRAME_CAPTURE
+#ifdef BUILD_REMOTE_DISPLAY
 		wl_signal_init(&ias_output->base.commit_signal);
 #endif
 
@@ -3502,7 +3502,7 @@ cleanup_hyper_dmabuf(struct ias_backend *backend)
 }
 #endif
 
-#ifdef BUILD_FRAME_CAPTURE
+#ifdef BUILD_REMOTE_DISPLAY
 static void
 capture_proxy_destroy_from_output(struct ias_output *output)
 {
@@ -4142,7 +4142,7 @@ release_buffer_handle(struct ias_backend *ias_backend, uint32_t surfid,
 	return IAS_HMI_FCAP_ERROR_OK;
 }
 
-#endif /*BUILD_FRAME_CAPTURE*/
+#endif /*BUILD_REMOTE_DISPLAY*/
 
 static int
 init_drm(struct ias_backend *backend, struct udev_device *device)
@@ -4487,7 +4487,7 @@ ias_compositor_create(struct weston_compositor *compositor,
 				MODIFIER_CTRL | MODIFIER_ALT,
 				switch_vt_binding, compositor);
 
-#ifdef BUILD_FRAME_CAPTURE
+#ifdef BUILD_REMOTE_DISPLAY
 	wl_list_init(&backend->capture_proxy_list);
 #endif
 
@@ -4566,7 +4566,7 @@ ias_compositor_create(struct weston_compositor *compositor,
 	backend->get_tex_info = get_tex_info;
 	backend->get_egl_image_info = get_egl_image_info;
 	backend->set_viewport = set_viewport;
-#ifdef BUILD_FRAME_CAPTURE
+#ifdef BUILD_REMOTE_DISPLAY
 	backend->start_capture = start_capture;
 	backend->stop_capture = stop_capture;
 	backend->release_buffer_handle = release_buffer_handle;
@@ -5563,9 +5563,7 @@ void env_begin(void *userdata, const char **attrs)
  */
 void capture_begin(void *userdata, const char **attrs)
 {
-#ifdef BUILD_FRAME_CAPTURE
-	/* Nothing to do here. */
-#else
+#ifndef BUILD_REMOTE_DISPLAY
 	weston_log("warning: frame capture options set in " CFG_FILENAME
 			" but frame capture not compiled in\n");
 #endif

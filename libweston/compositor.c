@@ -3512,7 +3512,7 @@ surface_commit(struct wl_client *client, struct wl_resource *resource)
 
 	weston_surface_commit(surface);
 
-#ifdef BUILD_FRAME_CAPTURE
+#ifdef BUILD_REMOTE_DISPLAY
 	if (surface->output) {
 		wl_signal_emit(&surface->output->commit_signal, surface);
 	}

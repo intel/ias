@@ -184,16 +184,16 @@ struct ias_output {
 	struct wl_signal printfps_signal;
 	struct wl_listener printfps_listener;
 
-#if defined(BUILD_VAAPI_RECORDER) || defined(BUILD_FRAME_CAPTURE)
+#if defined(BUILD_VAAPI_RECORDER) || defined(BUILD_REMOTE_DISPLAY)
 	struct wl_signal next_scanout_ready_signal;
 #endif
-#ifdef BUILD_FRAME_CAPTURE
+#ifdef BUILD_REMOTE_DISPLAY
 	struct capture_proxy *cp;
 	struct wl_listener capture_proxy_frame_listener;
 #endif
 };
 
-#ifdef BUILD_FRAME_CAPTURE
+#ifdef BUILD_REMOTE_DISPLAY
 struct ias_surface_capture {
 	struct wl_list link;
 	struct capture_proxy *cp;
@@ -282,7 +282,7 @@ struct ias_backend {
 	void (*get_tex_info)(struct weston_view *view, int *num, GLuint *names);
 	void (*get_egl_image_info)(struct weston_view *view, int *num, EGLImageKHR *names);
 	void (*set_viewport)(int x, int y, int width, int height);
-#if BUILD_FRAME_CAPTURE
+#if BUILD_REMOTE_DISPLAY
 	int (*start_capture)(struct wl_client *client,
 			struct ias_backend *ias_backend, struct wl_resource *resource,
 			struct weston_surface *surface, uint32_t output_number,
