@@ -262,19 +262,12 @@ if test x$enable_drm_compositor = xyes; then
 		    [AC_MSG_WARN([GBM does not support dmabuf import, will omit that capability])])
 fi
 
-AC_ARG_ENABLE(emgd-compositor, [  --enable-emgd-compositor],,
-	      enable_emgd_compositor=yes)
-AM_CONDITIONAL(ENABLE_IAS_COMPOSITOR, test x$enable_emgd_compositor = xyes)
-if test x$enable_emgd_compositor = xyes; then
+AC_ARG_ENABLE(ias-compositor, [  --enable-ias-compositor],,
+	      enable_ias_compositor=yes)
+AM_CONDITIONAL(ENABLE_IAS_COMPOSITOR, test x$enable_ias_compositor = xyes)
+if test x$enable_ias_compositor = xyes; then
   AC_DEFINE([BUILD_IAS_COMPOSITOR], [1], [Build the IAS compositor])
   PKG_CHECK_MODULES(IAS_COMPOSITOR, [libudev >= 136 libdrm >= 2.4.30 gbm mtdev >= 1.1.0])
-fi
-
-AC_ARG_ENABLE(text-backend, [  --enable-text-backend],,
-	      enable_text_backend=no)
-AM_CONDITIONAL(ENABLE_TEXT_BACKEND, test x$enable_text_backend = xyes)
-if test x$enable_text_backend = xyes; then
-  AC_DEFINE([TEXT_BACKEND], [1], [Text backend for onscreen keyboard])
 fi
 
 PKG_CHECK_MODULES(LIBEVDEV, [libevdev])
@@ -649,13 +642,6 @@ if test x$enable_ivi_shell = xyes; then
    fi
 fi
 
-AC_ARG_ENABLE(layer-manager-control,
-	      AS_HELP_STRING([--enable-layer-manager-control],
-			     [Enable IVI LayerManagerControl tool [default=no]]),,
-	      enable_layer_manager_control=no)
-AM_CONDITIONAL(ENABLE_LAYER_MANAGER_CONTROL,
-	       test x$enable_layer_manager_control = xyes)
-
 AC_ARG_ENABLE(tracing,
 			  AS_HELP_STRING([--enable-tracing[=buffsize]],
 							 [Enables lightweight tracepoints for startup timing [default=no]]),,
@@ -949,6 +935,7 @@ AC_MSG_RESULT([
 	systemd notify support		${enable_systemd_notify}
 
 	DRM Compositor			${enable_drm_compositor}
+	IAS Compositor			${enable_ias_compositor}
 	Remoting			${enable_remoting}
 	X11 Compositor			${enable_x11_compositor}
 	Wayland Compositor		${enable_wayland_compositor}
