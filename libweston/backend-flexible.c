@@ -559,9 +559,9 @@ allocate_scanout_flexible(struct ias_crtc *ias_crtc, struct ias_mode *m)
 			return -1;
 		}
 
-#ifdef USE_VM
+#ifdef HYPER_DMABUF
 		use_vm = gl_renderer->vm_exec;
-#endif // USE_VM
+#endif /* HYPER_DMABUF */
 
 		if (gl_renderer->output_window_create(&ias_crtc->output[i]->base,
 						      (EGLNativeWindowType)scanout[i].surface,

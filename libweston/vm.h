@@ -1,7 +1,7 @@
 #ifndef __VM_H__
 #define __VM_H__
 
-#ifndef USE_VM
+#ifndef HYPER_DMABUF
 
 #define VM_INIT(gr, res) res=0
 #define VM_ADD_BUF(es, gr, gs, bc, buf, surf, idx)
@@ -11,7 +11,7 @@
 #define VM_OUTPUT_INIT(o)
 #define VM_DESTROY(gr)
 
-#else // USE_VM
+#else /* HYPER_DMABUF */
 
 #include "vm-shared.h"
 #include "gl-renderer.h"
@@ -79,5 +79,5 @@ int unexport_bo(struct ias_backend *bk, struct vm_buffer_info *vb);
 void unpin_bo(struct gl_renderer *gr, void *buf);
 void vm_destroy(struct gl_renderer *gr);
 
-#endif // USE_VM
-#endif // __VM_H__
+#endif /* HYPER_DMABUF */
+#endif /* __VM_H__ */

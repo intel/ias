@@ -819,12 +819,6 @@ else
 	   AC_DEFINE([GENERATE_BINARY_SHADERS], [0], [Generate binary shaders])
 fi
 
-AC_ARG_ENABLE(vm,
-	AS_HELP_STRING([--enable-vm],
-		       [Enable support for vm [default=no]]),,
-		       enable_vm=no)
-AM_CONDITIONAL(ENABLE_VM, test "x$enable_vm" = "xyes")
-
 AC_ARG_ENABLE(hyper-dmabuf,
 	AS_HELP_STRING([--enable-hyper-dmabuf],
 		       [Enable support for surface sharing using hyper dmabuf [default=no]]),,
@@ -836,13 +830,6 @@ AC_ARG_ENABLE(xen-comm-channel,
 		       [Enable support for xen specific communication channel [default=no]]),,
 		       enable_xen_comm_channel=no)
 AM_CONDITIONAL(ENABLE_XEN_COMM_CHANNEL, test "x$enable_xen_comm_channel" = "xyes")
-
-if test "x$enable_vm" != "xyes"; then
-	enable_xen_comm_channel=no
-	enable_hyper_dmabuf=no
-else
-	AC_DEFINE([USE_VM], [1], [Enable VM support])
-fi
 
 if test x$enable_hyper_dmabuf = xyes; then
 	   AC_CHECK_HEADER([hyper_dmabuf.h], [],
@@ -943,12 +930,6 @@ if test x$enable_ivi_share_protocol = xyes; then
                     [libdrm gbm])
 fi
 
-AC_ARG_ENABLE(vmdisplay,
-	AS_HELP_STRING([--enable-vmdisplay],
-		       [Enable support for vmdisplay [default=no]]),,
-		       enable_vmdisplay=no)
-AM_CONDITIONAL(ENABLE_VMDISPLAY, test "x$enable_vmdisplay" = "xyes")
-
 AC_CONFIG_FILES([Makefile libweston/version.h compositor/weston.pc])
 
 # AC_CONFIG_FILES needs the full name when running autoconf, so we need to use
@@ -1009,9 +990,6 @@ AC_MSG_RESULT([
 	VA H.264 encoding Support	${have_libva}
 
 	Generate binary shaders		${enable_shadergen}
-
-	VM				${enable_vm}
-        vmdisplay                       ${enable_vmdisplay}
 	Hyper dmabuf			${enable_hyper_dmabuf}
 	Xen communication channel	${enable_xen_comm_channel}
 ])

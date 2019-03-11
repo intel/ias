@@ -552,7 +552,7 @@ allocate_scanout_classic(struct ias_crtc *ias_crtc, struct ias_mode *m)
 		IAS_ERROR("Failed to create scanout for CRTC");
 		goto try_revert_mode;
 	}
-#ifdef USE_VM
+#ifdef HYPER_DMABUF
 	use_vm = gl_renderer->vm_exec;
 #endif
 

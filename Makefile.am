@@ -365,7 +365,7 @@ gl_renderer_la_SOURCES =			\
 	libweston/linux-sync-file.c		\
 	libweston/linux-sync-file.h		\
 	libweston/linux-sync-file-uapi.h
-if ENABLE_VM
+if ENABLE_HYPER_DMABUF
 gl_renderer_la_SOURCES +=			\
 	libweston/vm-shared.h				\
 	libweston/vm.h				\
@@ -756,7 +756,7 @@ transport_plugin_udp_la_SOURCES = clients/RemoteDisplay/transport_plugin_udp.c
 
 endif
 
-if ENABLE_VMDISPLAY
+if ENABLE_HYPER_DMABUF
 noinst_LTLIBRARIES += libvmdisplay.la
 
 libvmdisplay_la_LIBADD = $(COMPOSITOR_LIBS)	\
@@ -966,7 +966,7 @@ if ENABLE_IVI_SHELL
 libexec_PROGRAMS +=				\
 	weston-ivi-shell-user-interface
 endif
-if ENABLE_VMDISPLAY
+if ENABLE_HYPER_DMABUF
 libexec_PROGRAMS += vmdisplay-wayland		\
 	vmdisplay-server			\
 	vmdisplay-input

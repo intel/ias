@@ -150,7 +150,7 @@ struct gl_renderer_interface {
 
 	int rbc;
 
-#ifdef USE_VM
+#ifdef HYPER_DMABUF
 	int vm_exec;
 	int vm_dbg;
 	int vm_unexport_delay;
@@ -158,7 +158,7 @@ struct gl_renderer_interface {
 	int vm_use_plugin;
 	const char* vm_plugin_path;
 	const char* vm_plugin_args;
-#endif // USE_VM
+#endif /* HYPER_DMABUF */
 };
 
 struct gl_shader {
@@ -250,9 +250,9 @@ struct gl_renderer {
 	int has_wait_sync;
 	PFNEGLWAITSYNCKHRPROC wait_sync;
 
-#ifdef USE_VM
+#ifdef HYPER_DMABUF
 	void *vm_buffer_table;
-#endif // USE_VM
+#endif /* HYPER_DMABUF */
 };
 
 enum timeline_render_point_type {

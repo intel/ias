@@ -4201,20 +4201,14 @@ create_gbm_device(int fd)
 
 	gbm = gbm_create_device(fd);
 
-#ifdef USE_VM
+#ifdef HYPER_DMABUF
 	gl_renderer->vm_exec = vm_exec;
 	gl_renderer->vm_dbg = vm_dbg;
-#ifdef HYPER_DMABUF
 	gl_renderer->vm_unexport_delay = vm_unexport_delay;
 	gl_renderer->vm_plugin_path = vm_plugin_path;
 	gl_renderer->vm_plugin_args = vm_plugin_args;
 	gl_renderer->vm_share_only = vm_share_only;
-#else
-	weston_log("Hyper dmabuf support not enabled during compilation, "
-		   "disabling surface sharing\n");
-	gl_renderer->vm_exec = 0;
-#endif // HYPER_DMABUF
-#endif // USE_VM
+#endif /* HYPER_DMABUF */
 
 	return gbm;
 }
@@ -4252,12 +4246,12 @@ ias_compositor_create_gl_renderer(struct ias_backend *backend)
 	int n_formats = 1;
 	int use_vm = 0;
 
-#ifdef USE_VM
+#ifdef HYPER_DMABUF
 	if(gl_renderer->vm_exec) {
 		backend->format = GBM_FORMAT_ARGB8888;
 	}
 	use_vm = gl_renderer->vm_exec;
-#endif // USE_VM
+#endif /* HYPER_DMABUF */
 
 	if (format[1])
 		n_formats = 2;
