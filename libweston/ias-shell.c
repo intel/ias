@@ -40,6 +40,7 @@
 #include "ias-hmi.h"
 #include "ias-relay-input.h"
 #include "ias-shell.h"
+#include "shared/helpers.h"
 
 #define TARGET_NUM_SECONDS 5
 
