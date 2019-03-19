@@ -1256,10 +1256,8 @@ nodist_libwl_base_la_SOURCES = \
 	protocol/ias-backend-protocol.c			\
 	protocol/ias-shell-protocol.c			\
 	protocol/ias-shell-client-protocol.h	\
-	protocol/xdg-shell-unstable-v6-protocol.c			\
-	protocol/xdg-shell-unstable-v6-client-protocol.h		\
-	protocol/ivi-application-protocol.c		\
-	protocol/ivi-application-client-protocol.h
+	protocol/xdg-shell-protocol.c		\
+	protocol/xdg-shell-client-protocol.h
 
 BUILT_SOURCES += $(nodist_libwl_base_la_SOURCES)
 
@@ -1274,7 +1272,11 @@ module_LTLIBRARIES += libwl_disp.la
 
 libwl_disp_la_SOURCES =				\
 	clients/wl_disp/display_wayland.cpp		\
-	clients/wl_disp/display_wayland.h
+	clients/wl_disp/display_wayland.h	\
+	protocol/ias-shell-protocol.c			\
+	protocol/ias-shell-client-protocol.h	\
+	protocol/xdg-shell-protocol.c		\
+	protocol/xdg-shell-client-protocol.h
 
 libwl_disp_la_LDFLAGS = -module -avoid-version
 libwl_disp_la_LIBADD =  $(GLIB_LIBS)		\
@@ -1290,7 +1292,9 @@ module_LTLIBRARIES += libias_hmi.la
 
 libias_hmi_la_SOURCES =				\
 	clients/ias_hmi/ias_hmi_reg.cpp		\
-	clients/ias_hmi/ias_hmi_reg.h
+	clients/ias_hmi/ias_hmi_reg.h		\
+	protocol/ias-shell-protocol.c		\
+	protocol/ias-shell-client-protocol.h
 
 libias_hmi_la_LDFLAGS = -module -avoid-version
 libias_hmi_la_LIBADD =  $(GLIB_LIBS)		\

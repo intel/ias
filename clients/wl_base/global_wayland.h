@@ -52,8 +52,7 @@ class global_wl {
 		struct wl_registry *registry;
 		struct wl_compositor *compositor;
 		void *ias_shell;
-		void *wl_shell;
-		void *ivi_application;
+		void *wm_base;
 		struct wl_list crtc_list;
 
 	public:
@@ -70,7 +69,7 @@ class global_wl {
 				struct wl_registry *registry, uint32_t name);
 		virtual bool set_content_protection(int crtc, int cp);
 		virtual bool content_protection_status(int crtc);
-		static void xdg_shell_ping(void *data, struct zxdg_shell_v6 *shell,
+		static void xdg_wm_base_ping(void *data, struct xdg_wm_base *shell,
 				uint32_t serial);
 		static void modelist_event(void *data,
 				struct ias_crtc *ias_crtc,

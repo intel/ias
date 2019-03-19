@@ -42,8 +42,7 @@ typedef struct _surf {
 	struct wl_egl_window *native;
 	struct wl_surface *surface;
 	void *shell_surface;
-	struct ivi_surface *ivi_surface;
-	struct zxdg_toplevel_v6 *xdg_toplevel;
+	struct xdg_toplevel *xdg_toplevel;
 	bool wait_for_configure;
 	surf_info_t si;
 } surf_t ;
@@ -84,16 +83,13 @@ class disp_wl {
 		static void ias_handle_configure(void *data,
 				struct ias_surface *ias_surface, int32_t width, int32_t height);
 		static void handle_surface_configure(void *data,
-				struct zxdg_surface_v6 *surface, uint32_t serial);
-		static void handle_ivi_surface_configure(void *data,
-				struct ivi_surface *ivi_surface,
-				int32_t width, int32_t height);
+				struct xdg_surface *surface, uint32_t serial);
 		static void handle_toplevel_configure(void *data,
-				struct zxdg_toplevel_v6 *toplevel,
+				struct xdg_toplevel *toplevel,
 				int32_t width, int32_t height,
 				struct wl_array *states);
 		static void handle_toplevel_close(void *data,
-				struct zxdg_toplevel_v6 *xdg_toplevel);
+				struct xdg_toplevel *xdg_toplevel);
 		void configure(int width, int height);
 };
 

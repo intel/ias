@@ -20,8 +20,7 @@
 #include <wayland-cursor.h>
 #include "global_wayland.h"
 #include "protocol/ias-shell-client-protocol.h"
-#include "protocol/ivi-application-client-protocol.h"
-#include "protocol/xdg-shell-unstable-v6-client-protocol.h"
+#include "protocol/xdg-shell-client-protocol.h"
 #include "protocol/ias-backend-client-protocol.h"
 
 #define BATCH_SIZE 0x80000
@@ -48,8 +47,7 @@ global_wl::global_wl()
 	registry = NULL;
 	compositor = NULL;
 	ias_shell = NULL;
-	wl_shell = NULL;
-	ivi_application = NULL;
+	wm_base = NULL;
 }
 
 /*******************************************************************************
@@ -59,19 +57,19 @@ global_wl::global_wl()
  *	a pong.
  * Parameters
  *	void *data - a pointer to global_wl
- *	struct zxdg_shell_v6 *shell - a pointer to shell
+ *	struct xdg_wm_base *shell - a pointer to shell
  *	uint32_t serial - serial of the ping event
  * Return val
  *	void
  ******************************************************************************/
 void
-global_wl::xdg_shell_ping(void *data, struct zxdg_shell_v6 *shell, uint32_t serial)
+global_wl::xdg_wm_base_ping(void *data, struct xdg_wm_base *shell, uint32_t serial)
 {
-	zxdg_shell_v6_pong(shell, serial);
+	xdg_wm_base_pong(shell, serial);
 }
 
-static const struct zxdg_shell_v6_listener xdg_shell_listener = {
-	global_wl::xdg_shell_ping,
+static const struct xdg_wm_base_listener wm_base_listener = {
+	global_wl::xdg_wm_base_ping,
 };
 
 void global_wl::modelist_event(void *data,
@@ -161,22 +159,17 @@ global_wl::registry_handle_global(void *data, struct wl_registry *registry,
 		d->compositor = (wl_compositor *)
 			wl_registry_bind(registry, name,
 					&wl_compositor_interface, 1);
-	} else if (strcmp(interface, "zxdg_shell_v6") == 0) {
-		if (!d->ias_shell && !d->ivi_application) {
-			d->wl_shell = wl_registry_bind(registry,
-					name, &zxdg_shell_v6_interface, 1);
-			zxdg_shell_v6_add_listener((struct zxdg_shell_v6 *) d->wl_shell,
-					&xdg_shell_listener, d);
+	} else if (strcmp(interface, "xdg_wm_base") == 0) {
+		if (!d->ias_shell) {
+			d->wm_base = wl_registry_bind(registry,
+					name, &xdg_wm_base_interface, 1);
+			xdg_wm_base_add_listener((struct xdg_wm_base *) d->wm_base,
+					&wm_base_listener, d);
 		}
 	} else if (strcmp(interface, "ias_shell") == 0) {
-		if (!d->wl_shell && !d->ivi_application) {
+		if (!d->wm_base) {
 			d->ias_shell = wl_registry_bind(registry, name,
 					&ias_shell_interface, 1);
-		}
-	} else if (strcmp(interface, "ivi_application") == 0) {
-		if (!d->ias_shell && !d->wl_shell) {
-			d->ivi_application = wl_registry_bind(
-					registry, name, &ivi_application_interface, 1);
 		}
 	} else if (strcmp(interface, "ias_crtc") == 0) {
 		c = (struct crtc *) calloc(1, sizeof *c);
@@ -308,12 +301,8 @@ void global_wl::deinit()
 {
 	struct crtc *crtc, *temp_crtc;
 
-	if (wl_shell) {
-		zxdg_shell_v6_destroy((struct zxdg_shell_v6 *) wl_shell);
-	}
-
-	if (ivi_application) {
-		ivi_application_destroy((struct ivi_application *) ivi_application);
+	if (wm_base) {
+		xdg_wm_base_destroy((struct xdg_wm_base *) wm_base);
 	}
 
 	if (ias_shell) {
