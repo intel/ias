@@ -40,6 +40,10 @@
 
 #include "cursor_image.h"
 
+#ifndef UNUSED
+#define UNUSED(var)  (void)(var)
+#endif
+
 static ias_identifier myid;
 static spug_seat_id seat;
 static spug_matrix projmat;
@@ -202,6 +206,7 @@ create_shader(const char *source, GLenum shader_type)
 static void
 grid_switch_to(spug_output_id output_id)
 {
+	UNUSED(output_id);
 	/* Set initial mouse position */
 	spug_mouse_xy(&mouse_x, &mouse_y, seat);
 }
@@ -296,6 +301,7 @@ static void
 custom_cursor_draw(	struct spug_view_draw_info *view_draw_info,
 					struct spug_draw_info *draw_info)
 {
+	UNUSED(draw_info);
 	glBindTexture(GL_TEXTURE_2D, view_draw_info->texture);
 	//glBindTexture(GL_TEXTURE_2D, surface->textures[0]);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -347,6 +353,7 @@ view_draw_setup()
 static int
 view_filter(const spug_view_id view_id, spug_view_list all_views)
 {
+	UNUSED(all_views);
 	if (!use_for_grid(view_id) || current_tile >= 4) {
 		return SPUG_FALSE;
 	}
@@ -359,6 +366,7 @@ static int
 cursor_filter(const spug_view_id view_id, spug_view_list all_views)
 {
 	spug_view_id seat_sprite = spug_get_seat_sprite(seat);
+	UNUSED(all_views);
 
 	if(seat_sprite == view_id) {
 		return SPUG_TRUE;
@@ -371,39 +379,41 @@ cursor_filter(const spug_view_id view_id, spug_view_list all_views)
 static void
 gray_box_draw(void)
 {
-		glUniform1i(tile_uniform, current_tile);
-		glUniform1i(gray_uniform, 1);
-		glUniform1i(timedout_uniform, 0);
-		glUniform1f(opacity_uniform, (current_tile++ == selected_tile) ?
-				abs(60.0 - (float)(frame%120)) / 60.0 :
-				1.0);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glUniform1i(tile_uniform, current_tile);
+	glUniform1i(gray_uniform, 1);
+	glUniform1i(timedout_uniform, 0);
+	glUniform1f(opacity_uniform, (current_tile++ == selected_tile) ?
+			abs(60.0 - (float)(frame%120)) / 60.0 :
+			1.0);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
 static void
 view_draw(	struct spug_view_draw_info *view_draw_info,
 			struct spug_draw_info *draw_info)
 {
-		glBindTexture(GL_TEXTURE_2D, view_draw_info->texture);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	UNUSED(draw_info);
+	glBindTexture(GL_TEXTURE_2D, view_draw_info->texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		glUniform1i(tile_uniform, current_tile);
-		glUniform1i(gray_uniform, 0);
-		glUniform1i(tex_uniform, 0);
-		glUniform1i(timedout_uniform, 
-				spug_has_surface_timedout(view_draw_info->id));
-		glUniform1f(opacity_uniform, (current_tile++ == selected_tile) ?
-				abs(60.0 - (float)(frame%120)) / 60.0 :
-				1.0);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-		glBindTexture(GL_TEXTURE_2D, 0);
+	glUniform1i(tile_uniform, current_tile);
+	glUniform1i(gray_uniform, 0);
+	glUniform1i(tex_uniform, 0);
+	glUniform1i(timedout_uniform,
+			spug_has_surface_timedout(view_draw_info->id));
+	glUniform1f(opacity_uniform, (current_tile++ == selected_tile) ?
+			abs(60.0 - (float)(frame%120)) / 60.0 :
+			1.0);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 static spug_bool
 fullscreen_filter(	const spug_view_id view_id,
 					spug_view_list all_views)
 {
+	UNUSED(all_views);
 	if(spug_is_surface_flippable(view_id) &&
 		spug_get_zorder(view_id) != SHELL_SURFACE_ZORDER_BACKGROUND) {
 		/*
@@ -605,7 +615,7 @@ select_output(int32_t x, int32_t y)
 static void
 grid_grab_focus(spug_pointer_grab *base)
 {
-
+	UNUSED(base);
 }
 
 static void
@@ -694,6 +704,7 @@ static void
 grid_grab_pointer_cancel(spug_pointer_grab *grab)
 {
 	/* Noop */
+	UNUSED(grab);
 }
 
 static void
@@ -702,18 +713,24 @@ grid_grab_axis(spug_pointer_grab *grab,
 		  struct weston_pointer_axis_event *event)
 {
     /* TODO */
+	UNUSED(grab);
+	UNUSED(time);
+	UNUSED(event);
 }
 
 static void
 grid_grab_axis_source(spug_pointer_grab *grab, uint32_t source)
 {
     /* TODO */
+	UNUSED(grab);
+	UNUSED(source);
 }
 
 static void
 grid_grab_frame(spug_pointer_grab *grab)
 {
     /* TODO */
+	UNUSED(grab);
 }
 
 static spug_pointer_grab_interface mouse_grab_interface = {
@@ -737,6 +754,11 @@ grid_grab_touch_down(spug_touch_grab *grab,
 	int x = spug_fixed_to_int(grab->touch->grab_x);
 	int y = spug_fixed_to_int(grab->touch->grab_y);
 
+	UNUSED(time);
+	UNUSED(touch_id);
+	UNUSED(sx);
+	UNUSED(sy);
+
 	/*
 	 * Grid might be active on multiple outputs at once.  Figure out which
 	 * output the event button event happened on.
@@ -757,6 +779,9 @@ grid_grab_touch_up(spug_touch_grab *grab,
 		int touch_id)
 {
 	/* noop */
+	UNUSED(grab);
+	UNUSED(time);
+	UNUSED(touch_id);
 }
 
 static void
@@ -767,18 +792,25 @@ grid_grab_touch_motion(spug_touch_grab *grab,
 		int sy)
 {
 	/* noop */
+	UNUSED(grab);
+	UNUSED(time);
+	UNUSED(touch_id);
+	UNUSED(sx);
+	UNUSED(sy);
 }
 
 static void
 grid_grab_touch_frame(spug_touch_grab *grab)
 {
 	/* noop */
+	UNUSED(grab);
 }
 
 static void
 grid_grab_touch_cancel(spug_touch_grab *grab)
 {
 	/* noop */
+	UNUSED(grab);
 }
 
 
@@ -936,11 +968,18 @@ grid_grab_modifiers(spug_keyboard_grab *grab,
 		uint32_t group)
 {
 	/* Noop */
+	UNUSED(grab);
+	UNUSED(serial);
+	UNUSED(mods_depressed);
+	UNUSED(mods_latched);
+	UNUSED(mods_locked);
+	UNUSED(group);
 }
 
 static void grid_grab_key_cancel(spug_keyboard_grab *grab)
 {
 	/* Noop */
+	UNUSED(grab);
 }
 
 static spug_keyboard_grab_interface key_grab_interface = {
@@ -964,6 +1003,7 @@ ias_plugin_init(struct ias_plugin_info *info,
 	GLint status;
 	spug_output_id output;
 
+	UNUSED(version);
 	myid = id;
 
 	/*

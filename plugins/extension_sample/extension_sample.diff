@@ -1,260 +1,169 @@
---- grid_layout.c
-+++ extension_sample.c
-@@ -1,6 +1,6 @@
- /*
-  *-----------------------------------------------------------------------------
-- * Filename: grid-layout.c
-+ * Filename: extension_sample.c
-  *-----------------------------------------------------------------------------
-  * Copyright 2012 Intel Corporation All Rights Reserved.
-  * The source code contained or described herein and all documents related to
-@@ -25,7 +25,11 @@
-  *
-  *-----------------------------------------------------------------------------
-  * Description:
-- *   Grid layout plugin for the Intel Automotive Solutions shell.
-+ *   Slightly modified copy of original grid plugin.  This version also
-+ *   advertises a new, custom extension to the Wayland protocol and handles
-+ *   custom messages sent on this protocol.  Advertising a full protocol
-+ *   extension is a way to allow data to pass back and forth in cases where
-+ *   the IAS-provided mechanisms like behavior bits aren't sufficient.
-  *-----------------------------------------------------------------------------
-  */
- 
-@@ -35,10 +39,12 @@
- #include <GLES2/gl2.h>
- #include "ias-plugin-framework.h"
- #include "ias-spug.h"
-+#include "new-extension-server-protocol.h"
- 
- #include "cursor_image.h"
- 
- static ias_identifier myid;
-+static spug_list cell_listener_list;
- static spug_seat_id seat;
- static spug_matrix projmat;
- static spug_matrix *outmat;
-@@ -52,6 +58,7 @@ static spug_matrix gl_matrix;
- static const char *vert_shader_text =
- 	"uniform mat4 proj;\n"
- 	"uniform highp int tilenum;\n"
-+	"uniform float rot;\n"
- 	"attribute vec2 pos;\n"
- 	"attribute vec2 texcoord;\n"
- 	"varying vec2 v_texcoord;\n"
-@@ -59,8 +66,12 @@ static const char *vert_shader_text =
- 	"void main() {\n"
- 	"  float t = float(tilenum);\n"
- 	"  vec2 p;\n"
--	"  p = pos + vec2(50.0 + 500.0*mod(t, 2.0),\n"
--	"                 50.0 + 500.0*floor(t/2.0));\n"
-+	"  mat2 rotmat = mat2( cos(rot), -sin(rot),\n"
-+	"                      sin(rot), cos(rot));\n"
-+	"\n"
-+	"  p = (pos - vec2(200.0, 200.0)) * rotmat +\n"
-+	"                     vec2(300.0 + 450.0*mod(t, 2.0),\n"
-+	"                          300.0 + 450.0*floor(t/2.0));\n"
- 	"  gl_Position = proj * vec4(p, 0.0, 1.0);\n"
- 	"  v_texcoord = texcoord;\n"
- 	"}\n";
-@@ -154,6 +165,7 @@ static GLfloat curs_v[] = {
- static GLuint program, cursprogram;
- static GLuint proj_uniform, tile_uniform, gray_uniform;
- static GLuint tex_uniform, opacity_uniform, timedout_uniform;
-+static GLuint rot_uniform;
- static GLuint pos_att, tex_att;
- 
- static GLuint curs_proj_uniform, curs_tex_uniform;
-@@ -172,6 +184,15 @@ static enum {
- 	CURSOR_GRID, CURSOR_APP
- } cursor;
- 
-+/* Interface object for plugin-provided extension */
-+static struct myobj {
-+    struct spug_object base;
-+    struct spug_global *global;
-+
-+    /* Are grid cells spinning? */
-+    int spinning;
-+} pluginext;
-+
- static GLuint
- create_shader(const char *source, GLenum shader_type)
- {
-@@ -313,6 +334,8 @@ view_draw_clean_state(void)
- static void
- view_draw_setup()
- {
-+	static float rotangle = 0;
-+
- 	glClearColor(0.2, 0.2, 0.2, 1);
- 	glClear(GL_COLOR_BUFFER_BIT);
- 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-@@ -325,6 +348,21 @@ view_draw_setup()
- 	 */
- 	glUniformMatrix4fv(proj_uniform, 1, GL_FALSE, projmat.d);
- 
-+	/* Update rotation angle and pass to shader as uniform */
-+	if (pluginext.spinning == MY_PLUGIN_ROTATE_CELLS_METHOD_CW) {
-+	    rotangle += 0.05;
-+		if (rotangle > 2 * M_PI) {
-+			rotangle -= 2 * M_PI;
-+		}
-+	} else if (pluginext.spinning == MY_PLUGIN_ROTATE_CELLS_METHOD_CCW) {
-+	    rotangle -= 0.05;
-+		if (rotangle < 0) {
-+			rotangle += 2 * M_PI;
-+		}
-+	}
-+	glUniform1f(rot_uniform, rotangle);
-+
-+
- 	/* Buffer format is vert_x, vert_y, tex_x, tex_y */
- 	glVertexAttribPointer(pos_att, 2, GL_FLOAT, GL_FALSE,
- 			4 * sizeof(GLfloat), &tile_verts[0]);
-@@ -600,6 +638,31 @@ select_output(int32_t x, int32_t y)
-  *** Input handlers
-  ***/
- 
-+struct cell_listener {
-+	spug_resource resource;
-+	spug_list link;
-+};
-+
-+/*
-+ * cell_selected()
-+ *
-+ * Sends notification to all interested clients that the cell selection
-+ * has changed.
-+ */
-+void
-+cell_selected(int cell)
-+{
-+	struct cell_listener *l;
-+
-+	if (cell < 0 || cell > 3) {
-+		return;
-+	}
-+
-+	spug_list_for_each(l, &cell_listener_list, link) {
-+		my_plugin_send_cell_selected(&l->resource, cell);
-+	}
-+
-+}
- static void
- grid_grab_focus(spug_pointer_grab *base)
- {
-@@ -665,6 +728,7 @@ grid_grab_button(spug_pointer_grab *grab,
- 
- 	/* Figure out which tile we clicked on, if any */
- 	this_tile = select_cell(output, mouse_x, mouse_y);
-+	cell_selected(selected_tile);
- 
- 	/* lets take the opportunity to demonstrate set_input_focus */
- 	update_input_focus = 1;
-@@ -743,6 +807,7 @@ grid_grab_touch_down(spug_touch_grab *grab,
- 
- 	/* Figure out which tile we clicked on, if any */
- 	selected_tile = select_cell(output, x, y);
-+	cell_selected(selected_tile);
- 
- 	/* lets take the opportunity to demonstrate set_input_focus */
- 	update_input_focus = 1;
-@@ -910,6 +975,7 @@ grid_grab_key(spug_keyboard_grab *grab,
- 		/* Ignore other keys */
- 		;
- 	}
-+	cell_selected(selected_tile);
- 
- 	switch(key) {
- 	case KEY_UP:
-@@ -947,6 +1013,71 @@ static spug_keyboard_grab_interface key_grab_interface = {
- 	grid_grab_key_cancel
- };
- 
-+/***
-+ *** Protocol extension
-+ ***/
-+
-+
-+/*
-+ * my_plugin_rotate_cells()
-+ *
-+ * Begins rotating grid cells at client's request.
-+ */
-+static void
-+my_plugin_rotate_cells(spug_client_itf *client,
-+	spug_resource *resource,
-+	uint32_t method)
-+{
-+	struct myobj *extobj = resource->data;
-+
-+	extobj->spinning = method;
-+}
-+
-+static struct my_plugin_interface my_plugin_implementation = {
-+	my_plugin_rotate_cells,
-+};
-+
-+/*
-+ * my_plugin_client_disconnect()
-+ *
-+ * Cleans up when a client using our protocol extension disconnects
-+ * (we need to stop sending them events at that time).
-+ */
-+static void
-+my_plugin_client_disconnect(spug_resource *resource)
-+{
-+	struct cell_listener *l =
-+		container_of(resource, struct cell_listener, resource);
-+
-+	spug_list_remove(&l->link);
-+	free(l);
-+}
-+
-+/*
-+ * bind_my_plugin()
-+ *
-+ * Handles clients binding to our extension object.
-+ */
-+static void
-+bind_pluginext(spug_client_id client_id,
-+	void *data, uint32_t version, uint32_t id)
-+{
-+	struct cell_listener *l = calloc(1, sizeof *l);
-+	if (!l) {
-+		fprintf(stderr, "Out of memory!\n");
-+		return;
-+	}
-+
-+	l->resource.object.interface = &my_plugin_interface;
-+	l->resource.object.implementation = (void(**)(void)) &my_plugin_implementation;
-+	l->resource.object.id = id;
-+	l->resource.data = data;
-+	l->resource.destroy = my_plugin_client_disconnect;
-+	spug_client_add_resource(client_id, &l->resource);
-+
-+	/* Record this resource so we can send events on it later */
-+	spug_list_insert(&cell_listener_list, &l->link);
-+}
- 
- /***
-  *** Plugin initialization
-@@ -964,6 +1095,17 @@ ias_plugin_init(struct ias_plugin_info *info,
- 
- 	myid = id;
- 
-+	spug_list_init(&cell_listener_list);
-+
-+	/* Create an object to expose our protocol extension */
-+	pluginext.base.interface = (struct spug_interface *)&my_plugin_interface;
-+	pluginext.base.implementation =
-+	    (void(**)(void)) &my_plugin_implementation;
-+	/* TODO This won't work yet. pluginext.compositor will be undefined, this is
-+	 * just to make it build until the time comes to port this test to spug. */
-+	pluginext.global = (struct spug_global * )spug_global_create((const struct spug_interface * )&my_plugin_interface, &pluginext, (spug_global_bind_func_t )bind_pluginext);
-+	pluginext.spinning = MY_PLUGIN_ROTATE_CELLS_METHOD_NONE;
-+
- 	/*
- 	 * This plugin is written for inforec version 1, so that's all we fill
- 	 * in, regardless of what gets passed in for the version parameter.
+3c3
+<  * Filename: grid-layout.c
+---
+>  * Filename: extension_sample.c
+30c30,34
+<  *   Grid layout plugin for the Intel Automotive Solutions shell.
+---
+>  *   Slightly modified copy of original grid plugin.  This version also
+>  *   advertises a new, custom extension to the Wayland protocol and handles
+>  *   custom messages sent on this protocol.  Advertising a full protocol
+>  *   extension is a way to allow data to pass back and forth in cases where
+>  *   the IAS-provided mechanisms like behavior bits aren't sufficient.
+39a44
+> #include "new-extension-server-protocol.h"
+47a53
+> static spug_list cell_listener_list;
+60a67
+> 	"uniform float rot;\n"
+68,69c75,80
+< 	"  p = pos + vec2(50.0 + 500.0*mod(t, 2.0),\n"
+< 	"                 50.0 + 500.0*floor(t/2.0));\n"
+---
+> 	"  mat2 rotmat = mat2( cos(rot), -sin(rot),\n"
+> 	"                      sin(rot), cos(rot));\n"
+> 	"\n"
+> 	"  p = (pos - vec2(200.0, 200.0)) * rotmat +\n"
+> 	"                     vec2(300.0 + 450.0*mod(t, 2.0),\n"
+> 	"                          300.0 + 450.0*floor(t/2.0));\n"
+162a174
+> static GLuint rot_uniform;
+180a193,201
+> /* Interface object for plugin-provided extension */
+> static struct myobj {
+>     struct spug_object base;
+>     struct spug_global *global;
+> 
+>     /* Are grid cells spinning? */
+>     int spinning;
+> } pluginext;
+> 
+323a345,346
+> 	static float rotangle = 0;
+> 
+335a359,373
+> 	/* Update rotation angle and pass to shader as uniform */
+> 	if (pluginext.spinning == MY_PLUGIN_ROTATE_CELLS_METHOD_CW) {
+> 	    rotangle += 0.05;
+> 		if (rotangle > 2 * M_PI) {
+> 			rotangle -= 2 * M_PI;
+> 		}
+> 	} else if (pluginext.spinning == MY_PLUGIN_ROTATE_CELLS_METHOD_CCW) {
+> 	    rotangle -= 0.05;
+> 		if (rotangle < 0) {
+> 			rotangle += 2 * M_PI;
+> 		}
+> 	}
+> 	glUniform1f(rot_uniform, rotangle);
+> 
+> 
+614a653,677
+> struct cell_listener {
+> 	spug_resource resource;
+> 	spug_list link;
+> };
+> 
+> /*
+>  * cell_selected()
+>  *
+>  * Sends notification to all interested clients that the cell selection
+>  * has changed.
+>  */
+> void
+> cell_selected(int cell)
+> {
+> 	struct cell_listener *l;
+> 
+> 	if (cell < 0 || cell > 3) {
+> 		return;
+> 	}
+> 
+> 	spug_list_for_each(l, &cell_listener_list, link) {
+> 		my_plugin_send_cell_selected(&l->resource, cell);
+> 	}
+> 
+> }
+679a743
+> 	cell_selected(selected_tile);
+769a834
+> 	cell_selected(selected_tile);
+946a1012
+> 	cell_selected(selected_tile);
+990a1057,1121
+> /***
+>  *** Protocol extension
+>  ***/
+> 
+> 
+> /*
+>  * my_plugin_rotate_cells()
+>  *
+>  * Begins rotating grid cells at client's request.
+>  */
+> static void
+> my_plugin_rotate_cells(spug_client_itf *client,
+> 	spug_resource *resource,
+> 	uint32_t method)
+> {
+> 	struct myobj *extobj = resource->data;
+> 
+> 	extobj->spinning = method;
+> }
+> 
+> static struct my_plugin_interface my_plugin_implementation = {
+> 	my_plugin_rotate_cells,
+> };
+> 
+> /*
+>  * my_plugin_client_disconnect()
+>  *
+>  * Cleans up when a client using our protocol extension disconnects
+>  * (we need to stop sending them events at that time).
+>  */
+> static void
+> my_plugin_client_disconnect(spug_resource *resource)
+> {
+> 	struct cell_listener *l =
+> 		container_of(resource, struct cell_listener, resource);
+> 
+> 	spug_list_remove(&l->link);
+> 	free(l);
+> }
+> 
+> /*
+>  * bind_my_plugin()
+>  *
+>  * Handles clients binding to our extension object.
+>  */
+> static void
+> bind_pluginext(spug_client_id client_id,
+> 	void *data, uint32_t version, uint32_t id)
+> {
+> 	struct cell_listener *l = calloc(1, sizeof *l);
+> 	if (!l) {
+> 		fprintf(stderr, "Out of memory!\n");
+> 		return;
+> 	}
+> 
+> 	l->resource.object.interface = &my_plugin_interface;
+> 	l->resource.object.implementation = (void(**)(void)) &my_plugin_implementation;
+> 	l->resource.object.id = id;
+> 	l->resource.data = data;
+> 	l->resource.destroy = my_plugin_client_disconnect;
+> 	spug_client_add_resource(client_id, &l->resource);
+> 
+> 	/* Record this resource so we can send events on it later */
+> 	spug_list_insert(&cell_listener_list, &l->link);
+> }
+1007a1139,1149
+> 
+> 	spug_list_init(&cell_listener_list);
+> 
+> 	/* Create an object to expose our protocol extension */
+> 	pluginext.base.interface = (struct spug_interface *)&my_plugin_interface;
+> 	pluginext.base.implementation =
+> 	    (void(**)(void)) &my_plugin_implementation;
+> 	/* TODO This won't work yet. pluginext.compositor will be undefined, this is
+> 	 * just to make it build until the time comes to port this test to spug. */
+> 	pluginext.global = (struct spug_global * )spug_global_create((const struct spug_interface * )&my_plugin_interface, &pluginext, (spug_global_bind_func_t )bind_pluginext);
+> 	pluginext.spinning = MY_PLUGIN_ROTATE_CELLS_METHOD_NONE;
