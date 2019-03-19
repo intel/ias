@@ -24,6 +24,7 @@ install_data(
 		'tiling.png',
 		'wayland.png',
 		'wayland.svg',
+		'intel.png',
 	],
-	install_dir: join_paths(dir_data, 'weston')
+	install_dir: join_paths(dir_data, 'ias')
 )

@@ -8,6 +8,14 @@ option(
 	value: true,
 	description: 'Weston backend: DRM/KMS'
 )
+
+option(
+	'backend-ias',
+	type: 'boolean',
+	value: true,
+	description: 'IAS backend: DRM/KMS'
+)
+
 option(
 	'backend-drm-screencast-vaapi',
 	type: 'boolean',
@@ -53,8 +61,8 @@ option(
 option(
 	'backend-default',
 	type: 'combo',
-	choices: [ 'auto', 'drm', 'wayland', 'x11', 'fbdev', 'headless' ],
-	value: 'drm',
+	choices: [ 'auto', 'ias', 'drm', 'wayland', 'x11', 'fbdev', 'headless' ],
+	value: 'ias',
 	description: 'Default backend when no parent display server detected'
 )
 
@@ -116,6 +124,12 @@ option(
 	type: 'boolean',
 	value: true,
 	description: 'Weston shell UI: IVI (automotive)'
+)
+option(
+	'shell-ias',
+	type: 'boolean',
+	value: true,
+	description: 'Weston shell UI: IAS'
 )
 
 option(
@@ -203,4 +217,65 @@ option(
 	type: 'boolean',
 	value: true,
 	description: 'Tests: output JUnit XML results'
+)
+
+option(
+	'enable-shadergen',
+	type: 'boolean',
+	value: false,
+	description: 'Compile GLSL shaders online, but save resulting binaries for
+	later use by release builds'
+)
+
+option(
+	'disable-xkbcommon',
+	type: 'boolean',
+	value: true,
+	description: 'This is only useful in environments where you do not have
+	a hardware keyboard. If libxkbcommon support is disabled clients will not
+	be sent a keymap and must know how to interpret the keycode sent for any key event.'
+)
+
+option(
+	'enable-tracing',
+	type: 'boolean',
+	value: false,
+	description: 'Enables lightweight tracepoints for startup timing'
+)
+
+option(
+	'enable-remote-display',
+	type: 'boolean',
+	value: false,
+	description: 'Enables encoding of local surfaces/outputs and transport
+	via AVB/UDP to a remote SoC in a 0 copy and low latency manner'
+)
+
+option(
+	'profile-remote-display',
+	type: 'boolean',
+	value: false,
+	description: 'Enables profiling of remote display'
+)
+
+option(
+	'enable-hyper-dmabuf',
+	type: 'boolean',
+	value: false,
+	description: 'Enable support for surface sharing between VMs using hyper-dmabuf'
+)
+
+
+option(
+	'ias-plugin-framework',
+	type: 'boolean',
+	value: true,
+	description: 'A plugin framework for the IAS compositor'
+)
+
+option(
+	'ivi-plugin-framework',
+	type: 'boolean',
+	value: true,
+	description: 'A plugin framework for the IAS compositors IVI shell'
 )

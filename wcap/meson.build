@@ -17,5 +17,6 @@ executable(
 	srcs_wcap,
 	include_directories: include_directories('..'),
 	dependencies: [ dep_libm, wcap_dep_cairo ],
-	install: true
+	install: true,
+	install_dir: join_paths(dir_data, 'ias/examples')
 )

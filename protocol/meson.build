@@ -15,6 +15,10 @@ install_data(
 )
 
 generated_protocols = [
+	[ 'ias-backend', 'internal' ],
+	[ 'ias-input-manager', 'internal' ],
+	[ 'ias-layout-manager', 'internal' ],
+	[ 'ias-shell', 'internal' ],
 	[ 'input-method', 'v1' ],
 	[ 'input-timestamps', 'v1' ],
 	[ 'ivi-application', 'internal' ],
@@ -38,6 +42,12 @@ generated_protocols = [
 	[ 'xdg-shell', 'v6' ],
 	[ 'xdg-shell', 'stable' ],
 ]
+
+if get_option('enable-tracing')
+	generated_protocols += [
+		[ 'trace-reporter', 'internal' ],
+	]
+endif
 
 foreach proto: generated_protocols
 	proto_name = proto[0]

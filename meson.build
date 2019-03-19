@@ -4,6 +4,7 @@ project('ias-weston',
 	default_options: [
 		'warning_level=2',
 		'c_std=gnu99',
+		'cpp_std=c++11',
 		'b_lundef=false',
 	],
 	meson_version: '>= 0.47',
@@ -31,15 +32,15 @@ dir_prefix = get_option('prefix')
 dir_bin = join_paths(dir_prefix, get_option('bindir'))
 dir_data = join_paths(dir_prefix, get_option('datadir'))
 dir_include = join_paths(dir_prefix, get_option('includedir'))
-dir_include_libweston = 'libweston-@0@'.format(libweston_major)
+dir_include_libweston = 'libias-@0@'.format(libweston_major)
 dir_lib = join_paths(dir_prefix, get_option('libdir'))
 dir_libexec = join_paths(dir_prefix, get_option('libexecdir'))
 dir_module_weston = join_paths(dir_lib, 'weston')
-dir_module_libweston = join_paths(dir_lib, 'libweston-@0@'.format(libweston_major))
+dir_module_libweston = join_paths(dir_lib, 'libias-@0@'.format(libweston_major))
 dir_data_pc = join_paths(dir_data, 'pkgconfig')
 dir_lib_pc = join_paths(dir_lib, 'pkgconfig')
 dir_man = join_paths(dir_prefix, get_option('mandir'))
-dir_protocol_libweston = 'weston/protocols' # XXX: this should be 'libweston'
+dir_protocol_libweston = 'ias/protocols' # XXX: this should be 'libweston'
 
 pkgconfig = import('pkgconfig')
 
@@ -121,7 +122,7 @@ config_h.set_quoted('LIBWESTON_MODULEDIR', dir_module_libweston)
 
 backend_default = get_option('backend-default')
 if backend_default == 'auto'
-	foreach b : [ 'headless', 'fbdev', 'x11', 'wayland', 'drm' ]
+	foreach b : [  'ias' ]
 		if get_option('backend-' + b)
 			backend_default = b
 		endif
@@ -165,6 +166,7 @@ subdir('wcap')
 subdir('tests')
 subdir('data')
 subdir('man')
+subdir('plugins')
 
 configure_file(output: 'config.h', install: false, configuration: config_h)
 

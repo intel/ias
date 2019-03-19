@@ -29,8 +29,8 @@ install_headers('libweston-desktop.h', subdir: dir_include_libweston)
 
 pkgconfig.generate(
 	lib_desktop,
-	filebase: 'libweston-desktop-@0@'.format(libweston_major),
-	name: 'libweston-desktop',
+	filebase: 'libias-desktop-@0@'.format(libweston_major),
+	name: 'libias-desktop',
 	version: version_weston,
 	description: 'Desktop shells abstraction library for libweston compositors',
 	requires_private: [ lib_weston, dep_wayland_server ],

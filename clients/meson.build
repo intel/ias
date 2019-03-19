@@ -14,6 +14,12 @@ srcs_toytoolkit = [
 	pointer_constraints_unstable_v1_protocol_c,
 	ivi_application_client_protocol_h,
 	ivi_application_protocol_c,
+	ias_layout_manager_protocol_c,
+	ias_layout_manager_client_protocol_h,
+	ias_input_manager_protocol_c,
+	ias_input_manager_client_protocol_h,
+	ias_shell_protocol_c,
+	ias_shell_client_protocol_h,
 ]
 deps_toytoolkit = [
 	dep_wayland_client,
@@ -87,8 +93,20 @@ simple_clients = [
 			'simple-egl.c',
 			xdg_shell_client_protocol_h,
 			xdg_shell_protocol_c,
-			ivi_application_client_protocol_h,
-			ivi_application_protocol_c,
+			ias_shell_protocol_c,
+			ias_shell_client_protocol_h,
+		],
+		'dep_objs': [ dep_wayland_client, dep_libshared, dep_libm ],
+		'deps': [ 'egl', 'wayland-egl', 'glesv2', 'wayland-cursor' ]
+	},
+	{
+		'name': 'egl-ms',
+		'sources': [
+			'simple-egl-ms.c',
+			xdg_shell_client_protocol_h,
+			xdg_shell_protocol_c,
+			ias_shell_protocol_c,
+			ias_shell_client_protocol_h,
 		],
 		'dep_objs': [ dep_wayland_client, dep_libshared, dep_libm ],
 		'deps': [ 'egl', 'wayland-egl', 'glesv2', 'wayland-cursor' ]
@@ -102,8 +120,8 @@ simple_clients = [
 			xdg_shell_protocol_c,
 			fullscreen_shell_unstable_v1_client_protocol_h,
 			fullscreen_shell_unstable_v1_protocol_c,
-			ivi_application_client_protocol_h,
-			ivi_application_protocol_c,
+			ias_shell_protocol_c,
+			ias_shell_client_protocol_h,
 		],
 		'dep_objs': [ dep_wayland_client, dep_libshared ]
 	},
@@ -111,8 +129,21 @@ simple_clients = [
 		'name': 'touch',
 		'sources': [
 			'simple-touch.c',
+			ias_shell_protocol_c,
+			ias_shell_client_protocol_h,
 		],
 		'dep_objs': [ dep_wayland_client, dep_libshared ]
+	},
+	{ 
+		'name': 'clock',
+		'sources': [
+			'simple-clock.c',
+			xdg_shell_client_protocol_h,
+			xdg_shell_protocol_c,
+			ias_shell_protocol_c,
+			ias_shell_client_protocol_h,
+		],
+		'dep_objs': [ deps_toytoolkit, dep_libshared ]
 	},
 ]
 
@@ -134,7 +165,8 @@ foreach t : simple_clients
 			t_name, t.get('sources'),
 			include_directories: include_directories('..'),
 			dependencies: t_deps,
-			install: true
+			install: true,
+			install_dir: join_paths(dir_data, 'ias/examples')
 		)
 	endif
 endforeach
@@ -155,7 +187,7 @@ if simple_build_all or simple_clients_enabled.contains('im')
 			dependency('cairo')
 		],
 		install: true,
-		install_dir: dir_libexec
+		install_dir: get_option('libexecdir'),
 	)
 endif
 
@@ -217,7 +249,8 @@ foreach t : tools_list
 			t.get('sources'),
 			include_directories: include_directories('..', '../shared'),
 			dependencies: t.get('deps', []),
-			install: true
+			install: true,
+			install_dir: join_paths(dir_data, 'ias/examples')
 		)
 	endif
 endforeach
@@ -271,7 +304,78 @@ demo_clients = [
 		'deps': [ 'egl', 'glesv2', 'wayland-egl' ]
 	},
 	{ 'basename': 'transformed' },
+	{
+		'basename': 'es2gears',
+		'add_sources': [
+			ias_shell_protocol_c,
+			ias_shell_client_protocol_h,
+		],
+		'deps': [ 'egl', 'glesv2', 'wayland-egl' ]
+	},
 ]
+
+ias_demo_clients = [
+	{
+		'basename': 'surfctrl',
+		'add_sources': [
+			ias_shell_protocol_c,
+			ias_shell_client_protocol_h,
+			ivi_application_protocol_c,
+			ivi_application_client_protocol_h,
+		],
+	},
+	{
+		'basename': 'layoutctrl',
+		'add_sources': [
+			ias_layout_manager_protocol_c,
+			ias_layout_manager_client_protocol_h,
+		],
+	},
+	{
+		'basename': 'inputctrl',
+		'add_sources': [
+			ias_input_manager_protocol_c,
+			ias_input_manager_client_protocol_h,
+		],
+	},
+	{
+		'basename': 'eglinfo',
+		'deps': [ 'egl', 'glesv2', 'wayland-egl' ]
+	},
+	{
+		'basename': 'wrandr',
+		'add_sources': [
+			ias_backend_protocol_c,
+			ias_backend_client_protocol_h,
+		],
+	},
+]
+
+if get_option('enable-tracing')	
+	ias_demo_clients += [
+		{
+			'basename': 'traceinfo',
+			'add_sources': [
+				trace_reporter_protocol_c,
+				trace_reporter_client_protocol_h,
+			],
+		},
+	]
+endif
+
+if get_option('enable-remote-display')	
+
+	ias_demo_clients += [
+		{
+			'basename': 'mediaplayer',
+			'deps' : [ 'gstreamer-1.0',
+					'gstreamer-app-1.0',
+					'gstreamer-video-1.0',
+					'threads' ]
+		},
+	]
+endif
+
 
 if get_option('demo-clients')
 	foreach t : demo_clients
@@ -290,14 +394,36 @@ if get_option('demo-clients')
 			t_name, t_srcs,
 			include_directories: include_directories('..', '../shared'),
 			dependencies: t_deps,
-			install: true
+			install: true,
+			install_dir: join_paths(dir_data, 'ias/examples')
+		)
+	endforeach
+	
+	
+	foreach t : ias_demo_clients
+		t_name = t.get('basename')
+		t_srcs = [ t.get('basename') + '.c' ] + t.get('add_sources', [])
+		foreach depname : t.get('deps', [])
+			dep = dependency(depname, required: false)
+			if not dep.found()
+				error('@0@ requires \'@1@\' which was not found. If you rather not build this, set \'-Ddemo-clients=false\'.'.format(t_name, depname))
+			endif
+			t_deps += dep
+		endforeach
+
+		executable(
+			t_name, t_srcs,
+			include_directories: include_directories('..', '../shared'),
+			dependencies: t_deps,
+			install: true,
+			install_dir: join_paths(dir_data, 'ias/examples')
 		)
 	endforeach
 endif
 
 simple_dmabuf_drm_opts = get_option('simple-dmabuf-drm')
 simple_dmabuf_drm_deps = []
-foreach driver : [ 'etnaviv', 'intel', 'freedreno' ]
+foreach driver : [ 'intel' ]
 	if simple_dmabuf_drm_opts.contains(driver)
 		required = true
 		enabled = true
@@ -334,7 +460,8 @@ if simple_dmabuf_drm_deps.length() > 0
 			dep_libdrm,
 			simple_dmabuf_drm_deps
 		],
-		install: true
+		install: true,
+		install_dir: join_paths(dir_data, 'ias/examples')
 	)
 endif
 
@@ -349,7 +476,7 @@ if get_option('shell-desktop')
 		include_directories: include_directories('..'),
 		dependencies: dep_toytoolkit,
 		install_dir: get_option('libexecdir'),
-		install: true
+		install: true,
 	)
 	env_modmap += 'weston-keyboard=@0@;'.format(exe_keyboard.full_path())
 
@@ -361,7 +488,8 @@ if get_option('shell-desktop')
 		include_directories: include_directories('..'),
 		dependencies: dep_toytoolkit,
 		install_dir: get_option('bindir'),
-		install: true
+		install: true,
+		install_dir: join_paths(dir_data, 'ias/examples')
 	)
 	env_modmap += 'weston-screenshooter=@0@;'.format(exe_shooter.full_path())
 
@@ -394,3 +522,21 @@ if get_option('shell-ivi')
 	)
 	env_modmap += 'weston-ivi-shell-user-interface=@0@;'.format(exe_shell_ivi_ui.full_path())
 endif
+
+exe_ias_test_hmi = executable(
+	'ias-test-hmi',
+	'ias-test-hmi.c',
+	ias_shell_protocol_c,
+	ias_shell_client_protocol_h,
+	include_directories: include_directories('..'),
+	dependencies: dep_toytoolkit,
+	install_dir: get_option('libexecdir'),
+	install: true
+)
+env_modmap += 'ias-test-hmi=@0@;'.format(exe_ias_test_hmi.full_path())
+
+subdir('vmdisplay')
+subdir('RemoteDisplay')
+subdir('wl_base')
+subdir('wl_disp')
+subdir('ias_hmi')

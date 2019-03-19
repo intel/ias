@@ -27,7 +27,7 @@ if get_option('xwayland')
 endif
 
 exe_weston = executable(
-	'weston',
+	'ias-weston',
 	srcs_weston,
 	include_directories: include_directories('..', '../shared'),
 	link_args: [ '-Wl,-export-dynamic' ],
@@ -50,7 +50,7 @@ pkgconfig.generate(
 )
 
 install_data(
-	'weston.desktop',
+	'ias-weston.desktop',
 	install_dir: join_paths(dir_data, 'wayland-sessions')
 )
 
