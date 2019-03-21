@@ -1882,6 +1882,11 @@ ias_committed(struct weston_surface *surface, int32_t relx, int32_t rely)
 	uint32_t old_hidden;
 	uint32_t new_hidden;
 	struct hmi_callback *cb;
+	struct weston_output *old_output;
+#ifdef BUILD_REMOTE_DISPLAY
+	struct ias_backend *ias_backend =
+			(struct ias_backend *)surface->compositor->backend;
+#endif
 
 	/* Shouldn't be possible to get here with non-IAS surfaces */
 	assert(shsurf);
@@ -2010,7 +2015,20 @@ ias_committed(struct weston_surface *surface, int32_t relx, int32_t rely)
 		scale_surface_if_fullscreen(shsurf);
 	}
 
+	old_output = surface->output;
 	weston_view_update_transform(shsurf->view);
+
+	/*
+	 * If the output for this surface has changed, then let's inform the backend
+	 */
+#ifdef BUILD_REMOTE_DISPLAY
+	if(old_output != surface->output) {
+		ias_backend->change_capture_output(ias_backend, surface);
+	}
+#else
+	/* To get rid of a set but not used warning */
+	old_output = old_output;
+#endif
 
 	/*
 	 * Notify listeners on ias_hmi interface that this surface has

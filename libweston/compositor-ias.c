@@ -3978,8 +3978,8 @@ start_capture(struct wl_client *client,
 
 		capture_proxy_item->capture_commit_listener.notify =
 			capture_commit_notify;
-		wl_signal_add(&output->base.commit_signal,
-			  &capture_proxy_item->capture_commit_listener);
+		wl_signal_add(&surface->commit_signal,
+				&capture_proxy_item->capture_commit_listener);
 
 		wl_list_init(&capture_proxy_item->link);
 		wl_list_insert(&ias_backend->capture_proxy_list, &capture_proxy_item->link);
@@ -4137,6 +4137,36 @@ release_buffer_handle(struct ias_backend *ias_backend, uint32_t surfid,
 			return IAS_HMI_FCAP_ERROR_INVALID;
 		}
 		capture_proxy_release_buffer(output->cp, 0, 0, 0);
+	}
+
+	return IAS_HMI_FCAP_ERROR_OK;
+}
+
+int change_capture_output(struct ias_backend *ias_backend,
+		struct weston_surface *surface)
+{
+	struct ias_surface_capture *capture_item;
+	struct ias_output *output;
+
+	if (surface->output) {
+		output = container_of(surface->output, struct ias_output,
+			base);
+	} else {
+		weston_log("Error - No output associated with surface %p.\n",
+				surface);
+		return IAS_HMI_FCAP_ERROR_INVALID;
+	}
+
+	wl_list_for_each(capture_item, &ias_backend->capture_proxy_list, link) {
+		if (capture_item->capture_surface == surface) {
+			/* Remove the old output's link from capture_vsync_listener */
+			wl_list_remove(&capture_item->capture_vsync_listener.link);
+
+			/* Add the new output's link into capture_vsync_listener */
+			capture_item->capture_vsync_listener.notify = capture_vsync_notify;
+			wl_signal_add(&output->next_scanout_ready_signal,
+				&capture_item->capture_vsync_listener);
+		}
 	}
 
 	return IAS_HMI_FCAP_ERROR_OK;
@@ -4570,6 +4600,7 @@ ias_compositor_create(struct weston_compositor *compositor,
 	backend->start_capture = start_capture;
 	backend->stop_capture = stop_capture;
 	backend->release_buffer_handle = release_buffer_handle;
+	backend->change_capture_output = change_capture_output;
 #endif
 
 	centre_pointer(backend);

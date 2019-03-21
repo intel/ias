@@ -293,6 +293,8 @@ struct ias_backend {
 	int (*release_buffer_handle)(struct ias_backend *ias_backend,
 			uint32_t surfid, uint32_t bufid, uint32_t imageid,
 			struct weston_surface *surface, uint32_t output_number);
+	int (*change_capture_output)(struct ias_backend *ias_backend,
+			struct weston_surface *surface);
 
 	struct wl_list capture_proxy_list;
 #endif
