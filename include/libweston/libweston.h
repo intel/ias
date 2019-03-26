@@ -1580,6 +1580,9 @@ struct weston_surface_state {
 
 	/* zwp_surface_synchronization_v1.get_release */
 	struct weston_buffer_release_reference buffer_release_ref;
+
+	/* weston_protected_surface.set_type */
+	enum weston_hdcp_protection desired_protection;
 };
 
 struct weston_surface_activation_data {
@@ -1712,6 +1715,8 @@ struct weston_surface {
 	struct wl_resource *synchronization_resource;
 	int acquire_fence_fd;
 	struct weston_buffer_release_reference buffer_release_ref;
+
+	enum weston_hdcp_protection desired_protection;
 };
 
 struct weston_subsurface {
