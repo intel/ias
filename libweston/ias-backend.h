@@ -52,7 +52,7 @@
 
 
 #include "gl-renderer.h"
-#include "compositor.h"
+#include <libweston/libweston.h>
 #include "ias-shell.h"
 #include "ias-sprite.h"
 #include "ias-common.h"

@@ -43,7 +43,7 @@
  */
 #define private privdata
 
-#include "compositor.h"
+#include <libweston/libweston.h>
 //plugins may have previously included gl through the compositor
 //#define GL_EXT_unpack_subimage;
 #include <GLES2/gl2.h>

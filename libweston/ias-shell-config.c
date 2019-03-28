@@ -34,7 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "compositor.h"
+#include <libweston/libweston.h>
 #include "ias-shell.h"
 
 static void handle_hmi(void *, const char **);

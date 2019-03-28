@@ -44,7 +44,7 @@
 #include <va/va_drmcommon.h>
 #include <va/va_enc_h264.h>
 
-#include "compositor.h"
+#include <libweston/libweston.h>
 #include "capture-proxy.h"
 #include "ias-shell-server-protocol.h"
 #include "../shared/timespec-util.h"

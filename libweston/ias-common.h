@@ -36,7 +36,7 @@
 #include "config.h"
 #include <wayland-server.h>
 #include <xf86drmMode.h>
-#include "compositor.h"
+#include <libweston/libweston.h>
 #include "libinput-seat.h"
 #include "compositor/weston.h"
 

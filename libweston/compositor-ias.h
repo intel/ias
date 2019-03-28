@@ -29,7 +29,7 @@
 #ifndef WESTON_COMPOSITOR_IAS_H
 #define WESTON_COMPOSITOR_IAS_H
 
-#include "compositor.h"
+#include <libweston/libweston.h>
 
 #ifdef __cplusplus
 extern "C" {
