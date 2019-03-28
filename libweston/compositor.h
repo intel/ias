@@ -54,7 +54,7 @@ extern "C" {
 #include <dlfcn.h>
 #include <stdlib.h>
 #include <sys/time.h>
-#include "timeline-object.h"
+#include <libweston/timeline-object.h>
 
 #ifndef MIN
 #define MIN(x,y) (((x) < (y)) ? (x) : (y))

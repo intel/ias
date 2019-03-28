@@ -59,7 +59,6 @@ srcs_libweston = [
 install_headers(
 	'compositor.h',
 	'plugin-registry.h',
-	'timeline-object.h',
 	'windowed-output-api.h',
 	'../shared/config-parser.h',
 	'../shared/matrix.h',
@@ -83,7 +82,7 @@ endif
 lib_weston = shared_library(
 	'ias-@0@'.format(libweston_major),
 	srcs_libweston,
-	include_directories: include_directories('..', '../shared'),
+	include_directories: [ include_directories('..', '../shared'), public_inc ],
 	link_args: [ '-Wl,-export-dynamic' ],
 	install: true,
 	version: '0.0.@0@'.format(libweston_revision),
@@ -93,7 +92,7 @@ lib_weston = shared_library(
 
 dep_libweston = declare_dependency(
 	link_with: lib_weston,
-	include_directories: include_directories('.'),
+	include_directories: [ include_directories('.'), public_inc ],
 	dependencies: deps_libweston
 )
 
@@ -102,7 +101,7 @@ dep_libweston = declare_dependency(
 # https://github.com/mesonbuild/meson/pull/5167
 # in hopefully Meson 0.51.
 dep_libweston_h = declare_dependency(
-	include_directories: include_directories('.'),
+	include_directories: [ include_directories('.'), public_inc ],
 	dependencies: [
 		dep_pixman.partial_dependency(compile_args: true),
 		dep_xkbcommon.partial_dependency(compile_args: true),
