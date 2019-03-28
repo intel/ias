@@ -131,7 +131,10 @@ enum weston_mode_aspect_ratio {
 	WESTON_MODE_PIC_AR_256_135 = 4,	/* DRM_MODE_PICTURE_ASPECT_256_135*/
 };
 
-
+enum weston_surface_protection_mode {
+	WESTON_SURFACE_PROTECTION_MODE_RELAXED,
+	WESTON_SURFACE_PROTECTION_MODE_ENFORCED
+};
 
 struct weston_mode {
 	uint32_t flags;
@@ -1346,6 +1349,8 @@ struct weston_compositor {
 	struct weston_log_context *weston_log_ctx;
 	struct weston_log_scope *debug_scene;
 
+	struct content_protection *content_protection;
+
 	/***
 	 *** IAS-specific additions
 	 ***
@@ -1583,6 +1588,9 @@ struct weston_surface_state {
 
 	/* weston_protected_surface.set_type */
 	enum weston_hdcp_protection desired_protection;
+
+	/* weston_protected_surface.enforced/relaxed */
+	enum weston_surface_protection_mode protection_mode;
 };
 
 struct weston_surface_activation_data {
@@ -1717,6 +1725,8 @@ struct weston_surface {
 	struct weston_buffer_release_reference buffer_release_ref;
 
 	enum weston_hdcp_protection desired_protection;
+	enum weston_hdcp_protection current_protection;
+	enum weston_surface_protection_mode protection_mode;
 };
 
 struct weston_subsurface {
@@ -1755,6 +1765,22 @@ struct weston_frame_callback {
 	struct wl_resource *resource;
 	struct wl_list link;
 };
+
+struct protected_surface {
+	struct weston_surface *surface;
+	struct wl_listener surface_destroy_listener;
+	struct wl_list link;
+	struct wl_resource *protection_resource;
+	struct content_protection *cp_backptr;
+};
+
+struct content_protection {
+	struct weston_compositor *compositor;
+	struct wl_listener destroy_listener;
+	struct weston_log_scope *debug;
+	struct wl_list protected_list;
+};
+
 
 enum weston_key_state_update {
 	STATE_UPDATE_AUTOMATIC,
@@ -2598,6 +2624,13 @@ weston_log_ctx_compositor_destroy(struct weston_compositor *compositor);
 void
 weston_buffer_send_server_error(struct weston_buffer *buffer,
 				      const char *msg);
+
+int
+weston_compositor_enable_content_protection(struct weston_compositor *compositor);
+
+void
+weston_protected_surface_send_event(struct protected_surface *psurface,
+				    enum weston_hdcp_protection protection);
 
 #ifdef  __cplusplus
 }
