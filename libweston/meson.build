@@ -258,7 +258,7 @@ if get_option('backend-drm')
 	)
 	env_modmap += 'drm-backend.so=@0@;'.format(plugin_drm.full_path())
 
-	install_headers('compositor-drm.h', subdir: dir_include_libweston)
+	install_headers(backend_drm_h, subdir: dir_include_libweston_install)
 endif
 
 if get_option('backend-ias')
@@ -266,7 +266,7 @@ if get_option('backend-ias')
 
 	srcs_ias = [
 		'compositor-ias.c',
-		'compositor-ias.h',
+		backend_ias_h,
 		'ias-plugin-framework-definitions.h',
 		'ias-spug.h',
 		'ias-config.c',
@@ -352,7 +352,7 @@ if get_option('backend-ias')
 	)
 	env_modmap += 'ias-backend.so=@0@;'.format(plugin_ias.full_path())
 
-	install_headers('compositor-ias.h', subdir: dir_include_libweston)
+	install_headers(backend_ias_h, subdir: dir_include_libweston)
 endif
 
 
@@ -373,7 +373,7 @@ if get_option('backend-headless')
 		install_dir: dir_module_libweston,
 	)
 	env_modmap += 'headless-backend.so=@0@;'.format(plugin_headless.full_path())
-	install_headers('compositor-headless.h', subdir: dir_include_libweston)
+	install_headers(backend_headless_h, subdir: dir_include_libweston_install)
 endif
 
 
@@ -411,7 +411,7 @@ if get_option('backend-rdp')
 		install_dir: dir_module_libweston
 	)
 	env_modmap += 'rdp-backend.so=@0@;'.format(plugin_rdp.full_path())
-	install_headers('compositor-rdp.h', subdir: dir_include_libweston)
+	install_headers(backend_rdp_h, subdir: dir_include_libweston_install)
 endif
 
 
@@ -454,7 +454,7 @@ if get_option('backend-wayland')
 		install_dir: dir_module_libweston
 	)
 	env_modmap += 'wayland-backend.so=@0@;'.format(plugin_wlwl.full_path())
-	install_headers('compositor-wayland.h', subdir: dir_include_libweston)
+	install_headers(backend_wayland_h, subdir: dir_include_libweston_install)
 endif
 
 
@@ -510,7 +510,7 @@ if get_option('backend-x11')
 	)
 	env_modmap += 'x11-backend.so=@0@;'.format(plugin_x11.full_path())
 
-	install_headers('compositor-x11.h', subdir: dir_include_libweston)
+	install_headers(backend_x11_h, subdir: dir_include_libweston_install)
 endif
 
 
@@ -542,7 +542,7 @@ if get_option('backend-fbdev')
 	)
 	env_modmap += 'fbdev-backend.so=@0@;'.format(plugin_fbdev.full_path())
 
-	install_headers('compositor-fbdev.h', subdir: dir_include_libweston)
+	install_headers(backend_fbdev_h, subdir: dir_include_libweston_install)
 endif
 
 

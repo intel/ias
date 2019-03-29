@@ -1,6 +1,6 @@
 /*
  *-----------------------------------------------------------------------------
- * Filename: compositor-ias.h
+ * Filename: backend-ias.h
  *-----------------------------------------------------------------------------
  * Copyright 2011-2018 Intel Corporation
  *
@@ -26,8 +26,8 @@
  * SOFTWARE.
  *
  */
-#ifndef WESTON_COMPOSITOR_IAS_H
-#define WESTON_COMPOSITOR_IAS_H
+#ifndef WESTON_BACKEND_IAS_H
+#define WESTON_BACKEND_IAS_H
 
 #include <libweston/libweston.h>
 
@@ -58,4 +58,4 @@ struct weston_ias_backend_config {
 }
 #endif
 
-#endif /* WESTON_COMPOSITOR_IAS_H */
+#endif /* WESTON_BACKEND_IAS_H */

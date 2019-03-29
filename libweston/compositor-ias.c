@@ -54,7 +54,7 @@
  *-----------------------------------------------------------------------------
  */
 
-#include "compositor-ias.h"
+#include <libweston/backend-ias.h>
 #include "config.h"
 #include "ias-backend.h"
 #include "launcher-util.h"
