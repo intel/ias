@@ -1307,6 +1307,18 @@ wet_output_set_transform(struct weston_output *output,
 	weston_output_set_transform(output, transform);
 }
 
+static void
+allow_content_protection(struct weston_output *output,
+			struct weston_config_section *section)
+{
+	int allow_hdcp = 1;
+
+	if (section)
+		weston_config_section_get_bool(section, "allow_hdcp", &allow_hdcp, 1);
+
+	weston_output_allow_protection(output, allow_hdcp);
+}
+
 static int
 wet_configure_windowed_output_from_config(struct weston_output *output,
 					  struct wet_output_config *defaults)
@@ -1343,6 +1355,8 @@ wet_configure_windowed_output_from_config(struct weston_output *output,
 		}
 		free(mode);
 	}
+
+	allow_content_protection(output, section);
 
 	if (parsed_options->width)
 		width = parsed_options->width;
@@ -1794,6 +1808,8 @@ drm_backend_output_configure(struct weston_output *output,
 
 	api->set_seat(output, seat);
 	free(seat);
+
+	allow_content_protection(output, section);
 
 	return 0;
 }
