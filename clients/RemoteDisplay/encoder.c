@@ -52,7 +52,7 @@
 #include "encoder.h"
 #include "ias-shell-client-protocol.h"
 #include "../../shared/timespec-util.h"
-#include "../../shared/zalloc.h"
+#include <libweston/zalloc.h>
 #include "debug.h"
 
 #define NAL_REF_IDC_NONE        0

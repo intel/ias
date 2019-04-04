@@ -73,7 +73,7 @@ typedef void *EGLContext;
 #include "shared/cairo-util.h"
 #include "shared/helpers.h"
 #include "shared/xalloc.h"
-#include "shared/zalloc.h"
+#include <libweston/zalloc.h>
 #include "xdg-shell-client-protocol.h"
 #include "ias-shell-client-protocol.h"
 #include "text-cursor-position-client-protocol.h"

@@ -48,7 +48,7 @@ extern "C" {
 
 #include <libweston/matrix.h>
 #include <libweston/config-parser.h>
-#include "zalloc.h"
+#include <libweston/zalloc.h>
 
 #include <assert.h>
 #include <dlfcn.h>

@@ -57,7 +57,6 @@ srcs_libweston = [
 ]
 
 install_headers(
-	'../shared/zalloc.h',
 	'../shared/platform.h',
 	'../shared/weston-egl-ext.h',
 	'ias-common.h',
