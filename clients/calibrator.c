@@ -38,7 +38,7 @@
 
 #include "window.h"
 #include "shared/helpers.h"
-#include "shared/matrix.h"
+#include <libweston/matrix.h>
 
 /* Our points for the calibration must be not be on a line */
 static const struct {

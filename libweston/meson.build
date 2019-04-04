@@ -58,7 +58,6 @@ srcs_libweston = [
 
 install_headers(
 	'../shared/config-parser.h',
-	'../shared/matrix.h',
 	'../shared/zalloc.h',
 	'../shared/platform.h',
 	'../shared/weston-egl-ext.h',
