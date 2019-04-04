@@ -1,5 +1,5 @@
 #include "vm_comm.h"
-#include "vm-shared.h"
+#include "renderer-gl/vm-shared.h"
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

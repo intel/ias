@@ -16,7 +16,7 @@ if get_option('enable-hyper-dmabuf')
 	lib_vmdisplaylib = static_library(
 		'vmdisplay',
 		srcs_vmdisplaylib,
-		include_directories: include_directories('../..', '../../shared', '../../libweston', '../cmn'),
+		include_directories: include_directories('../..', '../../shared', '../../libweston/renderer-gl', '../cmn'),
 		dependencies: deps_vmdisplaylib,
 		install: false,
 	)
@@ -49,7 +49,7 @@ if get_option('enable-hyper-dmabuf')
 		'vmdisplay-wayland.c',
 		ias_shell_client_protocol_h,
 		ias_shell_protocol_c,
-		include_directories: include_directories('../..', '../../libweston', '../cmn'),
+		include_directories: include_directories('../..', '../../libweston/renderer-gl', '../cmn'),
 		dependencies: dep_vmdisplay_wayland,
 		link_args: '-lm',
 		install: true,
@@ -61,7 +61,7 @@ if get_option('enable-hyper-dmabuf')
 		'vmdisplay-server.cpp',
 		'vmdisplay-server-network.cpp',
 		'vmdisplay-server-hyperdmabuf.cpp',
-		include_directories: include_directories('../..', '../../libweston'),
+		include_directories: include_directories('../..', '../../libweston/renderer-gl'),
 		dependencies: [
 			dep_wayland_client,
 			dep_libshared,
@@ -75,7 +75,7 @@ if get_option('enable-hyper-dmabuf')
 		'vmdisplay-input',
 		'vmdisplay-input.cpp',
 		'vmdisplay-server-network.cpp',
-		include_directories: include_directories('../..', '../../libweston'),
+		include_directories: include_directories('../..', '../../libweston/renderer-gl'),
 		dependencies: [
 			dep_wayland_client,
 			dep_libshared,

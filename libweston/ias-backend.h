@@ -51,7 +51,7 @@
 #include <libudev.h>
 
 
-#include "gl-renderer.h"
+#include "renderer-gl/gl-renderer.h"
 #include <libweston/libweston.h>
 #include "ias-shell.h"
 #include "ias-sprite.h"
