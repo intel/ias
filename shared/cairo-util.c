@@ -37,7 +37,7 @@
 
 #include "shared/helpers.h"
 #include "image-loader.h"
-#include "config-parser.h"
+#include <libweston/config-parser.h>
 
 #ifdef HAVE_PANGO
 #include <pango/pangocairo.h>

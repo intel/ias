@@ -59,7 +59,7 @@
 #include "ias-backend-server-protocol.h"
 #include "presentation-time-server-protocol.h"
 #include "launcher-util.h"
-#include "config-parser.h"
+#include <libweston/config-parser.h>
 
 #define MAX_OUTPUTS_PER_CRTC 4
 

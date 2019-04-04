@@ -38,7 +38,7 @@
 #include <wayland-client.h>
 #include <wayland-egl.h>
 
-#include "../shared/config-parser.h"
+#include <libweston/config-parser.h>
 #include "../shared/timespec-util.h"
 #include "../shared/helpers.h"
 #include "ias-shell-client-protocol.h"

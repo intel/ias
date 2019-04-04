@@ -62,7 +62,7 @@
 #include <drm/drm_fourcc.h>
 #include <sys/poll.h>
 #include "ias-shell-client-protocol.h"
-#include "../shared/config-parser.h"
+#include <libweston/config-parser.h>
 #include "../shared/helpers.h"
 #include "debug.h"
 

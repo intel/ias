@@ -37,7 +37,7 @@
 #include <wayland-client.h>
 #include <wayland-egl.h>
 
-#include "../shared/config-parser.h"
+#include <libweston/config-parser.h>
 
 #include "trace-reporter-client-protocol.h"
 

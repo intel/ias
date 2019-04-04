@@ -56,7 +56,7 @@
 #include <wayland-client.h>
 #include "window.h"
 #include "../shared/cairo-util.h"
-#include "../shared/config-parser.h"
+#include <libweston/config-parser.h>
 
 #include "ias-shell-client-protocol.h"
 

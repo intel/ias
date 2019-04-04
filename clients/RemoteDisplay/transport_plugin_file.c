@@ -38,7 +38,7 @@
 #include <sys/time.h>
 #include <signal.h>
 
-#include "../shared/config-parser.h"
+#include <libweston/config-parser.h>
 #include "../shared/helpers.h"
 
 #include "transport_plugin.h"

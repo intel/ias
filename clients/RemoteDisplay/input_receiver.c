@@ -47,7 +47,7 @@
 #include <wayland-util.h>
 
 #include "shared/helpers.h"
-#include "shared/config-parser.h"
+#include <libweston/config-parser.h>
 
 #include "input_sender.h"
 #include "input_receiver.h"

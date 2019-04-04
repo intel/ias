@@ -36,7 +36,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "config-parser.h"
+#include <libweston/config-parser.h>
 #include "ias-common.h"
 
 /* General expat handlers */

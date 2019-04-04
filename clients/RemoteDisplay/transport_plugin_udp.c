@@ -37,7 +37,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
-#include "../shared/config-parser.h"
+#include <libweston/config-parser.h>
 #include "../shared/helpers.h"
 #include "transport_plugin.h"
 #include "udp_socket.h"

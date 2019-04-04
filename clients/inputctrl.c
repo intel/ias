@@ -37,7 +37,7 @@
 #include <wayland-client.h>
 #include <wayland-egl.h>
 
-#include "../shared/config-parser.h"
+#include <libweston/config-parser.h>
 
 #include "ias-input-manager-client-protocol.h"
 

@@ -36,7 +36,7 @@
 
 #include <wayland-client.h>
 
-#include "../shared/config-parser.h"
+#include <libweston/config-parser.h>
 
 #include "ias-backend-client-protocol.h"
 

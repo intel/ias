@@ -47,7 +47,7 @@ extern "C" {
 #include <EGL/eglext.h>
 
 #include <libweston/matrix.h>
-#include "config-parser.h"
+#include <libweston/config-parser.h>
 #include "zalloc.h"
 
 #include <assert.h>

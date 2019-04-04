@@ -34,7 +34,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include "../shared/config-parser.h"
+#include <libweston/config-parser.h>
 #include "../shared/helpers.h"
 
 #include "transport_plugin.h"

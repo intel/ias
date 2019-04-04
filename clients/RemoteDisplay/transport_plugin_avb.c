@@ -33,7 +33,7 @@
 
 #include <gst/gst.h>
 #include <gst/app/gstappsrc.h>
-#include "../shared/config-parser.h"
+#include <libweston/config-parser.h>
 #include "../shared/helpers.h"
 
 #include "transport_plugin.h"
