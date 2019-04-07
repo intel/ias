@@ -3031,6 +3031,7 @@ int main(int argc, char *argv[])
 	struct weston_seat *seat;
 	int32_t pogo = 0;
 	struct wet_compositor wet = { 0 };
+	struct weston_debug_compositor *wdc = NULL;
 	int require_input;
 	sigset_t mask;
 
@@ -3075,6 +3076,12 @@ int main(int argc, char *argv[])
 		free(cmdline);
 
 		return EXIT_SUCCESS;
+	}
+
+	wdc = weston_debug_compositor_create();
+	if (!wdc) {
+		fprintf(stderr, "Failed to initialize weston debug framework.\n");
+		return EXIT_FAILURE;
 	}
 
 	weston_log_set_handler(vlog, vlog_continue);
@@ -3149,7 +3156,7 @@ int main(int argc, char *argv[])
 
 	TRACEPOINT("Loaded backend");
 
-	wet.compositor = weston_compositor_create(display, &wet);
+	wet.compositor = weston_compositor_create(display, wdc, &wet);
 	if (wet.compositor == NULL) {
 		weston_log("fatal: failed to create compositor\n");
 		goto out;
