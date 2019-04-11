@@ -222,7 +222,7 @@ option(
 option(
 	'enable-shadergen',
 	type: 'boolean',
-	value: false,
+	value: true,
 	description: 'Compile GLSL shaders online, but save resulting binaries for
 	later use by release builds'
 )
@@ -246,7 +246,7 @@ option(
 option(
 	'enable-remote-display',
 	type: 'boolean',
-	value: false,
+	value: true,
 	description: 'Enables encoding of local surfaces/outputs and transport
 	via AVB/UDP to a remote SoC in a 0 copy and low latency manner'
 )
@@ -261,7 +261,7 @@ option(
 option(
 	'enable-hyper-dmabuf',
 	type: 'boolean',
-	value: false,
+	value: true,
 	description: 'Enable support for surface sharing between VMs using hyper-dmabuf'
 )
 
