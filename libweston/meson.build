@@ -84,7 +84,7 @@ lib_weston = shared_library(
 	'ias-@0@'.format(libweston_major),
 	srcs_libweston,
 	include_directories: include_directories('..', '../shared'),
-	link_args: [ '-export-dynamic' ],
+	link_args: [ '-Wl,-export-dynamic' ],
 	install: true,
 	version: '0.0.@0@'.format(libweston_revision),
 	link_whole: lib_libshared,
