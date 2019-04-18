@@ -5906,6 +5906,29 @@ display_add_input(struct display *d, uint32_t id, int display_seat_version)
 }
 
 static void
+display_add_data_device(struct display *d, uint32_t id, int ddm_version)
+{
+	struct input *input;
+
+	d->data_device_manager_version = MIN(ddm_version, 3);
+	d->data_device_manager =
+		wl_registry_bind(d->registry, id,
+				 &wl_data_device_manager_interface,
+				 d->data_device_manager_version);
+
+	wl_list_for_each(input, &d->input_list, link) {
+		if (!input->data_device) {
+			input->data_device =
+				wl_data_device_manager_get_data_device(d->data_device_manager,
+								       input->seat);
+			wl_data_device_add_listener(input->data_device,
+						    &data_device_listener,
+						    input);
+		}
+	}
+}
+
+static void
 input_destroy(struct input *input)
 {
 	input_remove_keyboard_focus(input);
@@ -6009,11 +6032,7 @@ registry_handle_global(void *data, struct wl_registry *registry, uint32_t id,
 		d->shm = wl_registry_bind(registry, id, &wl_shm_interface, 1);
 		wl_shm_add_listener(d->shm, &shm_listener, d);
 	} else if (strcmp(interface, "wl_data_device_manager") == 0) {
-		d->data_device_manager_version = MIN(version, 3);
-		d->data_device_manager =
-			wl_registry_bind(registry, id,
-					 &wl_data_device_manager_interface,
-					 d->data_device_manager_version);
+		display_add_data_device(d, id, version);
 	} else if (strcmp(interface, "xdg_wm_base") == 0) {
 		if (!d->ias_shell) {
 			d->xdg_shell = wl_registry_bind(registry, id,
