@@ -4756,6 +4756,9 @@ shell_reposition_view_on_output_destroy(struct weston_view *view)
 	float x, y;
 	int visible;
 
+	if (wl_list_empty(&ec->output_list))
+		return;
+
 	x = view->geometry.x;
 	y = view->geometry.y;
 
