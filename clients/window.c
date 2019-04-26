@@ -745,14 +745,14 @@ make_shm_pool(struct display *display, int size, void **data)
 
 	fd = os_create_anonymous_file(size);
 	if (fd < 0) {
-		fprintf(stderr, "creating a buffer file for %d B failed: %m\n",
-			size);
+		fprintf(stderr, "creating a buffer file for %d B failed: %s\n",
+			size, strerror(errno));
 		return NULL;
 	}
 
 	*data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if (*data == MAP_FAILED) {
-		fprintf(stderr, "mmap failed: %m\n");
+		fprintf(stderr, "mmap failed: %s\n", strerror(errno));
 		close(fd);
 		return NULL;
 	}
@@ -6251,7 +6251,8 @@ display_create(int *argc, char *argv[])
 
 	d->display = wl_display_connect(NULL);
 	if (d->display == NULL) {
-		fprintf(stderr, "failed to connect to Wayland display: %m\n");
+		fprintf(stderr, "failed to connect to Wayland display: %s\n",
+			strerror(errno));
 		free(d);
 		return NULL;
 	}
@@ -6281,7 +6282,8 @@ display_create(int *argc, char *argv[])
 	wl_registry_add_listener(d->registry, &registry_listener, d);
 
 	if (wl_display_roundtrip(d->display) < 0) {
-		fprintf(stderr, "Failed to process Wayland connection: %m\n");
+		fprintf(stderr, "Failed to process Wayland connection: %s\n",
+			strerror(errno));
 		return NULL;
 	}
 
@@ -6619,7 +6621,8 @@ toytimer_fire(struct task *tsk, uint32_t events)
 		 * readable and getting here, there'll be nothing to
 		 * read and we get EAGAIN. */
 		if (errno != EAGAIN)
-			fprintf(stderr, "timer read failed: %m\n");
+			fprintf(stderr, "timer read failed: %s\n",
+				strerror(errno));
 		return;
 	}
 
@@ -6634,7 +6637,8 @@ toytimer_init(struct toytimer *tt, clockid_t clock, struct display *display,
 
 	tt->fd = timerfd_create(clock, TFD_CLOEXEC | TFD_NONBLOCK);
 	if (tt->fd == -1) {
-		fprintf(stderr, "creating timer failed: %m\n");
+		fprintf(stderr, "creating timer failed: %s\n",
+			strerror(errno));
 		abort();
 	}
 
@@ -6659,7 +6663,7 @@ toytimer_arm(struct toytimer *tt, const struct itimerspec *its)
 
 	ret = timerfd_settime(tt->fd, 0, its, NULL);
 	if (ret < 0) {
-		fprintf(stderr, "timer setup failed: %m\n");
+		fprintf(stderr, "timer setup failed: %s\n", strerror(errno));
 		abort();
 	}
 }
