@@ -76,6 +76,8 @@
 #define DRM_FORMAT_GR88          fourcc_code('G', 'R', '8', '8')	/* [15:0] G:R 8:8 little endian */
 #endif
 
+#define HYPER_DMABUF_LIST_LEN 4
+
 static PFNEGLCREATEIMAGEKHRPROC create_image;
 static PFNEGLDESTROYIMAGEKHRPROC destroy_image;
 static PFNGLEGLIMAGETARGETTEXTURE2DOESPROC image_target_texture_2d;
@@ -104,14 +106,6 @@ static int counter = 0;
 
 vmdisplay_socket vmsocket;
 
-static void create_new_buffer_common(int dmabuf_fd);
-static int find_rec(struct buffer_list *l, uint32_t hyper_dmabuf_id);
-static void age_list(struct buffer_list *l);
-static void last_rec(struct buffer_list *l, int i);
-static void clear_rec(struct buffer_list *l, int i);
-static void update_hyper_dmabuf_list(int hyper_dmabuf_id, int old_hyper_dmabuf_id);
-static int recvfd(int socket);
-
 #ifndef EGLTILING
 #define EGL_TILING			  0x3062
 #endif
@@ -123,6 +117,75 @@ int open_drm(void)
 }
 
 #define ALIGN(x, y) ((x + y - 1) & ~(y - 1))
+
+static int find_rec(struct buffer_list *l, uint32_t id)
+{
+	int i, r;
+	r = -1;
+
+	for (i = 0; i < l->len; i++) {
+		if (l->l[i].hyper_dmabuf_id == id) {
+			r = i;
+		}
+	}
+
+	return r;
+}
+
+static void age_list(struct buffer_list *l)
+{
+	int i;
+	for (i = 0; i < l->len; i++)
+		l->l[i].age++;
+}
+
+static void last_rec(struct buffer_list *l, int i)
+{
+	l->l[i].age = 0;
+}
+
+static int oldest_rec(struct buffer_list *l, int len)
+{
+	int i, a, r;
+	a = 0, r = 0;
+
+	for (i = 0; i < len; i++) {
+		if (l->l[i].age >= a) {
+			a = l->l[i].age;
+			r = i;
+		}
+	}
+
+	return r;
+}
+
+static void clear_rec(struct buffer_list *l, int i)
+{
+	l->l[i].age = 0;
+	glDeleteTextures(2, l->l[i].textureId);
+
+	if (l->l[i].buffer)
+		wl_buffer_destroy(l->l[i].buffer);
+
+	l->l[i].textureId[0] = 0;
+	l->l[i].textureId[1] = 0;
+	l->l[i].width = 0;
+	l->l[i].height = 0;
+	l->l[i].buffer = 0;
+	l->l[i].hyper_dmabuf_id = 0;
+	l->l[i].gem_handle = 0;
+}
+
+void init_buffers(void)
+{
+	hyper_dmabuf_list.l = calloc(1, HYPER_DMABUF_LIST_LEN * sizeof(struct buffer_rec));
+	hyper_dmabuf_list.len = HYPER_DMABUF_LIST_LEN;
+
+	if(!hyper_dmabuf_list.l) {
+		fprintf(stderr, "Error: allocating memory\n");
+		exit(1);
+	}
+}
 
 int init_hyper_dmabuf(int dom)
 {
@@ -146,6 +209,48 @@ int init_hyper_dmabuf(int dom)
 		return -1;
 	}
 	return 0;
+}
+
+static void update_oldest_rec_hyper_dmabuf(uint32_t old_id, GLuint *textureId,
+				    struct wl_buffer *buf, uint32_t width,
+				    uint32_t height, int age)
+{
+	int r = oldest_rec(&hyper_dmabuf_list, HYPER_DMABUF_LIST_LEN);
+
+	clear_rec(&hyper_dmabuf_list, r);
+
+	hyper_dmabuf_list.l[r].hyper_dmabuf_id = old_id;
+	hyper_dmabuf_list.l[r].buffer = buf;
+	hyper_dmabuf_list.l[r].textureId[0] = textureId[0];
+	hyper_dmabuf_list.l[r].textureId[1] = textureId[1];
+	hyper_dmabuf_list.l[r].width = width;
+	hyper_dmabuf_list.l[r].height = height;
+	hyper_dmabuf_list.l[r].age = age;
+}
+
+static void update_hyper_dmabuf_list(int id, int old_id)
+{
+	int r = find_rec(&hyper_dmabuf_list, id);
+
+	age_list(&hyper_dmabuf_list);
+
+	if (r >= 0) {
+		if (old_id == 0 ||
+		    hyper_dmabuf_list.l[r].width != surf_width ||
+		    hyper_dmabuf_list.l[r].height != surf_height) {
+			clear_rec(&hyper_dmabuf_list, r);
+			create_new_hyper_dmabuf_buffer();
+		} else {
+			last_rec(&hyper_dmabuf_list, r);
+			current_textureId[0] =
+			    hyper_dmabuf_list.l[r].textureId[0];
+			current_textureId[1] =
+			    hyper_dmabuf_list.l[r].textureId[1];
+			current_buffer = hyper_dmabuf_list.l[r].buffer;
+		}
+	} else {
+		create_new_hyper_dmabuf_buffer();
+	}
 }
 
 int check_for_new_buffer(void)
@@ -176,24 +281,6 @@ int check_for_new_buffer(void)
 	}
 	old_hyper_dmabuf_id = hyper_dmabuf_id;
 	return 0;
-}
-
-void create_new_hyper_dmabuf_buffer(void)
-{
-	struct ioctl_hyper_dmabuf_export_fd msg;
-	msg.fd = -1;
-
-	msg.hid = hyper_dmabuf_id;
-
-	if (ioctl(hyper_dmabuf_fd, IOCTL_HYPER_DMABUF_EXPORT_FD, &msg)) {
-		printf("Cannot import buffer %d %s\n", hyper_dmabuf_id.id,
-		       strerror(errno));
-		show_window = 0;
-		hyper_dmabuf_id.id = 0;
-		return;
-	}
-
-	create_new_buffer_common(msg.fd);
 }
 
 static void create_new_buffer_common(int dmabuf_fd)
@@ -439,6 +526,26 @@ static void create_new_buffer_common(int dmabuf_fd)
 		current_buffer = buf;
 	}
 	close(dmabuf_fd);
+	update_oldest_rec_hyper_dmabuf(hyper_dmabuf_id.id, textureId, buf,
+				       surf_width, surf_height, 0);
+}
+
+void create_new_hyper_dmabuf_buffer(void)
+{
+	struct ioctl_hyper_dmabuf_export_fd msg;
+	msg.fd = -1;
+
+	msg.hid = hyper_dmabuf_id;
+
+	if (ioctl(hyper_dmabuf_fd, IOCTL_HYPER_DMABUF_EXPORT_FD, &msg)) {
+		printf("Cannot import buffer %d %s\n", hyper_dmabuf_id.id,
+		       strerror(errno));
+		show_window = 0;
+		hyper_dmabuf_id.id = 0;
+		return;
+	}
+
+	create_new_buffer_common(msg.fd);
 }
 
 void clear_hyper_dmabuf_list(void)
@@ -447,70 +554,6 @@ void clear_hyper_dmabuf_list(void)
 	for (i = 0; i < hyper_dmabuf_list.len; i++)
 		clear_rec(&hyper_dmabuf_list, i);
 
-}
-
-static int find_rec(struct buffer_list *l, uint32_t id)
-{
-	int i, r;
-	r = -1;
-	for (i = 0; i < l->len; i++) {
-		if (l->l[i].hyper_dmabuf_id == id) {
-			r = i;
-		}
-	}
-	return r;
-}
-
-static void age_list(struct buffer_list *l)
-{
-	int i;
-	for (i = 0; i < l->len; i++)
-		l->l[i].age++;
-}
-
-static void last_rec(struct buffer_list *l, int i)
-{
-	l->l[i].age = 0;
-}
-
-static void clear_rec(struct buffer_list *l, int i)
-{
-	l->l[i].age = 0;
-	glDeleteTextures(2, l->l[i].textureId);
-	if (l->l[i].buffer)
-		wl_buffer_destroy(l->l[i].buffer);
-	l->l[i].textureId[0] = 0;
-	l->l[i].textureId[1] = 0;
-	l->l[i].width = 0;
-	l->l[i].height = 0;
-	l->l[i].buffer = 0;
-	l->l[i].hyper_dmabuf_id = 0;
-	l->l[i].gem_handle = 0;
-}
-
-static void update_hyper_dmabuf_list(int id, int old_id)
-{
-	int r = find_rec(&hyper_dmabuf_list, id);
-
-	age_list(&hyper_dmabuf_list);
-
-	if (r >= 0) {
-		if (old_id == 0 ||
-		    hyper_dmabuf_list.l[r].width != surf_width ||
-		    hyper_dmabuf_list.l[r].height != surf_height) {
-			clear_rec(&hyper_dmabuf_list, r);
-			create_new_hyper_dmabuf_buffer();
-		} else {
-			last_rec(&hyper_dmabuf_list, r);
-			current_textureId[0] =
-			    hyper_dmabuf_list.l[r].textureId[0];
-			current_textureId[1] =
-			    hyper_dmabuf_list.l[r].textureId[1];
-			current_buffer = hyper_dmabuf_list.l[r].buffer;
-		}
-	} else {
-		create_new_hyper_dmabuf_buffer();
-	}
 }
 
 void received_frames(void)

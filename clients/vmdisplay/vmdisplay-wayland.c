@@ -1180,9 +1180,7 @@ int main(int argc, char **argv)
 	domid = atoi(argv[1]);
 	open_drm();
 
-#if 0
 	init_buffers();
-#endif
 
 	if (g_Dbg) {
 		printf("Debug:%d h:%d w:%d\n", g_Dbg, window.window_size.height,
