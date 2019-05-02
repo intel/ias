@@ -773,6 +773,7 @@ libvmdisplay_la_SOURCES = clients/vmdisplay/vmdisplay-parser.c \
 		clients/vmdisplay/vmdisplay.c		\
 		clients/vmdisplay/wayland-drm-protocol.c
 
+bin_PROGRAMS += vmdisplay-wayland
 vmdisplay_wayland_SOURCES =	clients/vmdisplay/vmdisplay-wayland.c
 nodist_vmdisplay_wayland_SOURCES =				\
 	protocol/ias-shell-server-protocol.h    \
@@ -785,6 +786,7 @@ vmdisplay_wayland_LDADD = $(COMPOSITOR_LIBS) $(GLIB_LIBS) $(EGL_LIBS) $(SIMPLE_C
 	$(SIMPLE_EGL_CLIENT_LIBS)               \
 	libias-@LIBWESTON_MAJOR@.la
 
+bin_PROGRAMS += vmdisplay-server
 vmdisplay_server_SOURCES = clients/vmdisplay/vmdisplay-server.cpp	\
 		clients/vmdisplay/vmdisplay-server-network.cpp		\
 		clients/vmdisplay/vmdisplay-server-hyperdmabuf.cpp
@@ -792,6 +794,7 @@ vmdisplay_server_CFLAGS = $(AM_CFLAGS) $(GCC_CFLAGS)
 vmdisplay_server_LDADD =  $(GLIB_LIBS) \
 	libshared.la libvmdisplay.la -lm -lpthread
 
+bin_PROGRAMS += vmdisplay-input
 vmdisplay_input_SOURCES = clients/vmdisplay/vmdisplay-input.cpp
 nodist_vmdisplay_input_SOURCES = clients/vmdisplay/vmdisplay-server-network.cpp
 vmdisplay_input_CFLAGS = $(AM_CFLAGS) $(GCC_CFLAGS)
