@@ -2201,7 +2201,9 @@ gl_renderer_query_dmabuf_modifiers(struct weston_compositor *wc, int format,
 		 * them out.
 		 */
 		if(gl_renderer_interface.rbc ||
-			(temp_modifiers[i] != I915_FORMAT_MOD_Y_TILED_CCS &&
+			(temp_modifiers[i] != I915_FORMAT_MOD_Y_TILED &&
+			temp_modifiers[i] != I915_FORMAT_MOD_Yf_TILED &&
+			temp_modifiers[i] != I915_FORMAT_MOD_Y_TILED_CCS &&
 			temp_modifiers[i] != I915_FORMAT_MOD_Yf_TILED_CCS)) {
 			(*modifiers)[j++] = temp_modifiers[i];
 		}
