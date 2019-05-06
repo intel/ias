@@ -13,7 +13,7 @@ srcs_libdesktop = [
 	xdg_shell_protocol_c,
 ]
 lib_desktop = shared_library(
-	'weston-desktop-@0@'.format(libweston_major),
+	'ias-desktop-@0@'.format(libweston_major),
 	srcs_libdesktop,
 	include_directories: include_directories('..', '../shared'),
 	install: true,

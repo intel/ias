@@ -11,16 +11,14 @@ man_conf.set('version', version_weston)
 configure_file(
 	input: 'weston.man',
 	output: 'weston.1',
-	install: true,
-	install_dir: join_paths(dir_man, 'man1'),
+	install: false,
 	configuration: man_conf
 )
 
 configure_file(
 	input: 'weston-debug.man',
 	output: 'weston-debug.1',
-	install: true,
-	install_dir: join_paths(dir_man, 'man1'),
+	install: false,
 	configuration: man_conf
 )
 
