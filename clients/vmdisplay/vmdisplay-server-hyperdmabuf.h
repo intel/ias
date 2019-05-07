@@ -52,7 +52,8 @@ private:
 	struct vm_header *hdr;
 	struct vm_buffer_info *buf_info;
 	int offset[VM_MAX_OUTPUTS];
-	int last_counter;
+	int last_counter[VM_MAX_OUTPUTS];
+	int num_buffers[VM_MAX_OUTPUTS];
 };
 
 #endif // _VMDISPLAY_SERVER_HYPERDMABUF_H_
