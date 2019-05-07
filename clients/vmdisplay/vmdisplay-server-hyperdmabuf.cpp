@@ -65,11 +65,13 @@ int HyperDMABUFCommunicator::init(int domid,
 
 	hdr = NULL;
 	buf_info = NULL;
-	last_counter = -1;
 
-	/* Leave space at the begining of buffers for header */
-	for (int i = 0; i < VM_MAX_OUTPUTS; i++)
+	/* intializing frame paratmers */
+	for (int i = 0; i < VM_MAX_OUTPUTS; i++) {
+		last_counter[i] = -1;
+		num_buffers[i] = 0;
 		offset[i] = sizeof(struct vm_header);
+	}
 
 	return 0;
 }
@@ -123,8 +125,6 @@ int HyperDMABUFCommunicator::recv_metadata(void **buffer)
 {
 	int len;
 
-	struct vm_header last_hdr;
-	int num_buffers = 0;
 	struct hyper_dmabuf_event_hdr *event_hdr;
 
 	while (1) {
@@ -132,19 +132,17 @@ int HyperDMABUFCommunicator::recv_metadata(void **buffer)
 		 * In case when we received alreay buffer for next frame,
 		 * append its metadata to new frame metadata.
 		 */
-		if (hdr)
-			memcpy(&last_hdr, hdr, sizeof(*hdr));
-
-		if (hdr && hdr->counter != last_counter) {
+		if (hdr && hdr->counter != last_counter[hdr->output]) {
 			/* Copy metatadat to mmaped file of given output */
 			memcpy((char *)buffer[hdr->output] +
 			       offset[hdr->output], buf_info,
 			       sizeof(struct vm_buffer_info));
 			offset[hdr->output] += sizeof(struct vm_buffer_info);
-			num_buffers++;
-			last_counter = hdr->counter;
-		} else {
-			last_counter = -1;
+			num_buffers[hdr->output]++;
+			last_counter[hdr->output] = hdr->counter;
+		} else if (hdr) {
+			/* invalidating previous hdr */
+			last_counter[hdr->output] = -1;
 		}
 
 		do {
@@ -174,34 +172,32 @@ int HyperDMABUFCommunicator::recv_metadata(void **buffer)
 			 * Check if we received buffer from the same frame,
 			 * if so, append its metadata to frame metadata.
 			 */
-			if (last_counter == -1 || hdr->counter == last_counter) {
-				/* Copy metatadat to mmaped file of given output */
+			if (last_counter[hdr->output] == -1 ||
+			    hdr->counter == last_counter[hdr->output]) {
+				/* Copy metadata to mmaped file of
+				 * given output */
 				memcpy((char *)buffer[hdr->output] +
 				       offset[hdr->output], buf_info,
 				       sizeof(struct vm_buffer_info));
 				offset[hdr->output] +=
 				    sizeof(struct vm_buffer_info);
-				num_buffers++;
-				last_counter = hdr->counter;
+				num_buffers[hdr->output]++;
+				last_counter[hdr->output] = hdr->counter;
 			}
 
 			/*
-			 * In case that we received buffer for new frame, or we received
-			 * all buffers for current frame, send out new frame metadata to clients.
+			 * In case that we received buffer for new frame, or
+			 * we received all buffers for current frame, send out
+			 * new frame metadata to clients.
 			 */
-			if (hdr->counter != last_counter ||
-			    num_buffers >= hdr->n_buffers) {
-				last_hdr.n_buffers = num_buffers;
-				memcpy(buffer[last_hdr.output],
-				       &last_hdr, sizeof(struct vm_header));
-
-				num_buffers = 0;
-				offset[last_hdr.output] =
-				    sizeof(struct vm_header);
-
-				return last_hdr.output;
+			if (hdr->counter != last_counter[hdr->output] ||
+			    num_buffers[hdr->output] >= hdr->n_buffers) {
+				memcpy(buffer[hdr->output], hdr,
+				       sizeof(struct vm_header));
+				num_buffers[hdr->output] = 0;
+				offset[hdr->output] = sizeof(struct vm_header);
+				return hdr->output;
 			}
-
 		}
 	}
 }
