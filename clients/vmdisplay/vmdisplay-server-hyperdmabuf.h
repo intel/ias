@@ -41,8 +41,6 @@ public:
 	int init(int domid, HyperCommunicatorDirection direction,
 		 const char *name);
 	void cleanup();
-	int recv_data(void *data, int len);
-	int send_data(const void *data, int len);
 	int recv_metadata(void **buffers);
 
 private:

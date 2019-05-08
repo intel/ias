@@ -29,8 +29,8 @@
  *   VMDisplay parse metadata
  *-----------------------------------------------------------------------------
  */
-#ifndef _VMRECEPTOR_H_
-#define _VMRECEPTOR_H_
+#ifndef _VMDISPLAY_PARSER_H_
+#define _VMDISPLAY_PARSER_H_
 
 #include <stdint.h>
 #include <GLES2/gl2.h>
@@ -59,4 +59,4 @@ extern int32_t disp_h;
 int parse_event_metadata(int fd, int *counter);
 int parse_socket_metadata(vmdisplay_socket * socket, int *counter);
 
-#endif
+#endif // _VMDISPLAY_PARSER_H_

@@ -171,7 +171,10 @@ int VMDisplayServer::init_outputs()
 {
 	char path[255];
 
-	/* Create for each possible output its metadata file (and unlink it, so it becomes anonymouse one */
+	/*
+	 * Create for each possible output its metadata file and unlink it,
+	 * so it becomes anonymouse one
+	 */
 	for (int i = 0; i < VM_MAX_OUTPUTS; ++i) {
 		snprintf(path, 255, "/run/vmdisplay_%d_metadata", i);
 		outputs[i].shm_fd =
@@ -354,7 +357,10 @@ int VMDisplayServer::run()
 					    0) | O_NONBLOCK);
 				client_sockets.push_back(client_sockfd);
 
-				/*Send init message and fds of all outputs metadata files */
+				/*
+				 * Send init message and fds of all outputs
+				 * metadata files
+				 */
 				send_message(client_sockfd, VMDISPLAY_INIT_MSG,
 					     VM_MAX_OUTPUTS);
 				for (int i = 0; i < VM_MAX_OUTPUTS; i++)
@@ -386,7 +392,10 @@ int VMDisplayServer::process_metadata()
 		output_num =
 		    hyper_comm_metadata->recv_metadata(surfaces_metadata);
 
-		/* TODO decide if we should be waiting for weston to start again or just retun error and restart whole vmdisplay server */
+		/*
+		 * TODO decide if we should be waiting for weston to start
+		 * again or just retun error and restart whole vmdisplay server
+		 */
 		if (output_num < 0) {
 			printf("Lost connection to Dom%d compositor\n", domid);
 			running = false;
@@ -396,7 +405,8 @@ int VMDisplayServer::process_metadata()
 		pthread_mutex_lock(&mutex);
 
 		std::vector < int >::iterator it;
-		for (it = client_sockets.begin(); it != client_sockets.end();) {
+		for (it = client_sockets.begin();
+		     it != client_sockets.end();) {
 			rc = send_message((*it), VMDISPLAY_METADATA_UPDATE_MSG,
 					  output_num);
 			if (rc < 0) {

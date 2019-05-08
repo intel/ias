@@ -92,6 +92,7 @@ extern int enable_fps_info;
 extern uint32_t show_window;
 
 int open_drm(void);
+void init_buffers(void);
 int init_hyper_dmabuf(int dom);
 void clear_hyper_dmabuf_list(void);
 void create_new_hyper_dmabuf_buffer(void);

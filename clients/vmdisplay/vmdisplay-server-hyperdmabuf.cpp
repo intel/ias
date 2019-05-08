@@ -39,6 +39,10 @@
 #include <stdio.h>
 #include "vmdisplay-server-hyperdmabuf.h"
 
+#define METADATA_SZ (sizeof(struct vm_header) +\
+		     sizeof(struct vm_buffer_info) +\
+		     sizeof(struct hyper_dmabuf_event_hdr))
+
 int HyperDMABUFCommunicator::init(int domid,
 				  HyperCommunicatorDirection dir,
 				  const char *args)
@@ -59,12 +63,7 @@ int HyperDMABUFCommunicator::init(int domid,
 
 	direction = dir;
 
-	metadata = new char[sizeof(struct vm_header) +
-			    sizeof(struct vm_buffer_info) +
-			    sizeof(struct hyper_dmabuf_event_hdr)];
-
-	hdr = NULL;
-	buf_info = NULL;
+	metadata = new char[METADATA_SZ];
 
 	/* intializing frame paratmers */
 	for (int i = 0; i < VM_MAX_OUTPUTS; i++) {
@@ -87,38 +86,28 @@ void HyperDMABUFCommunicator::cleanup()
 	metadata = NULL;
 }
 
-int HyperDMABUFCommunicator::recv_data(void *buffer, int max_len)
+static int event_poll(int fd, void *buffer, int max_len)
 {
 	struct pollfd fds = { };
 	int ret = -1;
 
-	fds.fd = hyper_dmabuf_fd;
+	fds.fd = fd;
 	fds.events = POLLIN;
 
-	if (direction == HyperCommunicatorInterface::Receiver) {
-		do {
-			ret = poll(&fds, 1, -1);
-			if (ret > 0) {
-				if (fds.revents & (POLLERR | POLLNVAL)) {
-					errno = EINVAL;
-					return -1;
-				}
-				break;
+	do {
+		ret = poll(&fds, 1, -1);
+		if (ret > 0) {
+			if (fds.revents & (POLLERR | POLLNVAL)) {
+				errno = EINVAL;
+				return -1;
 			}
-		} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
+			break;
+		}
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
 
-		ret = read(hyper_dmabuf_fd, buffer, max_len);
-	}
+	ret = read(fd, buffer, max_len);
 
 	return ret;
-}
-
-int HyperDMABUFCommunicator::send_data(const void *buffer, int len)
-{
-	UNUSED(buffer);
-	UNUSED(len);
-
-	return -1;
 }
 
 int HyperDMABUFCommunicator::recv_metadata(void **buffer)
@@ -127,11 +116,22 @@ int HyperDMABUFCommunicator::recv_metadata(void **buffer)
 
 	struct hyper_dmabuf_event_hdr *event_hdr;
 
+	struct vm_header *hdr = (struct vm_header *)
+			&metadata[sizeof(struct hyper_dmabuf_event_hdr)];
+
+	struct vm_buffer_info *buf_info = (struct vm_buffer_info *)
+			&metadata[sizeof(struct hyper_dmabuf_event_hdr) +
+			sizeof(struct vm_header)];
+
+	/* only works if direction set for 'Receiver' */
+	if (direction != HyperCommunicatorInterface::Receiver)
+		return -1;
+
 	while (1) {
-		/*
-		 * In case when we received alreay buffer for next frame,
-		 * append its metadata to new frame metadata.
-		 */
+		 /*
+		  * In case when we already received buffer for next frame,
+		  * append its metadata to new frame metadata.
+		  */
 		if (hdr && hdr->counter != last_counter[hdr->output]) {
 			/* Copy metatadat to mmaped file of given output */
 			memcpy((char *)buffer[hdr->output] +
@@ -146,36 +146,27 @@ int HyperDMABUFCommunicator::recv_metadata(void **buffer)
 		}
 
 		do {
-			len = recv_data(metadata,
-					sizeof(struct vm_header) +
-					sizeof(struct vm_buffer_info) +
-					sizeof(struct hyper_dmabuf_event_hdr));
-
+			len = event_poll(hyper_dmabuf_fd, metadata,
+					 METADATA_SZ);
 		} while(len < 0);
 
 		event_hdr = (struct hyper_dmabuf_event_hdr *)&metadata[0];
-
-		hdr =
-		    (struct vm_header *)
-		    &metadata[sizeof(struct hyper_dmabuf_event_hdr)];
-
-		buf_info =
-		    (struct vm_buffer_info *)
-		    &metadata[sizeof(struct hyper_dmabuf_event_hdr) +
-			      sizeof(struct vm_header)];
 
 		/* Copy HID from event_hdr */
 		buf_info->hyper_dmabuf_id = event_hdr->hid;
 
 		if (hdr->output < VM_MAX_OUTPUTS) {
 			/*
-			 * Check if we received buffer from the same frame,
-			 * if so, append its metadata to frame metadata.
+			 * Check if we received buffer (surface) from the
+			 * same frame, if so, append new buffer info to the
+			 * of previuos metadata.
 			 */
 			if (last_counter[hdr->output] == -1 ||
 			    hdr->counter == last_counter[hdr->output]) {
-				/* Copy metadata to mmaped file of
-				 * given output */
+				/*
+				 * Copy metadata to mmaped file of
+				 * given output
+				 */
 				memcpy((char *)buffer[hdr->output] +
 				       offset[hdr->output], buf_info,
 				       sizeof(struct vm_buffer_info));

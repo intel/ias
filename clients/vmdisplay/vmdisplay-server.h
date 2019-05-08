@@ -48,8 +48,20 @@ public:
 	virtual int init(int dom_id, HyperCommunicatorDirection direction,
 			 const char *args) = 0;
 	virtual void cleanup() = 0;
-	virtual int recv_data(void *data, int len) = 0;
-	virtual int send_data(const void *data, int len) = 0;
+	virtual int recv_data(void *data, int len)
+	{
+		UNUSED(data);
+		UNUSED(len);
+		return 0;
+	}
+
+	virtual int send_data(const void *data, int len)
+	{
+		UNUSED(data);
+		UNUSED(len);
+		return 0;
+	}
+
 	virtual int recv_metadata(void **surfaces_metadata) = 0;
 };
 

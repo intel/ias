@@ -238,7 +238,10 @@ int NetworkCommunicator::recv_metadata(void **surfaces_metadata)
 			}
 		}
 
-		/* If whole frame metadata was received, parse for which output it is and return */
+		/*
+		 * If whole frame metadata was received, parse for which output
+		 * it is and return
+		 */
 		if (start_offset != -1 && end_offset != -1
 		    && end_offset > start_offset) {
 			header = (struct vm_header *)(&metadata[start_offset]);
