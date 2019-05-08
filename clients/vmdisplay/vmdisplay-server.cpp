@@ -53,22 +53,18 @@
 #include "vmdisplay-server-hyperdmabuf.h"
 #include "vmdisplay-server-network.h"
 
-/*
- * Number of pending connections that can be queued,
- * until new vmdisplay-wayland instances will be getting
- * error during connection
- */
+// Number of pending connections that can be queued,
+// until new vmdisplay-wayland instances will be getting
+// error during connection
 #define SOCKET_BACKLOG 25
 
 struct output_data {
-	/*
-	 * File descriptor to anonymous
-	 * file that will contain metadata
-	 * of surfaces placed on given output
-	 */
+	// File descriptor to anonymous
+	// file that will contain metadata
+	// of surfaces placed on given output
 	int shm_fd;
 
-	/* Address of mmaped metadata file */
+	// Address of mmaped metadata file
 	void *shm_addr;
 };
 
@@ -171,7 +167,8 @@ int VMDisplayServer::init_outputs()
 {
 	char path[255];
 
-	/* Create for each possible output its metadata file (and unlink it, so it becomes anonymouse one */
+	// Create for each possible output its metadata file and unlink it,
+	// so it becomes anonymouse one
 	for (int i = 0; i < VM_MAX_OUTPUTS; ++i) {
 		snprintf(path, 255, "/run/vmdisplay_%d_metadata", i);
 		outputs[i].shm_fd =
@@ -346,15 +343,16 @@ int VMDisplayServer::run()
 				perror("Accept error\n");
 				continue;
 			} else {
-				/* New client has connected */
+				// New client has connected
 				pthread_mutex_lock(&mutex);
-				/* Make its socket nonblocking */
+				// Make its socket nonblocking
 				fcntl(client_sockfd, F_SETFL,
 				      fcntl(client_sockfd, F_GETFL,
 					    0) | O_NONBLOCK);
 				client_sockets.push_back(client_sockfd);
 
-				/*Send init message and fds of all outputs metadata files */
+				// Send init message and fds of all outputs
+				// metadata files
 				send_message(client_sockfd, VMDISPLAY_INIT_MSG,
 					     VM_MAX_OUTPUTS);
 				for (int i = 0; i < VM_MAX_OUTPUTS; i++)
@@ -386,7 +384,8 @@ int VMDisplayServer::process_metadata()
 		output_num =
 		    hyper_comm_metadata->recv_metadata(surfaces_metadata);
 
-		/* TODO decide if we should be waiting for weston to start again or just retun error and restart whole vmdisplay server */
+		// TODO decide if we should be waiting for weston to start
+		// again or just retun error and restart whole vmdisplay server
 		if (output_num < 0) {
 			printf("Lost connection to Dom%d compositor\n", domid);
 			running = false;
@@ -396,7 +395,8 @@ int VMDisplayServer::process_metadata()
 		pthread_mutex_lock(&mutex);
 
 		std::vector < int >::iterator it;
-		for (it = client_sockets.begin(); it != client_sockets.end();) {
+		for (it = client_sockets.begin();
+		     it != client_sockets.end();) {
 			rc = send_message((*it), VMDISPLAY_METADATA_UPDATE_MSG,
 					  output_num);
 			if (rc < 0) {
@@ -423,7 +423,7 @@ int VMDisplayServer::process_input()
 	struct vmdisplay_key_event key_event;
 	struct vmdisplay_pointer_event pointer_event;
 	int rc, i;
-	/* TODO assuming now that max 255 client apps will be running */
+	// TODO assuming now that max 255 client apps will be running
 	struct pollfd fds[255];
 
 	while (running) {

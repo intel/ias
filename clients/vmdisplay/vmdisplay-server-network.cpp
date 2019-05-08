@@ -59,7 +59,7 @@ int NetworkCommunicator::init(int domid, HyperCommunicatorDirection dir,
 	struct hostent *server;
 	int portno;
 	struct sockaddr_in server_addr;
-	/* Local copy of args, as strtok is modyfing it */
+	// Local copy of args, as strtok is modyfing it
 	char args_tmp[255];
 	char *addr;
 	char *port;
@@ -195,7 +195,7 @@ int NetworkCommunicator::recv_data(void *buffer, int max_len)
 	if (direction == HyperCommunicatorInterface::Receiver) {
 		ret = recv(sock_fd, buffer, max_len, 0);
 		if (ret == 0) {
-			/* 0 return means socket closed, singal this as error */
+			// 0 return means socket closed, singal this as error
 			ret = -1;
 		}
 	}
@@ -222,7 +222,7 @@ int NetworkCommunicator::recv_metadata(void **surfaces_metadata)
 		start_offset = -1;
 		end_offset = -1;
 
-		/* Look for frame metadata start/end markers */
+		// Look for frame metadata start/end markers
 		for (int i = 0; i < metadata_offset; i++) {
 			int marker = *(int *)(&metadata[i]);
 
@@ -238,7 +238,8 @@ int NetworkCommunicator::recv_metadata(void **surfaces_metadata)
 			}
 		}
 
-		/* If whole frame metadata was received, parse for which output it is and return */
+		// If whole frame metadata was received, parse for which output
+		// it is and return
 		if (start_offset != -1 && end_offset != -1
 		    && end_offset > start_offset) {
 			header = (struct vm_header *)(&metadata[start_offset]);
@@ -270,7 +271,7 @@ int NetworkCommunicator::send_data(const void *buffer, int len)
 			client_sock_fd = -1;
 			pthread_create(&listener_thread, NULL,
 				       listener_thread_func, this);
-			/* 0 return means socket closed, singal this as error */
+			// 0 return means socket closed, singal this as error
 			ret = -1;
 		}
 	}

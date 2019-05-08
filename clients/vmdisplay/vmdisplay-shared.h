@@ -30,8 +30,8 @@
  *-----------------------------------------------------------------------------
  */
 
-#ifndef __VMDISPLAY_SHARED_H__
-#define __VMDISPLAY_SHARED_H__
+#ifndef _VMDISPLAY_SHARED_H_
+#define _VMDISPLAY_SHARED_H_
 
 #include <stdint.h>
 
@@ -120,4 +120,4 @@ struct vmdisplay_pointer_event {
 	};
 };
 
-#endif
+#endif // _VMDISPLAY_SHARED_H_
