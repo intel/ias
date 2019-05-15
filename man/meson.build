@@ -25,8 +25,7 @@ configure_file(
 configure_file(
 	input: 'weston.ini.man',
 	output: 'weston.ini.5',
-	install: true,
-	install_dir: join_paths(dir_man, 'man5'),
+	install: false,
 	configuration: man_conf
 )
 
@@ -34,8 +33,7 @@ if get_option('backend-drm')
 	configure_file(
 		input: 'weston-drm.man',
 		output: 'weston-drm.7',
-		install: true,
-		install_dir: join_paths(dir_man, 'man7'),
+		install: false,
 		configuration: man_conf
 	)
 endif
@@ -44,8 +42,7 @@ if get_option('backend-rdp')
 	configure_file(
 		input: 'weston-rdp.man',
 		output: 'weston-rdp.7',
-		install: true,
-		install_dir: join_paths(dir_man, 'man7'),
+		install: false,
 		configuration: man_conf
 	)
 endif
