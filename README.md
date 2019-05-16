@@ -19,6 +19,24 @@ Building IAS:
 -----------
 
 The following build options should be used to compile IAS:
+1) Meson way:
+
+meson builddir/
+ninja -C builddir/ install
+
+You can specify a prefix if you wish all the binaries to be
+installed in a non standard location. For example: 
+meson builddir/ --prefix=<some_path>
+
+Options to meson can be specified like this:
+meson builddir/ -D<option_name>=<value>
+For example:
+meson builddir/ -Denable-hyper-dmabuf=false
+
+For a complete list of options and their default values, please
+read meson_options.txt
+
+2) Autotools way:
 ./autogen.sh --disable-setuid-install \
         --enable-ias-shell \
         --disable-xkbcommon \
@@ -33,7 +51,8 @@ The following build options should be used to compile IAS:
         --enable-ivi-plugin-manager \
         --enable-layer-manager-control \
         --disable-tracing \
-        --enable-shadergen 
+        --enable-shadergen \
+		--enable-autotools
 
 For a complete list of flags that you can provide with 
 autogen.sh, please go to IAS folder and run:
@@ -42,3 +61,7 @@ autogen.sh, please go to IAS folder and run:
 After the successful completion of the above autogen.sh step:
 make -j <number of cores that you want to use>
 make install
+
+Note that this is the last release with autotools support. It
+will be dropped and meson will be the only build option in the
+future.
