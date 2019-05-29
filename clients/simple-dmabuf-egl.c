@@ -48,6 +48,7 @@
 #include "shared/platform.h"
 #include "shared/zalloc.h"
 #include "xdg-shell-unstable-v6-client-protocol.h"
+#include "ias-shell-client-protocol.h"
 #include "fullscreen-shell-unstable-v1-client-protocol.h"
 #include "linux-dmabuf-unstable-v1-client-protocol.h"
 #include "linux-explicit-synchronization-unstable-v1-client-protocol.h"
@@ -76,6 +77,7 @@ struct display {
 	struct wl_registry *registry;
 	struct wl_compositor *compositor;
 	struct zxdg_shell_v6 *shell;
+	struct ias_shell *ias_shell;
 	struct zwp_fullscreen_shell_v1 *fshell;
 	struct zwp_linux_dmabuf_v1 *dmabuf;
 	struct zwp_linux_explicit_synchronization_v1 *explicit_sync;
@@ -135,6 +137,7 @@ struct window {
 	struct display *display;
 	int width, height;
 	struct wl_surface *surface;
+	struct ias_surface *shell_surface;
 	struct zxdg_surface_v6 *xdg_surface;
 	struct zxdg_toplevel_v6 *xdg_toplevel;
 	struct zwp_linux_surface_synchronization_v1 *surface_sync;
@@ -617,10 +620,43 @@ destroy_window(struct window *window)
 		zxdg_toplevel_v6_destroy(window->xdg_toplevel);
 	if (window->xdg_surface)
 		zxdg_surface_v6_destroy(window->xdg_surface);
+	if (window->display->ias_shell) {
+		ias_surface_destroy(window->shell_surface);
+	}
 	if (window->surface_sync)
 		zwp_linux_surface_synchronization_v1_destroy(window->surface_sync);
 	wl_surface_destroy(window->surface);
 	free(window);
+}
+
+static void
+ias_handle_ping(void *data, struct ias_surface *ias_surface,
+	    uint32_t serial)
+{
+	ias_surface_pong(ias_surface, serial);
+}
+
+static void
+ias_handle_configure(void *data, struct ias_surface *ias_surface,
+		 int32_t width, int32_t height)
+{
+
+}
+
+static struct ias_surface_listener ias_surface_listener = {
+	ias_handle_ping,
+	ias_handle_configure,
+};
+
+static void
+create_ias_surface(struct window *window, struct display *display)
+{
+	window->shell_surface = ias_shell_get_ias_surface(display->ias_shell,
+			window->surface, "simple-dmabuf-egl");
+	ias_surface_add_listener(window->shell_surface,
+			&ias_surface_listener, window);
+
+	wl_surface_commit(window->surface);
 }
 
 static struct window *
@@ -667,6 +703,8 @@ create_window(struct display *display, int width, int height, int opts)
 							window->surface,
 							ZWP_FULLSCREEN_SHELL_V1_PRESENT_METHOD_DEFAULT,
 							NULL);
+	} else if (display->ias_shell) {
+		create_ias_surface(window, display);
 	} else {
 		assert(0);
 	}
@@ -1023,9 +1061,16 @@ registry_handle_global(void *data, struct wl_registry *registry,
 			wl_registry_bind(registry,
 					 id, &wl_compositor_interface, 1);
 	} else if (strcmp(interface, "zxdg_shell_v6") == 0) {
-		d->shell = wl_registry_bind(registry,
-					    id, &zxdg_shell_v6_interface, 1);
-		zxdg_shell_v6_add_listener(d->shell, &xdg_shell_listener, d);
+		if (!d->ias_shell) {
+			d->shell = wl_registry_bind(registry,
+							id, &zxdg_shell_v6_interface, 1);
+			zxdg_shell_v6_add_listener(d->shell, &xdg_shell_listener, d);
+		}
+	} else if (strcmp(interface, "ias_shell") == 0) {
+		if (!d->shell) {
+			d->ias_shell = wl_registry_bind(registry, id,
+					&ias_shell_interface, 1);
+		}
 	} else if (strcmp(interface, "zwp_fullscreen_shell_v1") == 0) {
 		d->fshell = wl_registry_bind(registry,
 					     id, &zwp_fullscreen_shell_v1_interface, 1);
@@ -1075,6 +1120,10 @@ destroy_display(struct display *display)
 
 	if (display->shell)
 		zxdg_shell_v6_destroy(display->shell);
+
+	if (display->ias_shell) {
+		ias_shell_destroy(display->ias_shell);
+	}
 
 	if (display->fshell)
 		zwp_fullscreen_shell_v1_release(display->fshell);
