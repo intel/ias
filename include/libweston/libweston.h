@@ -230,6 +230,8 @@ struct ias_plugin;
  *
  * This object represents a monitor (hardware backends like DRM) or a window
  * (windowed nested backends).
+ *
+ * \ingroup head
  */
 struct weston_head {
 	struct weston_compositor *compositor;	/**< owning compositor */
