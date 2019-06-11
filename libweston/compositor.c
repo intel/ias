@@ -1872,12 +1872,18 @@ weston_surface_update_size(struct weston_surface *surface)
 	surface_set_size(surface, width, height);
 }
 
+/** weston_compositor_get_time
+ * \ingroup compositor
+ */
 WL_EXPORT void
 weston_compositor_get_time(struct timespec *time)
 {
 	clock_gettime(CLOCK_REALTIME, time);
 }
 
+/** weston_compositor_pick_view
+ * \ingroup compositor
+ */
 WL_EXPORT struct weston_view *
 weston_compositor_pick_view(struct weston_compositor *compositor,
 			    wl_fixed_t x, wl_fixed_t y,
@@ -2232,6 +2238,9 @@ weston_surface_attach(struct weston_surface *surface,
 	weston_presentation_feedback_discard_list(&surface->feedback_list);
 }
 
+/** weston_compositor_damage_all
+ * \ingroup compositor
+ */
 WL_EXPORT void
 weston_compositor_damage_all(struct weston_compositor *compositor)
 {
@@ -2982,6 +2991,9 @@ weston_output_schedule_repaint(struct weston_output *output)
 	TL_POINT("core_repaint_enter_loop", TLP_OUTPUT(output), TLP_END);
 }
 
+/** weston_compositor_schedule_repaint
+ *  \ingroup compositor
+ */
 WL_EXPORT void
 weston_compositor_schedule_repaint(struct weston_compositor *compositor)
 {
@@ -4513,6 +4525,7 @@ weston_compositor_dpms(struct weston_compositor *compositor,
  * signal will fire.
  *
  * Restarts the idle timer.
+ * \ingroup compositor
  */
 WL_EXPORT void
 weston_compositor_wake(struct weston_compositor *compositor)
@@ -4545,6 +4558,8 @@ weston_compositor_wake(struct weston_compositor *compositor)
  * compositor is shutting down.
  *
  * Stops the idle timer.
+ *
+ * \ingroup compositor
  */
 WL_EXPORT void
 weston_compositor_offscreen(struct weston_compositor *compositor)
@@ -4568,6 +4583,8 @@ weston_compositor_offscreen(struct weston_compositor *compositor)
  * in sleep mode.
  *
  * Stops the idle timer.
+ *
+ * \ingroup compositor
  */
 WL_EXPORT void
 weston_compositor_sleep(struct weston_compositor *compositor)
@@ -4638,6 +4655,9 @@ weston_plane_release(struct weston_plane *plane)
 	wl_list_remove(&plane->link);
 }
 
+/** weston_compositor_stack_plane
+ * \ingroup compositor
+ */
 WL_EXPORT void
 weston_compositor_stack_plane(struct weston_compositor *ec,
 			      struct weston_plane *plane,
@@ -4836,7 +4856,7 @@ weston_compositor_call_heads_changed(void *data)
  *
  * \param compositor The Compositor.
  *
- * \memberof weston_compositor
+ * \ingroup compositor
  * \internal
  */
 static void
@@ -4860,7 +4880,7 @@ weston_compositor_schedule_heads_changed(struct weston_compositor *compositor)
  * This signals the core that a new head has become available, leading to
  * heads_changed hook being called later.
  *
- * \memberof weston_compositor
+ * \ingroup compositor
  * \internal
  */
 WL_EXPORT void
@@ -4889,7 +4909,7 @@ weston_compositor_add_head(struct weston_compositor *compositor,
  *
  * \sa weston_compositor_iterate_heads, weston_head_is_connected,
  * weston_head_is_enabled
- * \memberof weston_compositor
+ * \ingroup compositor
  */
 WL_EXPORT void
 weston_compositor_add_heads_changed_listener(struct weston_compositor *compositor,
@@ -4918,7 +4938,7 @@ weston_compositor_add_heads_changed_listener(struct weston_compositor *composito
  *  If you cause \c iter to be removed from the list, you cannot use it to
  * continue iterating. Removing any other item is safe.
  *
- * \memberof weston_compositor
+ * \ingroup compositor
  */
 WL_EXPORT struct weston_head *
 weston_compositor_iterate_heads(struct weston_compositor *compositor,
@@ -5652,6 +5672,7 @@ weston_output_move(struct weston_output *output, int x, int y)
  * \param output The output to be added.
  *
  * \internal
+ * \ingroup compositor
  */
 static void
 weston_compositor_add_output(struct weston_compositor *compositor,
@@ -5741,7 +5762,7 @@ weston_output_transform_coordinate(struct weston_output *output,
  *
  * - The output's internal ID is released.
  *
- * \memberof weston_output
+ * \ingroup compositor
  * \internal
  */
 static void
@@ -5924,7 +5945,7 @@ weston_output_init(struct weston_output *output,
  *
  * The opposite of this operation is built into weston_output_release().
  *
- * \ingroup output
+ * \ingroup compositor
  * \internal
  */
 WL_EXPORT void
@@ -6138,6 +6159,8 @@ weston_output_disable(struct weston_output *output)
  *
  * If there are new or changed heads, calls the heads_changed hook and
  * returns after the hook returns.
+ *
+ * \ingroup compositor
  */
 WL_EXPORT void
 weston_compositor_flush_heads_changed(struct weston_compositor *compositor)
@@ -6237,7 +6260,7 @@ weston_output_release(struct weston_output *output)
  * \param name The output name to search for.
  * \return An existing output with the given name, or NULL if not found.
  *
- * \memberof weston_compositor
+ * \ingroup compositor
  */
 WL_EXPORT struct weston_output *
 weston_compositor_find_output_by_name(struct weston_compositor *compositor,
@@ -6267,7 +6290,7 @@ weston_compositor_find_output_by_name(struct weston_compositor *compositor,
  * An output must be configured and it must have at least one head before
  * it can be enabled.
  *
- * \memberof weston_compositor
+ * \ingroup compositor
  */
 WL_EXPORT struct weston_output *
 weston_compositor_create_output(struct weston_compositor *compositor,
@@ -6296,7 +6319,7 @@ weston_compositor_create_output(struct weston_compositor *compositor,
  *
  * An output must be configured before it can be enabled.
  *
- * \memberof weston_compositor
+ * \ingroup compositor
  */
 WL_EXPORT struct weston_output *
 weston_compositor_create_output_with_head(struct weston_compositor *compositor,
@@ -6813,6 +6836,8 @@ debug_scene_view_print_tree(struct weston_view *view,
 /**
  * Output information on how libweston is currently composing the scene
  * graph.
+ *
+ * \ingroup compositor
  */
 WL_EXPORT char *
 weston_compositor_print_scene_graph(struct weston_compositor *ec)
@@ -6921,6 +6946,8 @@ debug_scene_graph_cb(struct weston_debug_stream *stream, void *data)
  * \param log_ctx A pointer to weston_debug_compositor
  * using the \ref weston_compositor_get_user_data function.
  * \return The compositor instance on success or NULL on failure.
+ *
+ * \ingroup compositor
  */
 WL_EXPORT struct weston_compositor *
 weston_compositor_create(struct wl_display *display,
@@ -7037,6 +7064,9 @@ fail:
 	return NULL;
 }
 
+/** weston_compositor_shutdown
+ * \ingroup compositor
+ */
 WL_EXPORT void
 weston_compositor_shutdown(struct weston_compositor *ec)
 {
@@ -7065,8 +7095,11 @@ weston_compositor_shutdown(struct weston_compositor *ec)
 	weston_plane_release(&ec->primary_plane);
 }
 
+/** weston_compositor_exit_with_code
+ * \ingroup compositor
+ */
 WL_EXPORT void
-weston_compositor_exit_with_code(struct weston_compositor *compositor,
+weston_compositor_exit_with_code(struct weston_compositor *compositor, 
 				 int exit_code)
 {
 	if (compositor->exit_code == EXIT_SUCCESS)
@@ -7075,6 +7108,9 @@ weston_compositor_exit_with_code(struct weston_compositor *compositor,
 	weston_compositor_exit(compositor);
 }
 
+/** weston_compositor_set_default_pointer_grab
+ * \ingroup compositor
+ */
 WL_EXPORT void
 weston_compositor_set_default_pointer_grab(struct weston_compositor *ec,
 			const struct weston_pointer_grab_interface *interface)
@@ -7090,6 +7126,9 @@ weston_compositor_set_default_pointer_grab(struct weston_compositor *ec,
 	}
 }
 
+/** weston_compositor_set_presentation_clock
+ * \ingroup compositor
+ */
 WL_EXPORT int
 weston_compositor_set_presentation_clock(struct weston_compositor *compositor,
 					 clockid_t clk_id)
@@ -7104,9 +7143,10 @@ weston_compositor_set_presentation_clock(struct weston_compositor *compositor,
 	return 0;
 }
 
-/*
- * For choosing the software clock, when the display hardware or API
+/** For choosing the software clock, when the display hardware or API
  * does not expose a compatible presentation timestamp.
+ *
+ * \ingroup compositor
  */
 WL_EXPORT int
 weston_compositor_set_presentation_clock_software(
@@ -7143,6 +7183,8 @@ weston_compositor_set_presentation_clock_software(
  * This function is never meant to fail. If reading the clock does fail,
  * an error message is logged and a zero time is returned. Callers are not
  * supposed to detect or react to failures.
+ *
+ * \ingroup compositor
  */
 WL_EXPORT void
 weston_compositor_read_presentation_clock(
@@ -7179,7 +7221,9 @@ weston_compositor_read_presentation_clock(
  * This hook is also used for detecting if the renderer supports
  * dmabufs at all. If the renderer hook is NULL, dmabufs are not
  * supported.
- * */
+ *
+ * \ingroup compositor
+ */
 WL_EXPORT bool
 weston_compositor_import_dmabuf(struct weston_compositor *compositor,
 				struct linux_dmabuf_buffer *buffer)
@@ -7308,6 +7352,8 @@ weston_load_module(const char *name, const char *entrypoint)
  * This function cleans up the compositor state and destroys it.
  *
  * \param compositor The compositor to be destroyed.
+ *
+ * \ingroup compositor
  */
 WL_EXPORT void
 weston_compositor_destroy(struct weston_compositor *compositor)
@@ -7344,6 +7390,8 @@ weston_compositor_destroy(struct weston_compositor *compositor)
  * tear down will happen immediately.
  *
  * \param compositor The compositor to tear down.
+ *
+ * \ingroup compositor
  */
 WL_EXPORT void
 weston_compositor_exit(struct weston_compositor *compositor)
@@ -7355,6 +7403,8 @@ weston_compositor_exit(struct weston_compositor *compositor)
  *
  * This function returns the user data pointer set with user_data parameter
  * to the \ref weston_compositor_create function.
+ *
+ * \ingroup compositor
  */
 WL_EXPORT void *
 weston_compositor_get_user_data(struct weston_compositor *compositor)
@@ -7383,6 +7433,8 @@ static const char * const backend_map[] = {
  * structure's 'base' member.
  *
  * \return 0 on success, or -1 on error.
+ *
+ * \ingroup compositor
  */
 WL_EXPORT int
 weston_compositor_load_backend(struct weston_compositor *compositor,
@@ -7412,6 +7464,9 @@ weston_compositor_load_backend(struct weston_compositor *compositor,
 	return 0;
 }
 
+/** weston_compositor_load_xwayland
+ * \ingroup compositor
+ */
 WL_EXPORT int
 weston_compositor_load_xwayland(struct weston_compositor *compositor)
 {
