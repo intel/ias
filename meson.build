@@ -2,7 +2,7 @@ project('ias-weston',
 	'c', 'cpp',
 	version: '6.0.90',
 	default_options: [
-		'warning_level=2',
+		'warning_level=3',
 		'c_std=gnu99',
 		'cpp_std=c++11',
 		'b_lundef=false',
@@ -63,7 +63,6 @@ global_args_maybe = [
 	'-Wno-shift-negative-value', # required due to Pixman
 	'-Wno-missing-field-initializers',
 	'-Wno-pedantic',
-	'-Wno-error=pedantic',
 	'-fvisibility=hidden',
 ]
 foreach a : global_args_maybe
