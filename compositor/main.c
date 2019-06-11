@@ -1893,7 +1893,7 @@ wet_layoutput_create_output(struct wet_layoutput *lo, const char *name)
 	output->output =
 		weston_compositor_create_output(lo->compositor->compositor,
 						name);
-	if (!output) {
+	if (!output->output) {
 		free(output);
 		return NULL;
 	}
