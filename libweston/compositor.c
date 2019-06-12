@@ -898,8 +898,8 @@ weston_surface_to_buffer_rect(struct weston_surface *surface,
  *
  * \param surface The surface to fetch wp_viewport and buffer transformation
  * from.
- * \param surface_region[in] The region in surface coordinates.
- * \param buffer_region[out] The region converted to buffer coordinates.
+ * \param[in] surface_region The region in surface coordinates.
+ * \param[out] buffer_region The region converted to buffer coordinates.
  *
  * Buffer_region must be init'd, but will be completely overwritten.
  *
@@ -907,6 +907,7 @@ weston_surface_to_buffer_rect(struct weston_surface *surface,
  * and rotations in 90-degree steps. Therefore the only loss in the
  * conversion is from the coordinate rounding that takes place in
  * \ref weston_surface_to_buffer_rect.
+ *
  */
 WL_EXPORT void
 weston_surface_to_buffer_region(struct weston_surface *surface,
@@ -979,7 +980,7 @@ weston_view_damage_below(struct weston_view *view)
  * \param surface The surface.
  * \param head A head of the entered/left output.
  * \param enter True if entered.
- * \param left True if left.
+ * \param leave True if left.
  *
  * Send the enter/leave events for all protocol objects bound to the given
  * output by the client owning the surface.
@@ -4851,7 +4852,7 @@ weston_compositor_add_head(struct weston_compositor *compositor,
  * \param compositor The compositor.
  * \param listener The listener to add.
  *
- * The listener notify function argument is the \var compositor.
+ * The listener notify function argument is weston_compositor.
  *
  * The listener function will be called after heads are added or their
  * connection status has changed. Several changes may be accumulated into a
@@ -4872,7 +4873,7 @@ weston_compositor_add_heads_changed_listener(struct weston_compositor *composito
 /** Iterate over available heads
  *
  * \param compositor The compositor.
- * \param item The iterator, or NULL for start.
+ * \param iter The iterator, or NULL for start.
  * \return The next available head in the list.
  *
  * Returns all available heads, regardless of being connected or enabled.
@@ -4918,7 +4919,7 @@ weston_compositor_iterate_heads(struct weston_compositor *compositor,
 /** Iterate over attached heads
  *
  * \param output The output whose heads to iterate.
- * \param item The iterator, or NULL for start.
+ * \param iter The iterator, or NULL for start.
  * \return The next attached head in the list.
  *
  * Returns all heads currently attached to the output.
@@ -5649,14 +5650,15 @@ weston_compositor_add_output(struct weston_compositor *compositor,
 
 /** Transform device coordinates into global coordinates
  *
- * \param device_x[in] X coordinate in device units.
- * \param device_y[in] Y coordinate in device units.
- * \param x[out] X coordinate in the global space.
- * \param y[out] Y coordinate in the global space.
+ * \param output the weston_output object
+ * \param[in] device_x X coordinate in device units.
+ * \param[in] device_y Y coordinate in device units.
+ * \param[out] x X coordinate in the global space.
+ * \param[out] y Y coordinate in the global space.
  *
- * Transforms coordinates from the device coordinate space
- * (physical pixel units) to the global coordinate space (logical pixel units).
- * This takes into account output transform and scale.
+ * Transforms coordinates from the device coordinate space (physical pixel
+ * units) to the global coordinate space (logical pixel units).  This takes
+ * into account output transform and scale.
  *
  * \memberof weston_output
  * \internal
@@ -6868,7 +6870,7 @@ debug_scene_graph_cb(struct weston_debug_stream *stream, void *data)
  *
  * \param display The Wayland display to be used.
  * \param user_data A pointer to an object that can later be retrieved
- * \param wdc A pointer to weston_debug_compositor
+ * \param log_ctx A pointer to weston_debug_compositor
  * using the \ref weston_compositor_get_user_data function.
  * \return The compositor instance on success or NULL on failure.
  */
@@ -7085,7 +7087,7 @@ weston_compositor_set_presentation_clock_software(
 /** Read the current time from the Presentation clock
  *
  * \param compositor
- * \param ts[out] The current time.
+ * \param[out] ts The current time.
  *
  * \note Reading the current time in user space is always imprecise to some
  * degree.
