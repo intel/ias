@@ -279,3 +279,9 @@ option(
 	value: true,
 	description: 'A plugin framework for the IAS compositors IVI shell'
 )
+option(
+	'doc',
+	type: 'boolean',
+	value: false,
+	description: 'Generate documentation'
+)

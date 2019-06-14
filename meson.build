@@ -178,5 +178,8 @@ subdir('plugins')
 
 configure_file(output: 'config.h', configuration: config_h)
 
-
-# TODO: process doc/doxygen/*.doxygen.in
+if get_option('doc')
+	subdir('doc/sphinx')
+else
+	message('Documentation will not be built. Use -Ddoc to build it.')
+endif
