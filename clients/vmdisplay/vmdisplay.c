@@ -437,7 +437,7 @@ static void create_new_buffer_common(int dmabuf_fd)
 					current_texture_sampler_format =
 					    DRM_FORMAT_ARGB8888;
 				} else {
-					printf("DRI not supporint NV12\n");
+					printf("DRI driver doesn't support NV12\n");
 					return;
 				}
 			}
@@ -525,7 +525,6 @@ static void create_new_buffer_common(int dmabuf_fd)
 							    surf_format, 0);
 		current_buffer = buf;
 	}
-	close(dmabuf_fd);
 	update_oldest_rec_hyper_dmabuf(hyper_dmabuf_id.id, textureId, buf,
 				       surf_width, surf_height, 0);
 }
@@ -546,6 +545,9 @@ void create_new_hyper_dmabuf_buffer(void)
 	}
 
 	create_new_buffer_common(msg.fd);
+
+	/* closing the handle for exported hyper_dmabuf */
+	close(msg.fd);
 }
 
 void clear_hyper_dmabuf_list(void)
