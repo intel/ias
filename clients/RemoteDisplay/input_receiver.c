@@ -562,11 +562,17 @@ static void
 init_transport(struct tcpTransport *transport)
 {
 	int ret = 0;
+	char *hello = "Hello";
+	struct timeval optTime = {0, 10}; /* {sec, msec} */
 
 	printf("Initialising transport on input receiver...\n");
-	transport->sockDesc = socket(AF_INET , SOCK_STREAM , IPPROTO_IP);
+	transport->sockDesc = socket(AF_INET , SOCK_DGRAM , 0);
 	if (transport->sockDesc == -1) {
 		fprintf(stderr, "Socket creation failed.\n");
+		return;
+	}
+	if (setsockopt(transport->sockDesc, SOL_SOCKET, SO_SNDTIMEO, &optTime, sizeof(optTime)) < 0) {
+		fprintf(stderr, "sendto timeout configuration failed\n");
 		return;
 	}
 
@@ -574,17 +580,19 @@ init_transport(struct tcpTransport *transport)
 	transport->sockAddr.sin_addr.s_addr = inet_addr(transport->ipaddr);
 	transport->sockAddr.sin_port = htons(transport->port);
 
-	ret = connect(transport->sockDesc,
-			(struct sockaddr *) &transport->sockAddr,
+	/* Send a simple hello message to the server so that it knows about us */
+	ret = sendto(transport->sockDesc, (const char *)hello, strlen(hello),
+			0, (const struct sockaddr *) &transport->sockAddr,
 			sizeof(transport->sockAddr));
+
 	if (ret < 0) {
-		fprintf(stderr, "Error connecting to input sender.\n");
+		fprintf(stderr, "Error with sending message to the server.\n");
 		close(transport->sockDesc);
 		transport->sockDesc = -1;
 		return;
 	}
 
-	printf("Connected to input sender.\n");
+	printf("Read to accept input events.\n");
 	transport->connected = 1;
 }
 
@@ -599,13 +607,14 @@ receive_events(void * const priv_data)
 	struct remote_display_key_event key_event;
 	struct remote_display_pointer_event pointer_event;
 	struct input_receiver_private_data *data = priv_data;
+	gstInputMsg msg;
 
 	init_transport(&data->transport);
 	data->running = 1;
 
 	while (data->running) {
 		if (data->transport.connected) {
-			ret = recv(data->transport.sockDesc, &header, sizeof(header), 0);
+			ret = recv(data->transport.sockDesc, &msg, sizeof(msg), 0);
 		}
 		if (data->running == 0) {
 			printf("Receive interrupted by shutdown.\n");
@@ -616,43 +625,57 @@ receive_events(void * const priv_data)
 		} else if (ret <= 0) {
 			printf("Header receive failed.\n");
 		} else if (data->appstate->surfid) {
-			switch(header.type) {
-			case REMOTE_DISPLAY_TOUCH_EVENT:
-				if (data->verbose > 1) {
-					printf("Touch event received for surface %d...\n",
-						data->appstate->surfid);
-				}
-				ret = recv(data->transport.sockDesc, &touch_event, header.size, 0);
-				if (ret > 0) {
-					handle_surface_touch_event(data->appstate->ias_in,
-							data->appstate->surfid,
-							&touch_event);
-				}
+			switch(msg.type) {
+			case TOUCH_HANDLE_DOWN:
+				ias_relay_input_send_touch(data->appstate->ias_in,
+								IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_DOWN,
+								data->appstate->surfid, msg.t.id,
+								msg.t.x, msg.t.y,
+								msg.t.time);
 				break;
-			case REMOTE_DISPLAY_KEY_EVENT:
-				if (data->verbose > 1) {
-					printf("Key event received for surface %d...\n",
-						data->appstate->surfid);
-				}
-				ret = recv(data->transport.sockDesc, &key_event, header.size, 0);
-				if (ret > 0) {
-					handle_surface_key_event(data->appstate->ias_in,
-							data->appstate->surfid,
-							&key_event);
-				}
+			case TOUCH_HANDLE_UP:
+				ias_relay_input_send_touch(data->appstate->ias_in,
+								IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_UP,
+								data->appstate->surfid, msg.t.id,
+								msg.t.x, msg.t.y,
+								msg.t.time);
 				break;
-			case REMOTE_DISPLAY_POINTER_EVENT:
-				if (data->verbose > 1) {
-					printf("Pointer event received for surface %d...\n",
-						data->appstate->surfid);
-				}
-				ret = recv(data->transport.sockDesc, &pointer_event, header.size, 0);
-				if (ret > 0) {
-					handle_surface_pointer_event(data->appstate->ias_in,
-							data->appstate->surfid, &data->button_state,
-							&pointer_event);
-				}
+			case TOUCH_HANDLE_MOTION:
+				ias_relay_input_send_touch(data->appstate->ias_in,
+								IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_MOTION,
+								data->appstate->surfid, msg.t.id,
+								msg.t.x, msg.t.y,
+								msg.t.time);
 				break;
+			case TOUCH_HANDLE_FRAME:
+				ias_relay_input_send_touch(data->appstate->ias_in,
+							IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_FRAME,
+							data->appstate->surfid, msg.t.id,
+							msg.t.x, msg.t.y,
+							msg.t.time);
+				break;
+			case TOUCH_HANDLE_CANCEL:
+				ias_relay_input_send_touch(data->appstate->ias_in,
+								IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_CANCEL,
+								data->appstate->surfid, msg.t.id,
+								msg.t.x, msg.t.y,
+								msg.t.time);
+				break;
+			case KEYBOARD_HANDLE_KEY:
+				ias_relay_input_send_key(data->appstate->ias_in,
+								IAS_RELAY_INPUT_KEY_EVENT_TYPE_KEY,
+								data->appstate->surfid, msg.k.time,
+								msg.k.key, msg.k.state,
+								msg.k.mods_depressed, msg.k.mods_latched,
+								msg.k.mods_locked, msg.k.group);
+				break;
+#if 0
+			case POINTER_HANDLE_ENTER:
+				handle_surface_pointer_event(data->appstate->ias_in,
+						data->appstate->surfid, &data->button_state,
+						&msg.p);
+				break;
+#endif
 			default:
 				if (data->verbose > 1) {
 					printf("Unknown event type for surface %d.\n",
@@ -662,6 +685,7 @@ receive_events(void * const priv_data)
 			}
 			wl_display_flush(data->appstate->display);
 		} else {
+#if 0
 			switch(header.type) {
 			case REMOTE_DISPLAY_TOUCH_EVENT:
 				if (data->verbose > 1) {
@@ -702,6 +726,7 @@ receive_events(void * const priv_data)
 				}
 				break;
 			}
+#endif
 		}
 		if (ret <= 0) {
 			if (data->transport.connected) {
