@@ -57,6 +57,7 @@
 struct tcpTransport {
 	int sockDesc;
 	struct sockaddr_in sockAddr;
+	socklen_t len;
 	char *ipaddr;
 	unsigned short port;
 	int connected;
@@ -564,6 +565,7 @@ init_transport(struct tcpTransport *transport)
 	int ret = 0;
 	char *hello = "Hello";
 	struct timeval optTime = {0, 10}; /* {sec, msec} */
+	transport->len = sizeof(transport->sockAddr);
 
 	printf("Initialising transport on input receiver...\n");
 	transport->sockDesc = socket(AF_INET , SOCK_DGRAM , 0);
@@ -583,7 +585,7 @@ init_transport(struct tcpTransport *transport)
 	/* Send a simple hello message to the server so that it knows about us */
 	ret = sendto(transport->sockDesc, (const char *)hello, strlen(hello),
 			0, (const struct sockaddr *) &transport->sockAddr,
-			sizeof(transport->sockAddr));
+			transport->len);
 
 	if (ret < 0) {
 		fprintf(stderr, "Error with sending message to the server.\n");
@@ -596,6 +598,40 @@ init_transport(struct tcpTransport *transport)
 	transport->connected = 1;
 }
 
+struct event_conv {
+	uint32_t remote_display_event_type;
+	uint32_t ias_event_type;
+} event_conv_table[] = {
+	{POINTER_HANDLE_ENTER, 0},
+	{POINTER_HANDLE_LEAVE, 0},
+	{POINTER_HANDLE_MOTION, 0},
+	{POINTER_HANDLE_BUTTON, 0},
+	{POINTER_HANDLE_AXIS, 0},
+	{KEYBOARD_HANDLE_KEYMAP, 0},
+	{KEYBOARD_HANDLE_ENTER, IAS_RELAY_INPUT_KEY_EVENT_TYPE_ENTER},
+	{KEYBOARD_HANDLE_LEAVE, IAS_RELAY_INPUT_KEY_EVENT_TYPE_LEAVE},
+	{KEYBOARD_HANDLE_KEY, IAS_RELAY_INPUT_KEY_EVENT_TYPE_KEY},
+	{KEYBOARD_HANDLE_MODIFIERS, IAS_RELAY_INPUT_KEY_EVENT_TYPE_MODIFIERS},
+	{TOUCH_HANDLE_DOWN, IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_DOWN},
+	{TOUCH_HANDLE_UP, IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_UP},
+	{TOUCH_HANDLE_MOTION, IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_MOTION},
+	{TOUCH_HANDLE_FRAME, IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_FRAME},
+	{TOUCH_HANDLE_CANCEL, IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_CANCEL},
+};
+
+uint32_t get_ias_type(uint32_t remote_display_event_type)
+{
+	unsigned long i;
+	for(i = 0; i < ARRAY_LENGTH(event_conv_table); i++) {
+		if(event_conv_table[i].remote_display_event_type ==
+				remote_display_event_type) {
+			break;
+		}
+	}
+
+	return i >= ARRAY_LENGTH(event_conv_table) ? 0 :
+			event_conv_table[i].ias_event_type;
+}
 
 #define MESG_SIZE 100
 static void *
@@ -608,13 +644,16 @@ receive_events(void * const priv_data)
 	struct remote_display_pointer_event pointer_event;
 	struct input_receiver_private_data *data = priv_data;
 	gstInputMsg msg;
+	uint32_t ias_type;
 
 	init_transport(&data->transport);
 	data->running = 1;
 
 	while (data->running) {
 		if (data->transport.connected) {
-			ret = recv(data->transport.sockDesc, &msg, sizeof(msg), 0);
+			ret = recvfrom(data->transport.sockDesc, &msg, sizeof(msg), 0,
+					(struct sockaddr *) &data->transport.sockAddr,
+					&data->transport.len);
 		}
 		if (data->running == 0) {
 			printf("Receive interrupted by shutdown.\n");
@@ -625,49 +664,26 @@ receive_events(void * const priv_data)
 		} else if (ret <= 0) {
 			printf("Header receive failed.\n");
 		} else if (data->appstate->surfid) {
+			ias_type = get_ias_type(msg.type);
 			switch(msg.type) {
 			case TOUCH_HANDLE_DOWN:
-				ias_relay_input_send_touch(data->appstate->ias_in,
-								IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_DOWN,
-								data->appstate->surfid, msg.t.id,
-								msg.t.x, msg.t.y,
-								msg.t.time);
-				break;
 			case TOUCH_HANDLE_UP:
-				ias_relay_input_send_touch(data->appstate->ias_in,
-								IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_UP,
-								data->appstate->surfid, msg.t.id,
-								msg.t.x, msg.t.y,
-								msg.t.time);
-				break;
 			case TOUCH_HANDLE_MOTION:
-				ias_relay_input_send_touch(data->appstate->ias_in,
-								IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_MOTION,
-								data->appstate->surfid, msg.t.id,
-								msg.t.x, msg.t.y,
-								msg.t.time);
-				break;
 			case TOUCH_HANDLE_FRAME:
-				ias_relay_input_send_touch(data->appstate->ias_in,
-							IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_FRAME,
-							data->appstate->surfid, msg.t.id,
-							msg.t.x, msg.t.y,
-							msg.t.time);
-				break;
 			case TOUCH_HANDLE_CANCEL:
 				ias_relay_input_send_touch(data->appstate->ias_in,
-								IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_CANCEL,
-								data->appstate->surfid, msg.t.id,
-								msg.t.x, msg.t.y,
-								msg.t.time);
+						ias_type,
+						data->appstate->surfid, msg.t.id,
+						msg.t.x, msg.t.y,
+						msg.t.time);
 				break;
 			case KEYBOARD_HANDLE_KEY:
 				ias_relay_input_send_key(data->appstate->ias_in,
-								IAS_RELAY_INPUT_KEY_EVENT_TYPE_KEY,
-								data->appstate->surfid, msg.k.time,
-								msg.k.key, msg.k.state,
-								msg.k.mods_depressed, msg.k.mods_latched,
-								msg.k.mods_locked, msg.k.group);
+						ias_type,
+						data->appstate->surfid, msg.k.time,
+						msg.k.key, msg.k.state,
+						msg.k.mods_depressed, msg.k.mods_latched,
+						msg.k.mods_locked, msg.k.group);
 				break;
 #if 0
 			case POINTER_HANDLE_ENTER:

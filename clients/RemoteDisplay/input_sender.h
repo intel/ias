@@ -132,6 +132,7 @@ typedef enum {
   TOUCH_HANDLE_MOTION,
   TOUCH_HANDLE_FRAME,
   TOUCH_HANDLE_CANCEL,
+  ALL_TOUCH_EVENTS,
 } GstInputEventType;
 
 
