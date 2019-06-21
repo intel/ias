@@ -2151,6 +2151,9 @@ weston_keyboard_send_keymap(struct weston_keyboard *kbd, struct wl_resource *res
 	void *area;
 	int fd;
 
+	if (!kbd->seat->compositor->use_xkbcommon)
+		return;
+
 	fd = os_create_anonymous_file(xkb_info->keymap_size);
 	if (fd < 0) {
 		weston_log("creating a keymap file for %lu bytes failed: %m\n",
