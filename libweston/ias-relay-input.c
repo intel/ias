@@ -59,11 +59,8 @@ ias_relay_input_send_touch(struct wl_client *client,
 	struct wl_resource *t_resource = NULL;
 	struct weston_seat *seat = NULL;
 
-	printf("Touch event received in server.\n");
-
 	/* Walk the surface list looking for the requested surface.  */
 	wl_list_for_each(shsurf, &shell->client_surfaces, surface_link) {
-		printf("Surface ID: %u\n", SURFPTR2ID(shsurf));
 		if (SURFPTR2ID(shsurf) == surfid) {
 			surf_resource = shsurf->resource;
 			ws_resource = shsurf->surface->resource;
@@ -86,7 +83,6 @@ ias_relay_input_send_touch(struct wl_client *client,
 			}
 		}
 		if (target_resource) {
-			printf("Target resource found for seat %p.\n", seat);
 			break;
 		} else {
 			printf("Target resource not found for seat %p.\n", seat);
@@ -102,10 +98,6 @@ ias_relay_input_send_touch(struct wl_client *client,
 		case IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_DOWN:
 		{
 			uint32_t serial = wl_display_next_serial(wl_client_get_display(client));
-			printf("Touch down at (%f,%f). ID=%d - server.\n",
-				wl_fixed_to_double(x),
-				wl_fixed_to_double(y),
-				touch_id);
 			wl_touch_send_down(target_resource,
 					serial, time,
 					ws_resource,
@@ -115,23 +107,16 @@ ias_relay_input_send_touch(struct wl_client *client,
 		case IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_UP:
 		{
 			uint32_t serial = wl_display_next_serial(wl_client_get_display(client));
-			printf("Touch up - server.\n");
 			wl_touch_send_up(target_resource, serial, time, touch_id);
 			break;
 		}
 		case IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_MOTION:
-			printf("Touch motion at (%f,%f). ID=%d - server.\n",
-				wl_fixed_to_double(x),
-				wl_fixed_to_double(y),
-				touch_id);
 			wl_touch_send_motion(target_resource, time, touch_id, x, y);
 			break;
 		case IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_FRAME:
-			printf("Touch frame - server.\n");
 			 wl_touch_send_frame(target_resource);
 			break;
 		case IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_CANCEL:
-			printf("Touch cancel - server.\n");
 			wl_touch_send_cancel(target_resource);
 			break;
 	}
@@ -155,13 +140,10 @@ ias_relay_input_send_key(struct wl_client *client,
 	struct wl_resource *surf_resource = NULL;
 	struct wl_resource *t_resource = NULL;
 	struct wl_resource *target_resource = NULL;
-    struct weston_seat *seat = NULL;
-
-	printf("Key event received in server.\n");
+	struct weston_seat *seat = NULL;
 
 	/* Walk the surface list looking for the requested surface.  */
 	wl_list_for_each(shsurf, &shell->client_surfaces, surface_link) {
-		printf("Surface ID: %u\n", SURFPTR2ID(shsurf));
 		if (SURFPTR2ID(shsurf) == surfid) {
 			surf_resource = shsurf->resource;
 			break;
@@ -181,7 +163,6 @@ ias_relay_input_send_key(struct wl_client *client,
 			}
 		}
 		if (target_resource) {
-			printf("Target resource found for seat %p.\n", seat);
 			break;
 		} else {
 			wl_list_for_each(t_resource, &seat->keyboard_state->focus_resource_list, link) {
@@ -191,7 +172,6 @@ ias_relay_input_send_key(struct wl_client *client,
 				}
 			}
 			if (target_resource) {
-				printf("Target resource found for seat %p.\n", seat);
 				break;
 			} else {
 				printf("Target resource not found for seat %p.\n", seat);
@@ -207,7 +187,6 @@ ias_relay_input_send_key(struct wl_client *client,
 	uint32_t serial = wl_display_next_serial(wl_client_get_display(client));
 	switch(key_event_type) {
 	case IAS_RELAY_INPUT_KEY_EVENT_TYPE_KEY:
-		printf("Send key %u - server.\n", key);
 		wl_keyboard_send_key(target_resource, serial, time, key, state);
 		break;
 	}
@@ -230,7 +209,6 @@ bind_ias_relay_input(struct wl_client *client,
 {
 	struct wl_resource *resource;
 
-	printf("bind_ias_relay_input...\n");
 	resource = wl_resource_create(client, &ias_relay_input_interface, 1, id);
 	if (resource == NULL) {
 		wl_client_post_no_memory(client);
