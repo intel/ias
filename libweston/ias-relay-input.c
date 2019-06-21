@@ -184,7 +184,18 @@ ias_relay_input_send_key(struct wl_client *client,
 			printf("Target resource found for seat %p.\n", seat);
 			break;
 		} else {
-			printf("Target resource not found for seat %p.\n", seat);
+			wl_list_for_each(t_resource, &seat->keyboard_state->focus_resource_list, link) {
+				if (wl_resource_get_client(t_resource) == wl_resource_get_client(surf_resource)) {
+					target_resource = t_resource;
+					break;
+				}
+			}
+			if (target_resource) {
+				printf("Target resource found for seat %p.\n", seat);
+				break;
+			} else {
+				printf("Target resource not found for seat %p.\n", seat);
+			}
 		}
 	}
 
