@@ -137,7 +137,7 @@ file_name_with_datadir(const char *filename)
 	if (base)
 		len = asprintf(&out, "%s/%s", base, filename);
 	else
-		len = asprintf(&out, "%s/weston/%s", DATADIR, filename);
+		len = asprintf(&out, "%s/ias/%s", DATADIR, filename);
 
 	if (len == -1)
 		return NULL;
