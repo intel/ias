@@ -1321,10 +1321,8 @@ weston_xkb_info_destroy(struct weston_xkb_info *xkb_info)
 
 	xkb_keymap_unref(xkb_info->keymap);
 
-	if (xkb_info->keymap_area)
-		munmap(xkb_info->keymap_area, xkb_info->keymap_size);
-	if (xkb_info->keymap_fd >= 0)
-		close(xkb_info->keymap_fd);
+	if (xkb_info->keymap_string)
+		free(xkb_info->keymap_string);
 	free(xkb_info);
 }
 #endif
@@ -3228,19 +3226,6 @@ weston_compositor_set_xkb_rule_names(struct weston_compositor *ec,
 		ec->xkb_names.layout = strdup("us");
 
 	return 0;
-}
-
-static void
-weston_xkb_info_destroy(struct weston_xkb_info *xkb_info)
-{
-	if (--xkb_info->ref_count > 0)
-		return;
-
-	xkb_keymap_unref(xkb_info->keymap);
-
-	if (xkb_info->keymap_string)
-		free(xkb_info->keymap_string);
-	free(xkb_info);
 }
 
 void
