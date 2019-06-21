@@ -3205,9 +3205,6 @@ WL_EXPORT int
 weston_compositor_set_xkb_rule_names(struct weston_compositor *ec,
 				     struct xkb_rule_names *names)
 {
-	if (!ec->use_xkbcommon)
-		return 0;
-
 	if (ec->xkb_context == NULL) {
 		ec->xkb_context = xkb_context_new(0);
 		if (ec->xkb_context == NULL) {
@@ -3231,13 +3228,6 @@ weston_compositor_set_xkb_rule_names(struct weston_compositor *ec,
 void
 weston_compositor_xkb_destroy(struct weston_compositor *ec)
 {
-	/*
-	 * If we're operating in raw keyboard mode, we never initialized
-	 * libxkbcommon so there's no cleanup to do either.
-	 */
-	if (!ec->use_xkbcommon)
-		return;
-
 	free((char *) ec->xkb_names.rules);
 	free((char *) ec->xkb_names.model);
 	free((char *) ec->xkb_names.layout);
