@@ -554,5 +554,30 @@
 
 	</interface>
 
+	<interface name="ias_metrics" version="1">
+		<event name="output_info">
+			<description summary="Metrics per output">
+			Provide per output flips event count
+			</description>
+			<arg name="time" type="uint" />
+			<arg name="output" type="string" />
+			<arg name="output_id" type="uint" />
+			<arg name="flips" type="uint" />
+		</event>
+		<event name="process_info">
+			<description summary="Metrics per process">
+			Provide per process frames info
+			</description>
+			<arg name="surf_id" type="uint" />
+			<arg name="title" type="string" />
+			<arg name="pid" type="uint" />
+			<arg name="pname" type="string" />
+			<arg name="output_id" type="uint" />
+			<arg name="time" type="uint" />
+			<arg name="frames" type="uint" />
+			<arg name="flip" type="uint" />
+		</event>
+	</interface>
+
 </protocol>
 

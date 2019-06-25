@@ -142,6 +142,7 @@ static int use_xkbcommon;
 static int normalized_rotation;
 
 static int print_fps = 0;
+static int metrics_timing = 0;
 static int use_nuclear_flip = 1;
 static int no_flip_event = 0;
 static int no_color_correction = 0;
@@ -4416,6 +4417,7 @@ ias_compositor_create(struct weston_compositor *compositor,
 	compositor->damage_outputs_on_init = damage_outputs_on_init;
 
 	backend->print_fps = print_fps;
+	backend->metrics_timing = metrics_timing;
 	backend->no_flip_event = no_flip_event;
 
 	if (config->gbm_format) {
@@ -5311,6 +5313,8 @@ void backend_begin(void *userdata, const char **attrs) {
 			normalized_rotation = atoi(attrs[1]);
 		} else if (strcmp(attrs[0], "print_fps") == 0) {
 			print_fps = atoi(attrs[1]);
+		} else if (strcmp(attrs[0], "metrics_timing") == 0) {
+			metrics_timing = atoi(attrs[1]);
 		} else if (strcmp(attrs[0], "use_nuclear_flip") == 0) {
 			use_nuclear_flip = atoi(attrs[1]);
 		} else if (strcmp(attrs[0], "no_flip_event") == 0) {

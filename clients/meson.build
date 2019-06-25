@@ -351,6 +351,13 @@ ias_demo_clients = [
 			ias_backend_client_protocol_h,
 		],
 	},
+	{
+		'basename': 'ias-metrics',
+		'add_sources': [
+			ias_shell_protocol_c,
+			ias_shell_client_protocol_h,
+		],
+	},
 ]
 
 if get_option('enable-tracing')	
