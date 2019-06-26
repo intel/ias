@@ -491,7 +491,6 @@ if get_option('shell-desktop')
 		dependencies: dep_toytoolkit,
 		install_dir: get_option('bindir'),
 		install: true,
-		install_dir: join_paths(dir_data, 'ias/examples')
 	)
 	env_modmap += 'weston-screenshooter=@0@;'.format(exe_shooter.full_path())
 
