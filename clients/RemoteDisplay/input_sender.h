@@ -68,7 +68,6 @@ enum remote_display_touch_event_type {
 
 
 struct remote_display_touch_event {
-	uint32_t type;
 	uint32_t id;
 	uint32_t x;
 	uint32_t y;
@@ -83,7 +82,6 @@ enum remote_display_key_event_type {
 };
 
 struct remote_display_key_event {
-	uint32_t type;
 	uint32_t time;
 	uint32_t key;
 	uint32_t state;
@@ -102,7 +100,6 @@ enum remote_display_pointer_event_type {
 };
 
 struct remote_display_pointer_event {
-	uint32_t type;
 	uint32_t time;
 	uint32_t x;
 	uint32_t y;

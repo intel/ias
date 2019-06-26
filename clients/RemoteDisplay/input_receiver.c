@@ -223,6 +223,7 @@ static void
 handle_output_touch_event(const struct remote_display_touch_event *event,
 		struct app_state *appstate)
 {
+#if 0
 	int touch_fd = appstate->ir_priv->input.uinput_touch_fd;
 
 	switch(event->type) {
@@ -251,6 +252,7 @@ handle_output_touch_event(const struct remote_display_touch_event *event,
 		write_touch_syn(touch_fd);
 		break;
 	}
+#endif
 }
 
 static int
@@ -261,59 +263,81 @@ init_surface_touch(void)
 }
 
 
+
+struct event_conv {
+	uint32_t remote_display_event_type;
+	uint32_t ias_event_type;
+} event_conv_table[] = {
+	{POINTER_HANDLE_ENTER, IAS_RELAY_INPUT_POINTER_EVENT_TYPE_ENTER},
+	{POINTER_HANDLE_LEAVE, IAS_RELAY_INPUT_POINTER_EVENT_TYPE_LEAVE},
+	{POINTER_HANDLE_MOTION, IAS_RELAY_INPUT_POINTER_EVENT_TYPE_MOTION},
+	{POINTER_HANDLE_BUTTON, IAS_RELAY_INPUT_POINTER_EVENT_TYPE_BUTTON},
+	{POINTER_HANDLE_AXIS, IAS_RELAY_INPUT_POINTER_EVENT_TYPE_AXIS},
+	{KEYBOARD_HANDLE_KEYMAP, 0},
+	{KEYBOARD_HANDLE_ENTER, IAS_RELAY_INPUT_KEY_EVENT_TYPE_ENTER},
+	{KEYBOARD_HANDLE_LEAVE, IAS_RELAY_INPUT_KEY_EVENT_TYPE_LEAVE},
+	{KEYBOARD_HANDLE_KEY, IAS_RELAY_INPUT_KEY_EVENT_TYPE_KEY},
+	{KEYBOARD_HANDLE_MODIFIERS, IAS_RELAY_INPUT_KEY_EVENT_TYPE_MODIFIERS},
+	{TOUCH_HANDLE_DOWN, IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_DOWN},
+	{TOUCH_HANDLE_UP, IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_UP},
+	{TOUCH_HANDLE_MOTION, IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_MOTION},
+	{TOUCH_HANDLE_FRAME, IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_FRAME},
+	{TOUCH_HANDLE_CANCEL, IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_CANCEL},
+};
+
+uint32_t get_ias_type(uint32_t remote_display_event_type)
+{
+	unsigned long i;
+	for(i = 0; i < ARRAY_LENGTH(event_conv_table); i++) {
+		if(event_conv_table[i].remote_display_event_type ==
+				remote_display_event_type) {
+			break;
+		}
+	}
+
+	return i >= ARRAY_LENGTH(event_conv_table) ? 0 :
+			event_conv_table[i].ias_event_type;
+}
+
 static void
 handle_surface_touch_event(struct ias_relay_input *ias_in, uint32_t surfid,
-		const struct remote_display_touch_event *event)
+		const struct remote_display_touch_event *event, gstInputMsg *msg)
 {
 	printf("Touch event for surface.\n");
-	switch(event->type) {
-	case REMOTE_DISPLAY_TOUCH_DOWN:
+	uint32_t ias_type = get_ias_type(msg->type);
+
+	switch(msg->type) {
+	case TOUCH_HANDLE_DOWN:
 		printf("Touch down at (%f,%f). ID=%d.\n",
 			wl_fixed_to_double(event->x),
 			wl_fixed_to_double(event->y),
 			event->id);
-		ias_relay_input_send_touch(ias_in,
-						IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_DOWN,
-						surfid, event->id,
-						event->x, event->y,
-						event->time);
 		break;
-	case REMOTE_DISPLAY_TOUCH_UP:
+	case TOUCH_HANDLE_UP:
 		printf("Touch up.\n");
-		ias_relay_input_send_touch(ias_in,
-						IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_UP,
-						surfid, event->id,
-						event->x, event->y,
-						event->time);
 		break;
-	case REMOTE_DISPLAY_TOUCH_MOTION:
+	case TOUCH_HANDLE_MOTION:
 		printf("Touch motion at (%f,%f). ID=%d.\n",
 			wl_fixed_to_double(event->x),
 			wl_fixed_to_double(event->y),
 			event->id);
-		ias_relay_input_send_touch(ias_in,
-						IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_MOTION,
-						surfid, event->id,
-						event->x, event->y,
-						event->time);
 		break;
-	case REMOTE_DISPLAY_TOUCH_FRAME:
+	case TOUCH_HANDLE_FRAME:
 		printf("Touch frame.\n");
-		ias_relay_input_send_touch(ias_in,
-						IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_FRAME,
-						surfid, event->id,
-						event->x, event->y,
-						event->time);
 		break;
-	case REMOTE_DISPLAY_TOUCH_CANCEL:
+	case TOUCH_HANDLE_CANCEL:
 		printf("Touch cancel.\n");
-		ias_relay_input_send_touch(ias_in,
-						IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_CANCEL,
-						surfid, event->id,
-						event->x, event->y,
-						event->time);
+		break;
+	default:
+		return;
 		break;
 	}
+
+	ias_relay_input_send_touch(ias_in,
+					ias_type,
+					surfid, event->id,
+					event->x, event->y,
+					event->time);
 }
 
 
@@ -360,27 +384,10 @@ init_output_keyboard(int *uinput_keyboard_fd_out)
 }
 
 static void
-handle_surface_key_event(struct ias_relay_input *ias_in, uint32_t surfid,
-		const struct remote_display_key_event *event)
-{
-	printf("Keyboard event for surface.\n");
-	switch(event->type) {
-	case REMOTE_DISPLAY_KEY_KEY:
-		printf("Key pressed: %u.\n", event->key);
-		ias_relay_input_send_key(ias_in,
-						IAS_RELAY_INPUT_KEY_EVENT_TYPE_KEY,
-						surfid, event->time,
-						event->key, event->state,
-						event->mods_depressed, event->mods_latched,
-						event->mods_locked, event->group);
-		break;
-	}
-}
-
-static void
 handle_output_key_event(const struct remote_display_key_event *event,
 		struct app_state *appstate)
 {
+#if 0
 	struct input_event ev;
 	int uinput_keyboard_fd = appstate->ir_priv->input.uinput_keyboard_fd;
 	int ret=0;
@@ -407,71 +414,71 @@ handle_output_key_event(const struct remote_display_key_event *event,
 		}
 		break;
 	}
+#endif
 }
 
 
 #define TOUCHID 3 //SJTODO
 static void
 convert_pointer_to_touch(struct remoteDisplayButtonState *button_state,
-		const struct remote_display_pointer_event *event,
-		struct remote_display_touch_event *touch_event,
+		gstInputMsg *msg,
 		uint32_t *send_event)
 {
 	assert(button_state);
-	switch(event->type) {
-	case REMOTE_DISPLAY_POINTER_MOTION:
+	switch(msg->type) {
+	case POINTER_HANDLE_MOTION:
 		printf("Pointer motion event at %f, %f.\n",
-			wl_fixed_to_double(event->x), wl_fixed_to_double(event->y));
+			wl_fixed_to_double(msg->p.x), wl_fixed_to_double(msg->p.y));
 		/* Send touch up or down if the flag in button_state indicates
 		 * a change in state, otherwise send a touch motion. */
 		if (button_state->state_changed){
 			button_state->state_changed = 0;
 			if (button_state->touch_down && (button_state->button_states == 0)) {
-				touch_event->type = REMOTE_DISPLAY_TOUCH_UP;
-				touch_event->id = TOUCHID;
-				touch_event->x = event->x;
-				touch_event->y = event->y;
-				touch_event->time = event->time;
+				msg->type = TOUCH_HANDLE_UP;
+				msg->t.id = TOUCHID;
+				msg->t.x = msg->p.x;
+				msg->t.y = msg->p.y;
+				msg->t.time = msg->p.time;
 				button_state->touch_down = 0;
 				*send_event = 1;
 			} else if ((button_state->touch_down == 0) &&
 					button_state->button_states) {
-				touch_event->type = REMOTE_DISPLAY_TOUCH_DOWN;
-				touch_event->id = TOUCHID;
-				touch_event->x = event->x;
-				touch_event->y = event->y;
-				touch_event->time = event->time;
+				msg->type = TOUCH_HANDLE_DOWN;
+				msg->t.id = TOUCHID;
+				msg->t.x = msg->p.x;
+				msg->t.y = msg->p.y;
+				msg->t.time = msg->p.time;
 				button_state->touch_down = 1;
 				*send_event = 1;
 			}
 		} else if (button_state->button_states) {
-			touch_event->type = REMOTE_DISPLAY_TOUCH_MOTION;
-			touch_event->id = TOUCHID;
-			touch_event->x = event->x;
-			touch_event->y = event->y;
-			touch_event->time = event->time;
+			msg->type = TOUCH_HANDLE_MOTION;
+			msg->t.id = TOUCHID;
+			msg->t.x = msg->p.x;
+			msg->t.y = msg->p.y;
+			msg->t.time = msg->p.time;
 			*send_event = 1;
 		}
 		break;
-	case REMOTE_DISPLAY_POINTER_ENTER:
+	case POINTER_HANDLE_ENTER:
 		printf("Pointer enter event.\n");
 		break;
-	case REMOTE_DISPLAY_POINTER_LEAVE:
+	case POINTER_HANDLE_LEAVE:
 		printf("Pointer leave event.\n");
 		break;
-	case REMOTE_DISPLAY_POINTER_BUTTON:
+	case POINTER_HANDLE_BUTTON:
 		{
 			uint32_t button_mask = 0;
-			uint32_t button = event->button - BTN_MOUSE;
+			uint32_t button = msg->p.button - BTN_MOUSE;
 
 			printf("Pointer button event. Button %u state = %u.\n",
-				event->button, event->state);
+				msg->p.button, msg->p.state);
 			if (button >= MAX_BUTTONS) {
 				fprintf(stderr, "Too many mouse buttons!\n");
 				break;
 			}
 			button_mask = 1 << button;
-			if (event->state) {
+			if (msg->p.state) {
 				if (button_state->button_states == 0) {
 					button_state->state_changed = 1;
 				}
@@ -484,9 +491,12 @@ convert_pointer_to_touch(struct remoteDisplayButtonState *button_state,
 			}
 		}
 		break;
-	case REMOTE_DISPLAY_POINTER_AXIS:
+	case POINTER_HANDLE_AXIS:
 		printf("Pointer axis event. Axis %u value = %u.\n",
-			event->axis, event->value);
+			msg->p.axis, msg->p.value);
+		break;
+	default:
+
 		break;
 	}
 }
@@ -497,6 +507,7 @@ handle_output_pointer_event(const struct remote_display_pointer_event *event,
 		struct remoteDisplayButtonState *button_state,
 		struct app_state *appstate)
 {
+#if 0
 	struct remote_display_touch_event touch_event;
 	uint32_t send_event = 0;
 
@@ -505,20 +516,20 @@ handle_output_pointer_event(const struct remote_display_pointer_event *event,
 	if (send_event) {
 		handle_output_touch_event(&touch_event, appstate);
 	}
+#endif
 }
 
 static void
 handle_surface_pointer_event(struct ias_relay_input *ias_in, uint32_t surfid,
 		struct remoteDisplayButtonState *button_state,
-		const struct remote_display_pointer_event *event)
+		gstInputMsg *msg)
 {
-	struct remote_display_touch_event touch_event;
 	uint32_t send_event = 0;
 
 	printf("Pointer event for surface.\n");
-	convert_pointer_to_touch(button_state, event, &touch_event, &send_event);
+	convert_pointer_to_touch(button_state, msg, &send_event);
 	if (send_event) {
-		handle_surface_touch_event(ias_in, surfid, &touch_event);
+		handle_surface_touch_event(ias_in, surfid, &msg->t, msg);
 	}
 }
 
@@ -598,41 +609,6 @@ init_transport(struct tcpTransport *transport)
 	transport->connected = 1;
 }
 
-struct event_conv {
-	uint32_t remote_display_event_type;
-	uint32_t ias_event_type;
-} event_conv_table[] = {
-	{POINTER_HANDLE_ENTER, 0},
-	{POINTER_HANDLE_LEAVE, 0},
-	{POINTER_HANDLE_MOTION, 0},
-	{POINTER_HANDLE_BUTTON, 0},
-	{POINTER_HANDLE_AXIS, 0},
-	{KEYBOARD_HANDLE_KEYMAP, 0},
-	{KEYBOARD_HANDLE_ENTER, IAS_RELAY_INPUT_KEY_EVENT_TYPE_ENTER},
-	{KEYBOARD_HANDLE_LEAVE, IAS_RELAY_INPUT_KEY_EVENT_TYPE_LEAVE},
-	{KEYBOARD_HANDLE_KEY, IAS_RELAY_INPUT_KEY_EVENT_TYPE_KEY},
-	{KEYBOARD_HANDLE_MODIFIERS, IAS_RELAY_INPUT_KEY_EVENT_TYPE_MODIFIERS},
-	{TOUCH_HANDLE_DOWN, IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_DOWN},
-	{TOUCH_HANDLE_UP, IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_UP},
-	{TOUCH_HANDLE_MOTION, IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_MOTION},
-	{TOUCH_HANDLE_FRAME, IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_FRAME},
-	{TOUCH_HANDLE_CANCEL, IAS_RELAY_INPUT_TOUCH_EVENT_TYPE_CANCEL},
-};
-
-uint32_t get_ias_type(uint32_t remote_display_event_type)
-{
-	unsigned long i;
-	for(i = 0; i < ARRAY_LENGTH(event_conv_table); i++) {
-		if(event_conv_table[i].remote_display_event_type ==
-				remote_display_event_type) {
-			break;
-		}
-	}
-
-	return i >= ARRAY_LENGTH(event_conv_table) ? 0 :
-			event_conv_table[i].ias_event_type;
-}
-
 #define MESG_SIZE 100
 static void *
 receive_events(void * const priv_data)
@@ -677,7 +653,10 @@ receive_events(void * const priv_data)
 						msg.t.x, msg.t.y,
 						msg.t.time);
 				break;
+			case KEYBOARD_HANDLE_ENTER:
+			case KEYBOARD_HANDLE_LEAVE:
 			case KEYBOARD_HANDLE_KEY:
+			case KEYBOARD_HANDLE_MODIFIERS:
 				ias_relay_input_send_key(data->appstate->ias_in,
 						ias_type,
 						data->appstate->surfid, msg.k.time,
@@ -685,13 +664,19 @@ receive_events(void * const priv_data)
 						msg.k.mods_depressed, msg.k.mods_latched,
 						msg.k.mods_locked, msg.k.group);
 				break;
-#if 0
 			case POINTER_HANDLE_ENTER:
-				handle_surface_pointer_event(data->appstate->ias_in,
-						data->appstate->surfid, &data->button_state,
-						&msg.p);
+			case POINTER_HANDLE_LEAVE:
+			case POINTER_HANDLE_MOTION:
+			case POINTER_HANDLE_BUTTON:
+			case POINTER_HANDLE_AXIS:
+				ias_relay_input_send_pointer(data->appstate->ias_in,
+						ias_type,
+						data->appstate->surfid,
+						msg.p.x, msg.p.y,
+						msg.p.button, msg.p.state,
+						msg.p.axis, msg.p.value,
+						msg.p.time);
 				break;
-#endif
 			default:
 				if (data->verbose > 1) {
 					printf("Unknown event type for surface %d.\n",

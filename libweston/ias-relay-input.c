@@ -138,14 +138,17 @@ ias_relay_input_send_key(struct wl_client *client,
 	struct ias_shell *shell = wl_resource_get_user_data(resource);
 	struct ias_surface *shsurf;
 	struct wl_resource *surf_resource = NULL;
+	struct wl_resource *ws_resource = NULL;
 	struct wl_resource *t_resource = NULL;
 	struct wl_resource *target_resource = NULL;
 	struct weston_seat *seat = NULL;
+	struct weston_keyboard *keyboard = NULL;
 
 	/* Walk the surface list looking for the requested surface.  */
 	wl_list_for_each(shsurf, &shell->client_surfaces, surface_link) {
 		if (SURFPTR2ID(shsurf) == surfid) {
 			surf_resource = shsurf->resource;
+			ws_resource = shsurf->surface->resource;
 			break;
 		}
 	}
@@ -159,6 +162,7 @@ ias_relay_input_send_key(struct wl_client *client,
 		wl_list_for_each(t_resource, &seat->keyboard_state->resource_list, link) {
 			if (wl_resource_get_client(t_resource) == wl_resource_get_client(surf_resource)) {
 				target_resource = t_resource;
+				keyboard = seat->keyboard_state;
 				break;
 			}
 		}
@@ -168,6 +172,7 @@ ias_relay_input_send_key(struct wl_client *client,
 			wl_list_for_each(t_resource, &seat->keyboard_state->focus_resource_list, link) {
 				if (wl_resource_get_client(t_resource) == wl_resource_get_client(surf_resource)) {
 					target_resource = t_resource;
+					keyboard = seat->keyboard_state;
 					break;
 				}
 			}
@@ -186,15 +191,109 @@ ias_relay_input_send_key(struct wl_client *client,
 
 	uint32_t serial = wl_display_next_serial(wl_client_get_display(client));
 	switch(key_event_type) {
+	case IAS_RELAY_INPUT_KEY_EVENT_TYPE_ENTER:
+		wl_keyboard_send_enter(target_resource, serial, ws_resource, &keyboard->keys);
+		break;
+	case IAS_RELAY_INPUT_KEY_EVENT_TYPE_LEAVE:
+		wl_keyboard_send_leave(target_resource, serial, ws_resource);
+		break;
 	case IAS_RELAY_INPUT_KEY_EVENT_TYPE_KEY:
 		wl_keyboard_send_key(target_resource, serial, time, key, state);
 		break;
+	case IAS_RELAY_INPUT_KEY_EVENT_TYPE_MODIFIERS:
+		wl_keyboard_send_modifiers(target_resource, serial, mods_depressed,
+				mods_latched, mods_locked, group);
+		break;
+	}
+}
+
+void ias_relay_input_send_pointer(struct wl_client *client,
+		     struct wl_resource *resource,
+		     uint32_t pointer_event_type,
+		     uint32_t surfid,
+		     uint32_t x,
+		     uint32_t y,
+		     uint32_t button,
+		     uint32_t state,
+		     uint32_t axis,
+		     uint32_t value,
+		     uint32_t time)
+{
+	struct ias_shell *shell = wl_resource_get_user_data(resource);
+	struct ias_surface *shsurf;
+	struct wl_resource *surf_resource = NULL;
+	struct wl_resource *ws_resource = NULL;
+	struct wl_resource *target_resource = NULL;
+	struct weston_pointer_client *pointer_client;
+	struct wl_resource *t_resource = NULL;
+	struct weston_seat *seat = NULL;
+
+	/* Walk the surface list looking for the requested surface.  */
+	wl_list_for_each(shsurf, &shell->client_surfaces, surface_link) {
+		if (SURFPTR2ID(shsurf) == surfid) {
+			surf_resource = shsurf->resource;
+			ws_resource = shsurf->surface->resource;
+			break;
+		}
+	}
+
+	if (surf_resource == NULL) {
+		printf("No surface to match surfid.\n");
+		return;
+	}
+
+
+
+	wl_list_for_each(seat, &shell->compositor->seat_list, link) {
+		wl_list_for_each(pointer_client, &seat->pointer_state->pointer_clients, link) {
+			wl_list_for_each(t_resource, &pointer_client->pointer_resources, link) {
+				if (wl_resource_get_client(t_resource) ==
+						wl_resource_get_client(surf_resource)) {
+					target_resource = t_resource;
+					break;
+				}
+			}
+			if (target_resource) {
+				break;
+			}
+		}
+		if (target_resource) {
+			break;
+		} else {
+			printf("Target resource not found for seat %p.\n", seat);
+		}
+	}
+
+	if (target_resource == NULL) {
+		printf("No target resource found.\n");
+		return;
+	}
+
+	uint32_t serial = wl_display_next_serial(wl_client_get_display(client));
+	switch(pointer_event_type) {
+		case IAS_RELAY_INPUT_POINTER_EVENT_TYPE_ENTER:
+			wl_pointer_send_enter(target_resource,
+					serial, ws_resource, x, y);
+			break;
+		case IAS_RELAY_INPUT_POINTER_EVENT_TYPE_LEAVE:
+			wl_pointer_send_leave(target_resource, serial, ws_resource);
+			break;
+		case IAS_RELAY_INPUT_POINTER_EVENT_TYPE_MOTION:
+			wl_pointer_send_motion(target_resource, time, x, y);
+			break;
+		case IAS_RELAY_INPUT_POINTER_EVENT_TYPE_BUTTON:
+			wl_pointer_send_button(target_resource, serial, time, button, state);
+			break;
+		case IAS_RELAY_INPUT_POINTER_EVENT_TYPE_AXIS:
+			wl_pointer_send_axis(target_resource, time, axis, value);
+			break;
 	}
 }
 
 static const struct ias_relay_input_interface ias_relay_input_implementation = {
 	ias_relay_input_send_touch,
 	ias_relay_input_send_key,
+	ias_relay_input_send_pointer,
 };
 
 
