@@ -66,6 +66,8 @@ simple_clients = [
 			xdg_shell_unstable_v6_protocol_c,
 			fullscreen_shell_unstable_v1_client_protocol_h,
 			fullscreen_shell_unstable_v1_protocol_c,
+			ias_shell_protocol_c,
+			ias_shell_client_protocol_h,
 		],
 		'dep_objs': [
 			dep_wayland_client,
@@ -489,7 +491,6 @@ if get_option('shell-desktop')
 		dependencies: dep_toytoolkit,
 		install_dir: get_option('bindir'),
 		install: true,
-		install_dir: join_paths(dir_data, 'ias/examples')
 	)
 	env_modmap += 'weston-screenshooter=@0@;'.format(exe_shooter.full_path())
 

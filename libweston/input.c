@@ -1321,10 +1321,8 @@ weston_xkb_info_destroy(struct weston_xkb_info *xkb_info)
 
 	xkb_keymap_unref(xkb_info->keymap);
 
-	if (xkb_info->keymap_area)
-		munmap(xkb_info->keymap_area, xkb_info->keymap_size);
-	if (xkb_info->keymap_fd >= 0)
-		close(xkb_info->keymap_fd);
+	if (xkb_info->keymap_string)
+		free(xkb_info->keymap_string);
 	free(xkb_info);
 }
 #endif
@@ -2152,6 +2150,9 @@ weston_keyboard_send_keymap(struct weston_keyboard *kbd, struct wl_resource *res
 	struct weston_xkb_info *xkb_info = kbd->xkb_info;
 	void *area;
 	int fd;
+
+	if (!kbd->seat->compositor->use_xkbcommon)
+		return;
 
 	fd = os_create_anonymous_file(xkb_info->keymap_size);
 	if (fd < 0) {
@@ -3207,9 +3208,6 @@ WL_EXPORT int
 weston_compositor_set_xkb_rule_names(struct weston_compositor *ec,
 				     struct xkb_rule_names *names)
 {
-	if (!ec->use_xkbcommon)
-		return 0;
-
 	if (ec->xkb_context == NULL) {
 		ec->xkb_context = xkb_context_new(0);
 		if (ec->xkb_context == NULL) {
@@ -3230,29 +3228,9 @@ weston_compositor_set_xkb_rule_names(struct weston_compositor *ec,
 	return 0;
 }
 
-static void
-weston_xkb_info_destroy(struct weston_xkb_info *xkb_info)
-{
-	if (--xkb_info->ref_count > 0)
-		return;
-
-	xkb_keymap_unref(xkb_info->keymap);
-
-	if (xkb_info->keymap_string)
-		free(xkb_info->keymap_string);
-	free(xkb_info);
-}
-
 void
 weston_compositor_xkb_destroy(struct weston_compositor *ec)
 {
-	/*
-	 * If we're operating in raw keyboard mode, we never initialized
-	 * libxkbcommon so there's no cleanup to do either.
-	 */
-	if (!ec->use_xkbcommon)
-		return;
-
 	free((char *) ec->xkb_names.rules);
 	free((char *) ec->xkb_names.model);
 	free((char *) ec->xkb_names.layout);

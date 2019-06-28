@@ -54,7 +54,7 @@ ias_committed(struct weston_surface *surface, int32_t relx, int32_t rely);
 struct frame_data {
 	int frame_count;
 	int flip_count;
-	int output_id;
+	uint32_t output_id;
 	struct wl_list output_link;
 };
 

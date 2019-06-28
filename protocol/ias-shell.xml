@@ -522,6 +522,36 @@
 			<arg name="group" type="uint"/>
 		</request>
 
+		<enum name="pointer_event_type">
+			<entry name="enter" value="0"
+				summary="Enter event" />
+			<entry name="leave" value="1"
+				summary="Leave event" />
+			<entry name="motion" value="2"
+				summary="Motion event" />
+			<entry name="button" value="3"
+				summary="Button event" />
+			<entry name="axis" value="4"
+				summary="Axis event" />
+		</enum>
+
+		<request name="send_pointer">
+			<description summary="Send user input pointer event to the server">
+				If a user input pointer event should be directed to a specific
+				application then this request is used to pass the event and
+				the ID of the application to the server.
+			</description>
+			<arg name="pointer_event_type" type="uint"/>
+			<arg name="surfid" type="uint"/>
+			<arg name="x" type="uint"/>
+			<arg name="y" type="uint"/>
+			<arg name="button" type="uint"/>
+			<arg name="state" type="uint"/>
+			<arg name="axis" type="uint"/>
+			<arg name="value" type="uint"/>
+			<arg name="time" type="uint"/>
+		</request>
+
 	</interface>
 
 </protocol>

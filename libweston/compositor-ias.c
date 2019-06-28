@@ -2786,6 +2786,8 @@ create_outputs_for_crtc(struct ias_backend *backend, struct ias_crtc *ias_crtc)
 
 		weston_compositor_add_head(backend->compositor, &ias_output->head);
 
+		weston_head_set_connection_status(&ias_output->head, true);
+
 		/*
 		 * Initialize output size according to output model.  The general case
 		 * that we assume here is that the output inherits its dimensions from

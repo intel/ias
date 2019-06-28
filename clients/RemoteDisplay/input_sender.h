@@ -68,7 +68,6 @@ enum remote_display_touch_event_type {
 
 
 struct remote_display_touch_event {
-	uint32_t type;
 	uint32_t id;
 	uint32_t x;
 	uint32_t y;
@@ -83,7 +82,6 @@ enum remote_display_key_event_type {
 };
 
 struct remote_display_key_event {
-	uint32_t type;
 	uint32_t time;
 	uint32_t key;
 	uint32_t state;
@@ -102,7 +100,6 @@ enum remote_display_pointer_event_type {
 };
 
 struct remote_display_pointer_event {
-	uint32_t type;
 	uint32_t time;
 	uint32_t x;
 	uint32_t y;
@@ -115,5 +112,34 @@ struct remote_display_pointer_event {
 		uint32_t value;
 	};
 };
+
+typedef enum {
+  POINTER_HANDLE_ENTER,
+  POINTER_HANDLE_LEAVE,
+  POINTER_HANDLE_MOTION,
+  POINTER_HANDLE_BUTTON,
+  POINTER_HANDLE_AXIS,
+  KEYBOARD_HANDLE_KEYMAP,
+  KEYBOARD_HANDLE_ENTER,
+  KEYBOARD_HANDLE_LEAVE,
+  KEYBOARD_HANDLE_KEY,
+  KEYBOARD_HANDLE_MODIFIERS,
+  TOUCH_HANDLE_DOWN,
+  TOUCH_HANDLE_UP,
+  TOUCH_HANDLE_MOTION,
+  TOUCH_HANDLE_FRAME,
+  TOUCH_HANDLE_CANCEL,
+  ALL_TOUCH_EVENTS,
+} GstInputEventType;
+
+
+typedef struct _gstInputMsg {
+	GstInputEventType type;
+	union {
+		struct remote_display_touch_event t;
+		struct remote_display_key_event k;
+		struct remote_display_pointer_event p;
+	};
+} gstInputMsg;
 
 #endif /* __REMOTE_DISPLAY_INPUT_SENDER_H__ */
