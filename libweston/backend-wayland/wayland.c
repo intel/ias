@@ -484,7 +484,7 @@ wayland_output_update_gl_border(struct wayland_output *output)
 }
 #endif
 
-static void
+static int
 wayland_output_start_repaint_loop(struct weston_output *output_base)
 {
 	struct wayland_output *output = to_wayland_output(output_base);
@@ -506,6 +506,8 @@ wayland_output_start_repaint_loop(struct weston_output *output_base)
 	wl_callback_add_listener(output->frame_cb, &frame_listener, output);
 	wl_surface_commit(output->parent.surface);
 	wl_display_flush(wb->parent.wl_display);
+
+	return 0;
 }
 
 #ifdef ENABLE_EGL

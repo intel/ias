@@ -2300,7 +2300,7 @@ ias_assign_planes(struct weston_output *output, void *repaint_data)
 	pixman_region32_fini(&overlap);
 }
 
-static void
+static int
 ias_output_start_repaint_loop(struct weston_output *output_base)
 {
 	struct timespec ts;
@@ -2309,6 +2309,7 @@ ias_output_start_repaint_loop(struct weston_output *output_base)
 
 	clock_gettime(backend->compositor->presentation_clock, &ts);
 	weston_output_finish_frame(output_base, &ts, WP_PRESENTATION_FEEDBACK_INVALID);
+	return 0;
 }
 
 
