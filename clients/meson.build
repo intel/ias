@@ -455,6 +455,8 @@ if simple_dmabuf_drm_deps.length() > 0
 		fullscreen_shell_unstable_v1_client_protocol_h,
 		fullscreen_shell_unstable_v1_protocol_c,
 		linux_dmabuf_unstable_v1_client_protocol_h,
+		ias_shell_protocol_c,
+		ias_shell_client_protocol_h,
 		linux_dmabuf_unstable_v1_protocol_c,
 		include_directories: include_directories('..'),
 		dependencies: [
