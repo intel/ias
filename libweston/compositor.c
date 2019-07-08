@@ -76,6 +76,8 @@
 #include "libweston-internal.h"
 #include "trace-reporter.h"
 
+#include "weston-log-internal.h"
+
 /**
  * \defgroup head Head
  * \defgroup output Output
