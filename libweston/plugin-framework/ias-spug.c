@@ -34,6 +34,7 @@
 #include <string.h>
 #include <glib.h>
 #include <inttypes.h>
+#include <libweston-internal.h>
 
 #include "ias-plugin-framework-private.h"
 
