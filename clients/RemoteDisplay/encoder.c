@@ -198,9 +198,7 @@ struct rd_encoder {
 
 	/* Transport plugin */
 	void *transport_handle;
-	void *transport_private_data;
-	int (*transport_send_fptr)(void *transport_private_data,
-			drm_intel_bo *drm_bo,
+	int (*transport_send_fptr)(drm_intel_bo *drm_bo,
 			int32_t stream_size,
 			uint32_t timestamp);
 
@@ -1782,8 +1780,7 @@ static int
 load_transport_plugin(const char *plugin, struct rd_encoder *encoder,
 		int *argc, char **argv)
 {
-	int (*plugin_init_fptr)(int *argc, char **argv,
-			void **plugin_private_data, int verbose);
+	int (*plugin_init_fptr)(int *argc, char **argv, int verbose);
 
 	if (plugin == NULL) {
 		fprintf(stderr, "load_transport_plugin : no plugin name provided\n");
@@ -1808,8 +1805,7 @@ load_transport_plugin(const char *plugin, struct rd_encoder *encoder,
 
 	plugin_init_fptr = dlsym(encoder->transport_handle, "init");
 	if (plugin_init_fptr) {
-		int ret = (*plugin_init_fptr)(argc, argv,
-			&(encoder->transport_private_data), encoder->verbose);
+		int ret = (*plugin_init_fptr)(argc, argv, encoder->verbose);
 
 		if (ret) {
 			fprintf(stderr, "Init function in %s transport plugin "
@@ -1840,11 +1836,11 @@ destroy_transport_plugin(struct rd_encoder *encoder)
 	}
 
 	if (encoder->transport_handle) {
-		void (*transport_destroy_fptr)(void **transport_private_data);
+		void (*transport_destroy_fptr)();
 
 		transport_destroy_fptr = dlsym(encoder->transport_handle, "destroy");
 		if (transport_destroy_fptr) {
-			(*transport_destroy_fptr)(&(encoder->transport_private_data));
+			(*transport_destroy_fptr)();
 		} else {
 			fprintf(stderr, "No destroy function found in transport plugin.\n");
 		}
@@ -2481,9 +2477,7 @@ transport_thread_function(void * const data)
 
 			drm_intel_bo_map(drm_bo, 1);
 
-			(*encoder->transport_send_fptr)(
-				encoder->transport_private_data,
-				drm_bo,
+			(*encoder->transport_send_fptr)(drm_bo,
 				encoder->current_transport.stream_size,
 				encoder->current_transport.timestamp);
 

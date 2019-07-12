@@ -78,6 +78,8 @@ struct private_data {
 	int fifo_handle;
 };
 
+struct private_data *private_data = NULL;
+
 static int add_one_client(struct private_data *pdata, char *str_ipaddr, char *str_port)
 {
 	int sockfd;
@@ -144,10 +146,10 @@ static int remove_one_client(struct private_data *pdata, char *str_ipaddr, char 
 }
 
 
-WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbose)
+WL_EXPORT int init(int *argc, char **argv, int verbose)
 {
 	printf("Using UDP remote display transport plugin...\n");
-	struct private_data *private_data = calloc(1, sizeof(*private_data));
+	private_data = calloc(1, sizeof(*private_data));
 
 	GstElement *pipeline   = NULL;
 	GstElement *appsrc     = NULL;
@@ -155,7 +157,6 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 	GstElement *rtph264pay = NULL;
 	GstElement *multiudpsink = NULL;
 
-	*plugin_private_data = (void *)private_data;
 	if (private_data) {
 		private_data->verbose = verbose;
 	} else {
@@ -180,7 +181,6 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 			free(private_data->tp);
 		}
 		free(private_data);
-		*plugin_private_data = NULL;
 		return -1;
 	}
 
@@ -237,7 +237,6 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 					free(private_data->tp);
 				}
 				free(private_data);
-				*plugin_private_data = NULL;
 				return -1;
 			}
 			ptr = strtok(ptr2, ",");
@@ -378,12 +377,9 @@ get_ps_write_size(uint8_t *readptr)
 	return i;
 }
 
-static int send_frame_gst(void *plugin_private_data, drm_intel_bo *drm_bo,
-		int32_t stream_size, uint32_t timestamp)
+static int send_frame_gst(drm_intel_bo *drm_bo, int32_t stream_size, uint32_t timestamp)
 {
 	uint8_t *readptr = drm_bo->virtual;
-
-	struct private_data *private_data = (struct private_data *)plugin_private_data;
 
 	GstBuffer *gstbuf = NULL;
 	GstMapInfo gstmap;
@@ -417,8 +413,7 @@ error:
 	return -1;
 }
 
-static int send_frame_native(void *plugin_private_data, drm_intel_bo *drm_bo,
-		int32_t stream_size, uint32_t timestamp)
+static int send_frame_native(drm_intel_bo *drm_bo, int32_t stream_size, uint32_t timestamp)
 {
 	int num_packets = 0;
 	int bytes_written = 0;
@@ -437,8 +432,6 @@ static int send_frame_native(void *plugin_private_data, drm_intel_bo *drm_bo,
 	volatile sig_atomic_t send_packages;
 	int err = 0;
 	int i;
-
-	struct private_data *private_data = (struct private_data *)plugin_private_data;
 
 	if (!private_data) {
 		fprintf(stderr, "No private data!\n");
@@ -730,10 +723,8 @@ static int send_frame_native(void *plugin_private_data, drm_intel_bo *drm_bo,
 	return 0;
 }
 
-WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo,
-		int32_t stream_size, uint32_t timestamp)
+WL_EXPORT int send_frame(drm_intel_bo *drm_bo, int32_t stream_size, uint32_t timestamp)
 {
-	struct private_data *private_data = (struct private_data *)plugin_private_data;
 	struct timeval tv;
 	uint32_t time;
 
@@ -761,18 +752,13 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo,
 		}
 
 		return (private_data->tp_mode==tp_mode_gst)
-			? send_frame_gst(plugin_private_data, drm_bo,
-					stream_size, timestamp)
-			: send_frame_native(plugin_private_data, drm_bo,
-					stream_size, timestamp);
+			? send_frame_gst(drm_bo, stream_size, timestamp)
+			: send_frame_native(drm_bo,stream_size, timestamp);
 	}
 }
 
-
-
-WL_EXPORT void destroy(void **plugin_private_data)
+WL_EXPORT void destroy()
 {
-	struct private_data *private_data = (struct private_data *)*plugin_private_data;
 	int i;
 
 	if (private_data == NULL) {
@@ -813,5 +799,4 @@ WL_EXPORT void destroy(void **plugin_private_data)
 		free(private_data->fifo_name);
 	}
 	free(private_data);
-	*plugin_private_data = NULL;
 }

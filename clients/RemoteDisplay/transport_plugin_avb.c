@@ -49,12 +49,12 @@ struct private_data {
 	GstElement *appsrc;
 };
 
+struct private_data *private_data = NULL;
 
-WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data,
-			int verbose)
+WL_EXPORT int init(int *argc, char **argv, int verbose)
 {
 	printf("Using avb remote display transport plugin...\n");
-	struct private_data *private_data = calloc(1, sizeof(*private_data));
+	private_data = calloc(1, sizeof(*private_data));
 
 	GstElement *pipeline    = NULL;
 	GstElement *appsrc      = NULL;
@@ -62,7 +62,6 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data,
 	GstElement *rtph264pay  = NULL;
 	GstElement *avbh264sink = NULL;
 
-	*plugin_private_data = (void *)private_data;
 	if (private_data) {
 		private_data->verbose = verbose;
 	} else {
@@ -88,7 +87,6 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data,
 	if ((private_data->dump_packets != 0) && (private_data->packet_path == 0)) {
 		fprintf(stderr, "No packet path provided - see help (remotedisplay --plugin=avb --help).\n");
 		free(private_data);
-		*plugin_private_data = NULL;
 		return -1;
 	}
 
@@ -103,7 +101,6 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data,
 		} else {
 			fprintf(stderr, "Failed to create packet file path.\n");
 			free(private_data);
-			*plugin_private_data = NULL;
 			return -1;
 		}
 		private_data->packet_path = tmp;
@@ -178,11 +175,9 @@ WL_EXPORT void help(void)
 }
 
 
-WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo,
-		int32_t stream_size, uint32_t timestamp)
+WL_EXPORT int send_frame(drm_intel_bo *drm_bo, int32_t stream_size, uint32_t timestamp)
 {
 	uint8_t *readptr = drm_bo->virtual;
-	struct private_data *private_data = (struct private_data *)plugin_private_data;
 
 	GstBuffer *gstbuf = NULL;
 	GstMapInfo gstmap;
@@ -222,9 +217,8 @@ error:
 }
 
 
-WL_EXPORT void destroy(void **plugin_private_data)
+WL_EXPORT void destroy()
 {
-	struct private_data *private_data = (struct private_data *)*plugin_private_data;
 	if (private_data == NULL) {
 		fprintf(stderr, "Invalid avb plugin private data passed to destroy.\n");
 		return;
@@ -246,5 +240,4 @@ WL_EXPORT void destroy(void **plugin_private_data)
 		printf("Freeing avb plugin private data...\n");
 	}
 	free(private_data);
-	*plugin_private_data = NULL;
 }

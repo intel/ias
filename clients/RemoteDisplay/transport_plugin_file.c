@@ -61,12 +61,14 @@ struct private_data {
 	uint32_t max_frames;
 };
 
+struct private_data *private_data = NULL;
 
-WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbose)
+
+WL_EXPORT int init(int *argc, char **argv, int verbose)
 {
 	printf("Using file remote display transport plugin...\n");
-	struct private_data *private_data = calloc(1, sizeof(*private_data));
-	*plugin_private_data = (void *)private_data;
+	private_data = calloc(1, sizeof(*private_data));
+
 	if (private_data) {
 		private_data->verbose = verbose;
 	} else {
@@ -104,9 +106,8 @@ WL_EXPORT void help(void)
 }
 
 
-WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo, int32_t stream_size, uint32_t timestamp)
+WL_EXPORT int send_frame(drm_intel_bo *drm_bo, int32_t stream_size, uint32_t timestamp)
 {
-	struct private_data *private_data = (struct private_data *)plugin_private_data;
 	if (private_data == NULL) {
 		fprintf(stderr, "Invalid pointer to file plugin private data.\n");
 		return (-EFAULT);
@@ -217,10 +218,8 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo, int32_
 	return 0;
 }
 
-WL_EXPORT void destroy(void **plugin_private_data)
+WL_EXPORT void destroy()
 {
-	struct private_data *private_data = (struct private_data *)*plugin_private_data;
-
 	if (private_data && private_data->verbose) {
 		printf("Freeing file plugin private data...\n");
 	}
@@ -228,5 +227,4 @@ WL_EXPORT void destroy(void **plugin_private_data)
 		fclose(private_data->fp);
 	}
 	free(private_data);
-	*plugin_private_data = NULL;
 }

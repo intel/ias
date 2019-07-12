@@ -53,12 +53,13 @@ struct private_data {
 	unsigned short port;
 };
 
+struct private_data *private_data = NULL;
 
-WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbose)
+WL_EXPORT int init(int *argc, char **argv, int verbose)
 {
 	printf("Using TCP remote display transport plugin...\n");
-	struct private_data *private_data = calloc(1, sizeof(*private_data));
-	*plugin_private_data = (void *)private_data;
+	private_data = calloc(1, sizeof(*private_data));
+
 	if (private_data) {
 		private_data->verbose = verbose;
 	} else {
@@ -78,7 +79,6 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 	} else {
 		fprintf(stderr, "Invalid network configuration.\n");
 		free(private_data);
-		*plugin_private_data = NULL;
 		return -1;
 	}
 
@@ -86,7 +86,6 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 	if (private_data->socket.sockDesc < 0) {
 		fprintf(stderr, "Socket creation failed.\n");
 		free(private_data);
-		*plugin_private_data = NULL;
 		return -1;
 	}
 
@@ -98,7 +97,6 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 			sizeof(private_data->socket.sockAddr)) < 0) {
 		fprintf(stderr, "Error connecting to receiver.\n");
 		free(private_data);
-		*plugin_private_data = NULL;
 		return -1;
 	}
 
@@ -116,11 +114,9 @@ WL_EXPORT void help(void)
 }
 
 
-WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo,
-		int32_t stream_size, uint32_t timestamp)
+WL_EXPORT int send_frame(drm_intel_bo *drm_bo, int32_t stream_size, uint32_t timestamp)
 {
 	uint8_t *bufdata = (uint8_t *)(drm_bo->virtual);
-	struct private_data *private_data = (struct private_data *)plugin_private_data;
 
 	if (private_data == NULL) {
 		fprintf(stderr, "Private data is null!\n");
@@ -140,10 +136,8 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo,
 	return 0;
 }
 
-WL_EXPORT void destroy(void **plugin_private_data)
+WL_EXPORT void destroy()
 {
-	struct private_data *private_data = (struct private_data *)*plugin_private_data;
-
 	if (private_data == NULL) {
 		return;
 	}
@@ -159,5 +153,4 @@ WL_EXPORT void destroy(void **plugin_private_data)
 		fprintf(stdout, "Freeing plugin private data...\n");
 	}
 	free(private_data);
-	*plugin_private_data = NULL;
 }
