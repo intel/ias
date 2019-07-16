@@ -42,6 +42,7 @@
 
 #include "ias-plugin-framework-definitions.h"
 #include "ias-spug.h"
+#include <backend.h>
 
 #define CFG_FILENAME "ias.conf"
 
