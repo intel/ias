@@ -41,6 +41,7 @@
 #include "ias-relay-input.h"
 #include "ias-shell.h"
 #include "shared/helpers.h"
+#include "backend.h"
 
 
 static struct ias_shell *self;
