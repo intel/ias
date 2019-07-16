@@ -38,6 +38,7 @@
 #include "../shared/config-parser.h"
 #include "../shared/helpers.h"
 #include "transport_plugin.h"
+#include "udp_socket.h"
 
 
 #define TO_Mb(bytes) ((bytes)/1024/1024*8)
@@ -55,18 +56,12 @@
 #define FU_A_TYPE 28
 #define MAX_ADDRS 10
 
-struct udpSocket {
-	int sockDesc;
-	struct sockaddr_in sockAddr;
-	bool available;
-};
-
 enum plugin_tp_mode { tp_mode_none=0, tp_mode_gst, tp_mode_native };
 
 struct private_data {
 	int verbose;
 	int debug_packetisation;
-	struct udpSocket socket[MAX_ADDRS];
+	struct udp_socket socket[MAX_ADDRS];
 	int num_addr;
 	char *ipaddr;
 	char *tp;
@@ -80,20 +75,20 @@ struct private_data {
 
 struct private_data *private_data = NULL;
 
-static int add_one_client(struct private_data *pdata, char *str_ipaddr, char *str_port)
+static int add_one_client(struct private_data *pdata, int slot)
 {
 	int sockfd;
 	struct timeval optTime = {0, 10}; /* {sec, msec} */
 	struct sockaddr_in s;
-	s.sin_addr.s_addr = inet_addr(str_ipaddr);
-	s.sin_port = htons(atoi(str_port));
+	s.sin_addr.s_addr = inet_addr(pdata->socket[slot].str_ipaddr);
+	s.sin_port = htons(pdata->socket[slot].data.port);
 	if (pdata->num_addr == MAX_ADDRS) {
 		fprintf(stderr, "MAX_ADDRS !\n");
 		return -1;
 	}
 	for (int i=0; i<pdata->num_addr; i++ ) {
-		if ((s.sin_port == pdata->socket[i].sockAddr.sin_port)  &&
-			(s.sin_addr.s_addr == pdata->socket[i].sockAddr.sin_addr.s_addr)) {
+		if ((s.sin_port == pdata->socket[i].data.addr.sin_port)  &&
+			(s.sin_addr.s_addr == pdata->socket[i].data.addr.sin_addr.s_addr)) {
 			return 0; /* Already exist */
 		}
 	}
@@ -104,15 +99,15 @@ static int add_one_client(struct private_data *pdata, char *str_ipaddr, char *st
 	if (setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &optTime, sizeof(optTime)) < 0) {
 		fprintf(stderr, "sendto timeout configuration failed\n");
 	}
-	pdata->socket[pdata->num_addr].sockDesc = sockfd;
-	pdata->socket[pdata->num_addr].sockAddr.sin_addr.s_addr = s.sin_addr.s_addr;
-	pdata->socket[pdata->num_addr].sockAddr.sin_family = AF_INET;
-	pdata->socket[pdata->num_addr].sockAddr.sin_port = s.sin_port;
-	pdata->socket[pdata->num_addr].available = true;
+	pdata->socket[slot].data.sock_desc = sockfd;
+	pdata->socket[slot].data.addr.sin_addr.s_addr = s.sin_addr.s_addr;
+	pdata->socket[slot].data.addr.sin_family = AF_INET;
+	pdata->socket[slot].data.addr.sin_port = s.sin_port;
+	pdata->socket[slot].data.available = true;
 	if (pdata->verbose) {
-		printf("%s: %s:%s at %d\n", __FUNCTION__, str_ipaddr, str_port, pdata->num_addr);
+		printf("%s: %s:%d at %d\n", __FUNCTION__, pdata->socket[slot].str_ipaddr,
+			pdata->socket[slot].data.port, slot);
 	}
-	pdata->num_addr++;
 	return 0;
 }
 
@@ -123,39 +118,46 @@ static int remove_one_client(struct private_data *pdata, char *str_ipaddr, char 
 	s.sin_addr.s_addr = inet_addr(str_ipaddr);
 	s.sin_port = htons(atoi(str_port));
 	for (int i=0; i<pdata->num_addr; i++ ) {
-		if ((s.sin_port == pdata->socket[i].sockAddr.sin_port)  &&
-			 (s.sin_addr.s_addr == pdata->socket[i].sockAddr.sin_addr.s_addr)) {
+		if ((s.sin_port == pdata->socket[i].data.addr.sin_port)  &&
+			 (s.sin_addr.s_addr == pdata->socket[i].data.addr.sin_addr.s_addr)) {
 			found = i;
 			if (pdata->verbose) {
 				printf("%s: %s:%s at %d\n", __FUNCTION__, str_ipaddr, str_port, found);
 			}
-			close(pdata->socket[i].sockDesc);
-			pdata->socket[i].sockDesc = -1;
-			memset(&pdata->socket[i].sockAddr, 0,
-                                        sizeof(pdata->socket[i].sockAddr));
+			close(pdata->socket[i].data.sock_desc);
+			pdata->socket[i].data.sock_desc = -1;
+			memset(&pdata->socket[i].data.addr, 0,
+				sizeof(pdata->socket[i].data.addr));
 			break;
 		}
 	}
 	if (found != -1) {
 		if (found != pdata->num_addr-1) {
-			memcpy(&pdata->socket[found], &pdata->socket[pdata->num_addr-1], sizeof(struct udpSocket));
+			memcpy(&pdata->socket[found], &pdata->socket[pdata->num_addr-1], sizeof(struct udp_socket));
 		}
 		pdata->num_addr--;
 	}
 	return 0;
 }
 
+WL_EXPORT void get_sockaddr(struct udp_socket **udp_sock, int *num_addr)
+{
+	*udp_sock = private_data->socket;
+	*num_addr = private_data->num_addr;
+}
 
 WL_EXPORT int init(int *argc, char **argv, int verbose)
 {
-	printf("Using UDP remote display transport plugin...\n");
-	private_data = calloc(1, sizeof(*private_data));
-
 	GstElement *pipeline   = NULL;
 	GstElement *appsrc     = NULL;
 	GstElement *h264parse  = NULL;
 	GstElement *rtph264pay = NULL;
 	GstElement *multiudpsink = NULL;
+	char copy[256], *ptr, *ptr2;
+	int slot;
+
+	private_data = calloc(1, sizeof(*private_data));
+	printf("Using UDP remote display transport plugin...\n");
 
 	if (private_data) {
 		private_data->verbose = verbose;
@@ -188,6 +190,39 @@ WL_EXPORT int init(int *argc, char **argv, int verbose)
 		private_data->tp = strdup("native");
 	}
 
+	strcpy(copy, private_data->ipaddr);
+	ptr = strtok(copy, ",");
+	ptr2 = strtok(NULL, "\n");
+
+	while(ptr && private_data->num_addr < MAX_ADDRS) {
+		char *str_ipaddr = strtok(ptr, ":");
+		char *str_data_port = strtok(NULL, ":,\n");
+		char *str_input_port = strtok(NULL, "\n");
+		if(str_ipaddr && str_data_port) {
+			strcpy(private_data->socket[private_data->num_addr].str_ipaddr,
+				str_ipaddr);
+			private_data->socket[private_data->num_addr].data.port =
+					atoi(str_data_port);
+			if(str_input_port) {
+				private_data->socket[private_data->num_addr].input.port =
+						atoi(str_input_port);
+			}
+			private_data->num_addr++;
+		} else {
+			fprintf(stderr, "Invalid network configuration.\n");
+			if(private_data->ipaddr) {
+				free(private_data->ipaddr);
+			}
+			if(private_data->tp) {
+				free(private_data->tp);
+			}
+			free(private_data);
+			return -1;
+		}
+		ptr = strtok(ptr2, ",");
+		ptr2 = strtok(NULL, "\n");
+	}
+
 	if(!strcmp(private_data->tp, "gst")) {
 		(void) gst_init (NULL, NULL);
 		private_data->tp_mode = tp_mode_gst;
@@ -214,20 +249,11 @@ WL_EXPORT int init(int *argc, char **argv, int verbose)
 
 	} else if(!strcmp(private_data->tp, "native")) {
 
-		char copy[256], *ptr, *ptr2;
+		int err;
 		private_data->tp_mode = tp_mode_native;
-		strcpy(copy, private_data->ipaddr);
-		ptr = strtok(copy, ",");
-		ptr2 = strtok(NULL, "\n");
 
-		while(ptr) {
-			int err = 0;
-			char *str_ipaddr = strtok(ptr, ":");
-			char *str_port = strtok(NULL, "\n");
-			if (!str_ipaddr || !str_port) err = 1;
-			if (!err) {
-				err = add_one_client(private_data, str_ipaddr, str_port);
-			}
+		for(slot = 0; slot < private_data->num_addr; slot++) {
+			err = add_one_client(private_data, slot);
 			if (err) {
 				fprintf(stderr, "Socket creation failed.\n");
 				if(private_data->ipaddr) {
@@ -239,8 +265,6 @@ WL_EXPORT int init(int *argc, char **argv, int verbose)
 				free(private_data);
 				return -1;
 			}
-			ptr = strtok(ptr2, ",");
-			ptr2 = strtok(NULL, "\n");
 		}
 		printf("Using native transport\n");
 	}
@@ -332,17 +356,17 @@ send_packet(uint8_t *payload, size_t size, uint32_t timestamp,
 	}
 
 	for(i = 0; i < private_data->num_addr; i++) {
-		if (private_data->socket[i].available) {
-			int rval = sendto(private_data->socket[i].sockDesc,
+		if (private_data->socket[i].data.available) {
+			int rval = sendto(private_data->socket[i].data.sock_desc,
 					rtpBase8,
 					size + RTP_HEADER_SIZE,
 					0,
-					(struct sockaddr *) &private_data->socket[i].sockAddr,
-					sizeof(private_data->socket[i].sockAddr));
+					(struct sockaddr *) &private_data->socket[i].data.addr,
+					sizeof(private_data->socket[i].data.addr));
 
 			if (rval <= 0) {
 				/*TODO - add more detailed error handles */
-				private_data->socket[i].available = false;
+				private_data->socket[i].data.available = false;
 				if (private_data->verbose >= 2) {
 					fprintf(stderr, "Socket(%d) - Send failed with %m \n", i);
 				}
@@ -652,7 +676,7 @@ static int send_frame_native(drm_intel_bo *drm_bo, int32_t stream_size, uint32_t
 	}
 
 	for(i = 0; i < private_data->num_addr; i++) {
-		private_data->socket[i].available = true;
+		private_data->socket[i].data.available = true;
 	}
 
 	if (private_data->verbose >= 2 || private_data->debug_packetisation) {
@@ -700,7 +724,10 @@ static int send_frame_native(drm_intel_bo *drm_bo, int32_t stream_size, uint32_t
 									remove_one_client(private_data, str_ipaddr, str_port);
 								} else {
 									printf("Do add: %s %s\n", str_ipaddr, str_port);
-									add_one_client(private_data, str_ipaddr, str_port);
+									strcpy(private_data->socket[private_data->num_addr].str_ipaddr, str_ipaddr);
+									private_data->socket[private_data->num_addr].data.port = atoi(str_port);
+									add_one_client(private_data, private_data->num_addr);
+									private_data->num_addr++;
 								}
 							}
 						}
@@ -712,7 +739,7 @@ static int send_frame_native(drm_intel_bo *drm_bo, int32_t stream_size, uint32_t
 								private_data->frames,
 								private_data->total_stream_size);
 						for (int i=0; i< private_data->num_addr; i++) {
-							struct sockaddr_in *a_addr = &private_data->socket[i].sockAddr;
+							struct sockaddr_in *a_addr = &private_data->socket[i].data.addr;
 							printf("%d: IP4: %s:%d\n", i, inet_ntoa(a_addr->sin_addr), htons(a_addr->sin_port));
 						}
 					}
@@ -774,10 +801,10 @@ WL_EXPORT void destroy()
 		(void) gst_object_unref (GST_OBJECT (private_data->pipeline));
 	} else if(!strcmp(private_data->tp, "native")) {
 		for(i = 0; i < private_data->num_addr; i++) {
-			close(private_data->socket[i].sockDesc);
-			private_data->socket[i].sockDesc = -1;
-			memset(&private_data->socket[i].sockAddr, 0,
-					sizeof(private_data->socket[i].sockAddr));
+			close(private_data->socket[i].data.sock_desc);
+			private_data->socket[i].data.sock_desc = -1;
+			memset(&private_data->socket[i].data.addr, 0,
+					sizeof(private_data->socket[i].data.addr));
 		}
 	}
 

@@ -26,6 +26,8 @@
 #ifndef _REMOTE_DISPLAY_MAIN_H_
 #define _REMOTE_DISPLAY_MAIN_H_
 
+#include "udp_socket.h"
+
 struct input_receiver_private_data;
 struct encoder_options;
 
@@ -72,6 +74,7 @@ struct app_state {
 	char *surfname;
 	char *pname;
 	struct encoder_options *enc_options;
+	void (*get_sockaddr_fptr)(struct udp_socket **udp_sock, int *num_addr);
 };
 
 struct surf_list {

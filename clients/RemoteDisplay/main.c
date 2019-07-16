@@ -611,7 +611,9 @@ usage(int error_code)
 		" video stream.\n\n");
 	printf("Options:\n");
 	printf("\t--plugin=<transport_plugin>\tTransport plugin to use."
-		" Examples are avb, file, tcp and stub.\n");
+		" Examples are udp, avb, file and stub.\n");
+	printf("\t--clients=<ip_address:port,<ip_address:port>> IP address and port of receiver."
+		" Only valid in case of udp\n");
 	printf("\t--state=0\t\t\tstop frame capture, e.g. if another client did"
 		" not close cleanly\n"
 		"\t--state=1\t\t\tstart frame capture (this is the default)\n");
@@ -688,7 +690,7 @@ init_enc(struct app_state *app_state, int *argc, char **argv)
 	}
 
 	app_state->rd_encoder =
-		rd_encoder_create(app_state->verbose, app_state->plugin_fullname, argc, argv);
+		rd_encoder_create(app_state, argc, argv);
 
 	if (app_state->rd_encoder == NULL) {
 		fprintf(stderr, "Failed to create Remote Display encoder\n");

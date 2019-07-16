@@ -52,16 +52,8 @@
 #include "input_receiver.h"
 #include "ias-shell-client-protocol.h"
 #include "main.h" /* Need access to app_state */
+#include "udp_socket.h"
 
-
-struct tcpTransport {
-	int sockDesc;
-	struct sockaddr_in sockAddr;
-	socklen_t len;
-	char *ipaddr;
-	unsigned short port;
-	int connected;
-};
 
 struct remoteDisplayInput {
 	int uinput_touch_fd;
@@ -77,7 +69,8 @@ struct remoteDisplayButtonState{
 	};
 
 struct input_receiver_private_data {
-	struct tcpTransport transport;
+	struct udp_socket *udp_socket;
+	int num_addr;
 	struct remoteDisplayInput input;
 	volatile int running;
 	int verbose;
@@ -520,16 +513,8 @@ init_output_keyboard(int *uinput_keyboard_fd_out)
 }
 
 static void
-close_transport(struct tcpTransport *transport)
+close_transport()
 {
-	printf("Closing transport...\n");
-	if (transport->sockDesc >= 0) {
-		close(transport->sockDesc);
-		transport->sockDesc = -1;
-	}
-	transport->connected = 0;
-	/* May need to consider tracking the state, so that any multi-touch slots
-	 * that are currently "down" are sent an up event. */
 }
 
 static void
@@ -556,42 +541,45 @@ cleanup_input(struct remoteDisplayInput *input)
 
 
 static void
-init_transport(struct tcpTransport *transport)
+init_transport(struct input_receiver_private_data *data)
 {
 	int ret = 0;
 	char *hello = "Hello";
 	struct timeval optTime = {0, 10}; /* {sec, msec} */
-	transport->len = sizeof(transport->sockAddr);
+
+	/* TODO: This 0 will have to change if we have more than one udp sockets */
+	struct udp_socket *transport = &data->udp_socket[0];
+
+	transport->input.len = sizeof(transport->input.addr);
 
 	printf("Initialising transport on input receiver...\n");
-	transport->sockDesc = socket(AF_INET , SOCK_DGRAM , 0);
-	if (transport->sockDesc == -1) {
+	transport->input.sock_desc = socket(AF_INET, SOCK_DGRAM , 0);
+	if (transport->input.sock_desc == -1) {
 		fprintf(stderr, "Socket creation failed.\n");
 		return;
 	}
-	if (setsockopt(transport->sockDesc, SOL_SOCKET, SO_SNDTIMEO, &optTime, sizeof(optTime)) < 0) {
+	if (setsockopt(transport->input.sock_desc, SOL_SOCKET, SO_SNDTIMEO, &optTime, sizeof(optTime)) < 0) {
 		fprintf(stderr, "sendto timeout configuration failed\n");
 		return;
 	}
 
-	transport->sockAddr.sin_family = AF_INET;
-	transport->sockAddr.sin_addr.s_addr = inet_addr(transport->ipaddr);
-	transport->sockAddr.sin_port = htons(transport->port);
+	transport->input.addr.sin_family = AF_INET;
+	transport->input.addr.sin_addr.s_addr = inet_addr(transport->str_ipaddr);
+	transport->input.addr.sin_port = htons(transport->input.port);
 
 	/* Send a simple hello message to the server so that it knows about us */
-	ret = sendto(transport->sockDesc, (const char *)hello, strlen(hello),
-			0, (const struct sockaddr *) &transport->sockAddr,
-			transport->len);
+	ret = sendto(transport->input.sock_desc, (const char *)hello, strlen(hello),
+			0, (const struct sockaddr *) &transport->input.addr,
+			transport->input.len);
 
 	if (ret < 0) {
 		fprintf(stderr, "Error with sending message to the server.\n");
-		close(transport->sockDesc);
-		transport->sockDesc = -1;
+		close(transport->input.sock_desc);
+		transport->input.sock_desc = -1;
 		return;
 	}
 
 	printf("Read to accept input events.\n");
-	transport->connected = 1;
 }
 
 static void *
@@ -602,22 +590,22 @@ receive_events(void * const priv_data)
 	gstInputMsg msg;
 	struct event_conv *ev;
 
-	init_transport(&data->transport);
+	/* TODO: This 0 will have to change if we have more than one udp sockets */
+	struct udp_socket *transport = &data->udp_socket[0];
+
+	init_transport(data);
 	data->running = 1;
 
 	while (data->running) {
-		if (data->transport.connected) {
-			ret = recvfrom(data->transport.sockDesc, &msg, sizeof(msg), 0,
-					(struct sockaddr *) &data->transport.sockAddr,
-					&data->transport.len);
-		}
+		ret = recvfrom(transport->input.sock_desc, &msg, sizeof(msg), 0,
+				(struct sockaddr *) &transport->input.addr,
+				&transport->input.len);
+
 		if (data->running == 0) {
 			printf("Receive interrupted by shutdown.\n");
 			continue;
 		}
-		if (data->transport.connected == 0) {
-			/* Do nothing. */
-		} else if (ret <= 0) {
+		if (ret <= 0) {
 			printf("Header receive failed.\n");
 		} else if (data->appstate->surfid) {
 			ev = get_matching_event(msg.type);
@@ -633,19 +621,9 @@ receive_events(void * const priv_data)
 				ev->output_event_func(data->appstate, &msg);
 			}
 		}
-		if (ret <= 0) {
-			if (data->transport.connected) {
-				printf("Sender has closed socket. Attempting to reconnect...\n");
-				close_transport(&data->transport);
-			}
-			init_transport(&data->transport);
-			if (!data->transport.connected) {
-				sleep(1);
-			}
-		}
 	}
 
-	close_transport(&data->transport);
+	close_transport();
 	cleanup_input(&data->input);
 	free(priv_data);
 
@@ -662,26 +640,22 @@ start_event_listener(struct app_state *appstate, int *argc, char **argv)
 	int touch_ret = 0;
 	int keyb_ret = 0;
 	int pointer_ret = 0;
-
+	struct udp_socket *transport;
 
 	data = calloc(1, sizeof(*data));
-	if (!data) {
-		fprintf(stderr, "Failed to allocate memory for input receiver private data.\n");
-		return;
-	} else {
-		int port = 0;
-		const struct weston_option options[] = {
-			{ WESTON_OPTION_STRING,  "relay_input_ipaddr", 0, &data->transport.ipaddr},
-			{ WESTON_OPTION_INTEGER, "relay_input_port", 0, &port},
-		};
 
-		parse_options(options, ARRAY_LENGTH(options), argc, argv);
-		data->transport.port = port;
+	/* In case of udp transport, we should get the  */
+	if(!strcmp(appstate->transport_plugin, "udp") &&
+		appstate->get_sockaddr_fptr) {
+		appstate->get_sockaddr_fptr(&data->udp_socket, &data->num_addr);
 	}
 
-	if ((data->transport.ipaddr != NULL) && (data->transport.ipaddr[0] != 0)) {
-		printf("Receiving input events from %s:%d.\n", data->transport.ipaddr,
-			data->transport.port);
+	/* TODO: This 0 will have to change if we have more than one udp sockets */
+	transport = &data->udp_socket[0];
+
+	if (transport && transport->input.port != 0) {
+		printf("Receiving input events from %s:%d.\n", transport->str_ipaddr,
+			transport->input.port);
 	} else {
 		printf("Not listening for input events; network configuration not set.\n");
 		free(data);
@@ -744,14 +718,14 @@ start_event_listener(struct app_state *appstate, int *argc, char **argv)
 void
 stop_event_listener(struct input_receiver_private_data *priv_data)
 {
-	if (!priv_data) {
+	if (!priv_data || !priv_data->udp_socket) {
 		return;
 	}
 	priv_data->running = 0;
 	if (priv_data->verbose) {
 		printf("Waiting for input receiver thread to finish...\n");
 	}
-	shutdown(priv_data->transport.sockDesc, SHUT_RDWR);
+	shutdown(priv_data->udp_socket[0].input.sock_desc, SHUT_RDWR);
 	pthread_join(priv_data->input_thread, NULL);
 	printf("Input receiver thread stopped.\n");
 }

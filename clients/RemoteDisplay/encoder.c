@@ -48,7 +48,7 @@
 #include <libdrm/intel_bufmgr.h>
 #include <wayland-client.h>
 
-//#include "compositor.h"
+#include "main.h"
 #include "encoder.h"
 #include "ias-shell-client-protocol.h"
 #include "../../shared/timespec-util.h"
@@ -1778,6 +1778,7 @@ destroy_transport_thread(struct rd_encoder * const encoder)
 
 static int
 load_transport_plugin(const char *plugin, struct rd_encoder *encoder,
+		struct app_state *app_state,
 		int *argc, char **argv)
 {
 	int (*plugin_init_fptr)(int *argc, char **argv, int verbose);
@@ -1825,6 +1826,14 @@ load_transport_plugin(const char *plugin, struct rd_encoder *encoder,
 		return -1;
 	}
 
+	/*
+	 * This will come in handy at a later point in case the input_receiver
+	 * wants to also get the socket addresses. Note that this can be NULL
+	 * in case the transport plugin doesn't support this function.
+	 */
+	app_state->get_sockaddr_fptr = dlsym(encoder->transport_handle,
+			"get_sockaddr");
+
 	return 0;
 }
 
@@ -1854,8 +1863,11 @@ destroy_transport_plugin(struct rd_encoder *encoder)
 }
 
 struct rd_encoder *
-rd_encoder_create(const int verbose, char *plugin, int *argc, char **argv)
+rd_encoder_create(void *as, int *argc, char **argv)
 {
+	struct app_state *app_state = (struct app_state *) as;
+	const int verbose = app_state->verbose;
+	char *plugin = app_state->plugin_fullname;
 	struct rd_encoder *encoder;
 	VAStatus status;
 	int major, minor;
@@ -1882,7 +1894,7 @@ rd_encoder_create(const int verbose, char *plugin, int *argc, char **argv)
 		goto err_encoder;
 	}
 
-	err = load_transport_plugin(plugin, encoder, argc, argv);
+	err = load_transport_plugin(plugin, encoder, app_state, argc, argv);
 	if (err != 0) {
 		goto err_encoder;
 	}
