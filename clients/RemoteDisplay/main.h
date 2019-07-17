@@ -45,7 +45,6 @@ struct app_state {
 	struct ias_relay_input *ias_in;
 	int recording;
 	int term_signal;
-	int verbose;
 	int profile;
 	uint32_t surfid;
 	uint32_t tracksurfid;

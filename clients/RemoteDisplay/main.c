@@ -46,6 +46,9 @@
 #include "encoder.h"
 #include "main.h"
 #include "input_receiver.h"
+#include "debug.h"
+
+int debug_level = DBG_OFF;
 
 enum {
 	STOP_DISPLAY = 0,
@@ -66,17 +69,13 @@ static void geometry_event(void *data, struct wl_output *wl_output,
 	output->height = h;
 	output->x = x;
 	output->y = y;
-	if (app_state.verbose > 2) {
-		printf("Geometry event received. %d by %d output at %d,%d.\n", w, h, x, y);
-	}
+	VERBOSE("Geometry event received. %d by %d output at %d,%d.\n", w, h, x, y);
 }
 
 static void mode_event(void *data, struct wl_output *wl_output,
 	uint32_t flags, int width, int height, int refresh)
 {
-	if (app_state.verbose > 2) {
-		printf("Mode event received. Output of %d by %d.\n", width, height);
-	}
+	VERBOSE("Mode event received. Output of %d by %d.\n", width, height);
 }
 
 static const struct wl_output_listener output_listener = {
@@ -117,7 +116,7 @@ handle_surface_info(void *data,
 	if (!existing) {
 		s = calloc(1, (sizeof(*s)));
 		if(!s) {
-			fprintf(stderr, "Couldn't allocate a surface list\n");
+			ERROR("Couldn't allocate a surface list\n");
 			return;
 		}
 	} else {
@@ -140,7 +139,7 @@ handle_surface_info(void *data,
 	if (app_state->surfid) {
 		return;
 	}
-	fprintf(stderr, "S='%s' id=%u  %4dx%4d (%4d,%4d)"
+	INFO("S='%s' id=%u  %4dx%4d (%4d,%4d)"
 			" Z=0x%02x a=%3d P=%4d N='%s' B=0x%02x f=%d\n",
 			name,
 			id, width, height, x, y, zorder, alpha, pid, pname, behavior_bits, flipped);
@@ -180,9 +179,7 @@ handle_surface_destroyed(void *data,
 		if (s->surf_id == id) {
 			if (app_state->surfid == id && app_state->recording) {
 				app_state->recording = 0;
-				if (app_state->verbose > 0) {
-					printf("Our recording surface is being destroyed\n");
-				}
+				INFO("Our recording surface is being destroyed\n");
 			}
 			wl_list_remove(&s->link);
 			free(s->name);
@@ -224,7 +221,7 @@ encoder_init_thread_function(void * const data)
 	if (err == 0) {
 		app_state->encoder_state = ENC_STATE_RUN;
 	} else {
-		fprintf(stderr, "Encoder init failed! : %d\n", err);
+		ERROR("Encoder init failed! : %d\n", err);
 		app_state->encoder_state = ENC_STATE_ERROR;
 	}
 
@@ -248,7 +245,7 @@ init_encoder(struct app_state *app_state)
 		|| (app_state->w < 0) || (app_state->h < 0)
 		|| (app_state->x + app_state->w > app_state->src_width)
 		|| (app_state->y + app_state->h > app_state->src_height)) {
-		fprintf(stderr, "Bad region values (%d %d/%d %d/%d %d)\n",
+		ERROR("Bad region values (%d %d/%d %d/%d %d)\n",
 					app_state->x, app_state->y,
 					app_state->w, app_state->h,
 					app_state->src_width, app_state->src_height);
@@ -258,7 +255,7 @@ init_encoder(struct app_state *app_state)
 	err = pthread_create(&app_state->encoder_init_thread, NULL,
 				encoder_init_thread_function, app_state);
 	if (err != 0) {
-		fprintf(stderr, "Encoder init thread creation failure: %d\n", err);
+		ERROR("Encoder init thread creation failure: %d\n", err);
 		return err;
 	}
 
@@ -284,31 +281,27 @@ handle_raw_buffer_handle(void *data,
 {
 	struct app_state *app_state = data;
 
-	if (app_state->verbose > 1) {
-		printf("RemoteDisplay: ias_hmi_raw_buffer_handle:\n"
-				"handle: %d\n"
-				"timestamp: %u\n"
-				"frame_number: %u\n"
-				"stride0: %u\n"
-				"stride1: %u\n"
-				"stride2: %u\n"
-				"format: %u\n"
-				"width: %u\n"
-				"height: %u\n"
-				"shm_surf_id: %u\n"
-				"buf_id: %u\n"
-				"image_id: %u\n",
-				handle, timestamp, frame_number, stride0, stride1,
-				stride2, format, out_width, out_height, shm_surf_id,
-				buf_id, image_id);
-	}
+	DBG("RemoteDisplay: ias_hmi_raw_buffer_handle:\n"
+			"handle: %d\n"
+			"timestamp: %u\n"
+			"frame_number: %u\n"
+			"stride0: %u\n"
+			"stride1: %u\n"
+			"stride2: %u\n"
+			"format: %u\n"
+			"width: %u\n"
+			"height: %u\n"
+			"shm_surf_id: %u\n"
+			"buf_id: %u\n"
+			"image_id: %u\n",
+			handle, timestamp, frame_number, stride0, stride1,
+			stride2, format, out_width, out_height, shm_surf_id,
+			buf_id, image_id);
 
 	switch (app_state->encoder_state) {
 	case ENC_STATE_NONE:
 	case ENC_STATE_INIT:
-		if (app_state->verbose) {
-			printf("Encoder init not complete, dropping frame\n");
-		}
+		VERBOSE("Encoder init not complete, dropping frame\n");
 		ias_hmi_release_buffer_handle(ias_hmi, shm_surf_id, buf_id, image_id,
 						app_state->surfid, 0);
 		break;
@@ -339,28 +332,24 @@ handle_raw_buffer_fd(void *data,
 {
 	struct app_state *app_state = data;
 
-	if (app_state->verbose > 1) {
-		printf("RemoteDisplay: handle_raw_buffer_fd:\n"
-				"prime_fd: %d\n"
-				"timestamp: %u\n"
-				"frame_number: %u\n"
-				"stride0: %u\n"
-				"stride1: %u\n"
-				"stride2: %u\n"
-				"format: %u\n"
-				"width: %u\n"
-				"height: %u\n",
-				prime_fd, timestamp, frame_number,
-				stride0, stride1, stride2, format,
-				out_width, out_height);
-	}
+	DBG("RemoteDisplay: handle_raw_buffer_fd:\n"
+			"prime_fd: %d\n"
+			"timestamp: %u\n"
+			"frame_number: %u\n"
+			"stride0: %u\n"
+			"stride1: %u\n"
+			"stride2: %u\n"
+			"format: %u\n"
+			"width: %u\n"
+			"height: %u\n",
+			prime_fd, timestamp, frame_number,
+			stride0, stride1, stride2, format,
+			out_width, out_height);
 
 	switch(app_state->encoder_state) {
 	case ENC_STATE_NONE:
 	case ENC_STATE_INIT:
-		if (app_state->verbose) {
-			printf("Encoder init not complete, dropping frame\n");
-		}
+		INFO("Encoder init not complete, dropping frame\n");
 		if (app_state->surfid) {
 			ias_hmi_release_buffer_handle(ias_hmi, 0, 0, 0,
 							app_state->surfid, 0);
@@ -389,17 +378,17 @@ handle_capture_error(void *data,
 	if (getpid() == pid) {
 		switch(error) {
 		case IAS_HMI_FCAP_ERROR_NO_CAPTURE_PROXY:
-			fprintf(stderr, "Capture proxy error: No proxy.\n");
+			ERROR("Capture proxy error: No proxy.\n");
 			break;
 		case IAS_HMI_FCAP_ERROR_DUPLICATE:
-			fprintf(stderr, "Capture error: Duplicate "
+			ERROR("Capture error: Duplicate "
 							"surface/output requested.\n");
 			break;
 		case IAS_HMI_FCAP_ERROR_NOT_BUILT_IN:
-			fprintf(stderr, "Capture proxy not built into Weston!\n");
+			ERROR("Capture proxy not built into Weston!\n");
 			break;
 		case IAS_HMI_FCAP_ERROR_INVALID:
-			fprintf(stderr, "Capture proxy error: Invalid parameter\n");
+			ERROR("Capture proxy error: Invalid parameter\n");
 			break;
 		case IAS_HMI_FCAP_ERROR_OK:
 			/* No actual error. */
@@ -430,17 +419,17 @@ registry_handle_global(void *data, struct wl_registry *registry, uint32_t id,
 	struct app_state *app_state = data;
 	struct output *new_output;
 
-  printf("%s : %s.\n", __func__, interface);
+	VERBOSE("%s : %s.\n", __func__, interface);
 	if (strcmp(interface, "ias_hmi") == 0) {
 		app_state->hmi = wl_registry_bind(registry, id, &ias_hmi_interface, 1);
 		ias_hmi_add_listener(app_state->hmi, &hmi_listener, app_state);
 	} else if (strcmp(interface, "ias_relay_input") == 0) {
-		printf("Bind ias_relay_input.\n");
+		VERBOSE("Bind ias_relay_input.\n");
 		app_state->ias_in = wl_registry_bind(registry, id, &ias_relay_input_interface, 1);
 	} else if (strcmp(interface, "wl_output") == 0) {
 		new_output = calloc(1, sizeof *new_output);
 		if (!new_output) {
-			fprintf(stderr, "Failed to handle new output: out of memory.\n");
+			ERROR("Failed to handle new output: out of memory.\n");
 			return;
 		}
 		wl_list_insert(&app_state->output_list, &new_output->link);
@@ -463,13 +452,11 @@ stop_recording(struct app_state *app_state)
 static void
 start_recording(struct app_state *app_state)
 {
-	if (app_state->verbose) {
-		printf("Start recording from output %d.\n",
-			app_state->output_number);
-	}
+	DBG("Start recording from output %d.\n",
+		app_state->output_number);
 
 	ias_hmi_start_capture(app_state->hmi, app_state->surfid,
-		app_state->output_number, app_state->profile, app_state->verbose);
+		app_state->output_number, app_state->profile, debug_level);
 
 	app_state->recording = 1;
 }
@@ -477,10 +464,8 @@ start_recording(struct app_state *app_state)
 static void
 on_term_signal(int signal_number)
 {
-	if (app_state.verbose) {
-		printf("\nCaught signal %d, stopping recording.\n",
-				signal_number);
-		}
+	DBG("\nCaught signal %d, stopping recording.\n",
+			signal_number);
 	app_state.term_signal = 1;
 	app_state.recording = 0;
 }
@@ -496,21 +481,19 @@ get_surface_size(struct app_state *app_state, int *width, int *height)
 				*width = s->width;
 				*height = s->height;
 
-				if (app_state->verbose > 1) {
-					printf("Surface %u found %dx%d\n",
-						app_state->surfid, *width, *height);
-				}
+				DBG("Surface %u found %dx%d\n",
+					app_state->surfid, *width, *height);
 
 				return 0;
 			}
 		} else {
-			fprintf(stderr, "Invalid surfid %u\n", app_state->surfid);
+			ERROR("Invalid surfid %u\n", app_state->surfid);
 			return -1;
 		}
 	}
 
 	if (*width == 0 || *height == 0) {
-		fprintf(stderr, "Surface size is 0.\n");
+		ERROR("Surface size is 0.\n");
 		return -1;
 	}
 
@@ -533,11 +516,9 @@ get_output_size(struct app_state *app_state, int *width, int *height)
 			*width = output->width;
 			*height = output->height;
 
-			if (app_state->verbose > 0) {
-				printf("Output %d found %dx%d\n",
-					app_state->output_number,
-					output->width, output->height);
-			}
+			INFO("Output %d found %dx%d\n",
+				app_state->output_number,
+				output->width, output->height);
 
 			return 0;
 		}
@@ -545,7 +526,7 @@ get_output_size(struct app_state *app_state, int *width, int *height)
 	}
 
 	if (*width == 0 || *height == 0) {
-		fprintf(stderr, "Output size is 0.\n");
+		ERROR("Output size is 0.\n");
 		return -1;
 	}
 
@@ -563,7 +544,7 @@ plugin_print_help(void)
 		plugin_handle = dlopen(app_state.plugin_fullname, RTLD_LAZY | RTLD_LOCAL);
 	}
 	if (!plugin_handle) {
-		fprintf(stderr, "Failed to load transport plugin.\n");
+		ERROR("Failed to load transport plugin.\n");
 		return;
 	}
 
@@ -571,7 +552,7 @@ plugin_print_help(void)
 	if (plugin_help_fptr) {
 		(*plugin_help_fptr)();
 	} else {
-		fprintf(stderr, "Failed to locate help in transport plugin: %s\n", dlerror());
+		ERROR("Failed to locate help in transport plugin: %s\n", dlerror());
 	}
 
 	dlclose(plugin_handle);
@@ -589,7 +570,7 @@ plugin_fullname_helper(void)
 
 	app_state.plugin_fullname = malloc(fullnamelen);
 	if (app_state.plugin_fullname == NULL) {
-		fprintf(stderr, "plugin_fullname_helper : name allocation failure.\n");
+		ERROR("plugin_fullname_helper : name allocation failure.\n");
 	} else {
 		snprintf(app_state.plugin_fullname, fullnamelen, "transport_plugin_%s%s",
 				app_state.transport_plugin, suffix);
@@ -601,47 +582,50 @@ static void
 usage(int error_code)
 {
 	if (error_code != 0) {
-		fprintf(stderr, "Exiting with error code of %d...\n",
+		ERROR("Exiting with error code of %d...\n",
 				error_code);
 	}
 
-	printf("\nUsage:\n\tremote-display [options]\n"
+	PRINT("\nUsage:\n\tremote-display [options]\n"
 		"Controls the frame capture in weston and handles the frames passed"
 		" by weston, recording\nto file or sending to a remote device as a"
 		" video stream.\n\n");
-	printf("Options:\n");
-	printf("\t--plugin=<transport_plugin>\tTransport plugin to use."
+	PRINT("Options:\n");
+	PRINT("\t--plugin=<transport_plugin>\tTransport plugin to use."
 		" Examples are udp, avb, file and stub.\n");
-	printf("\t--clients=<ip_address:port,<ip_address:port>> IP address and port of receiver."
+	PRINT("\t--clients=<ip_address:port,<ip_address:port>> IP address and port of receiver."
 		" Only valid in case of udp\n");
-	printf("\t--state=0\t\t\tstop frame capture, e.g. if another client did"
+	PRINT("\t--state=0\t\t\tstop frame capture, e.g. if another client did"
 		" not close cleanly\n"
 		"\t--state=1\t\t\tstart frame capture (this is the default)\n");
-	printf("\t--verbose=<level>\t\tenable extra trace at levels 1, 2 or 3\n");
-	printf("\t--profile=<level>\t\tenable profiling trace at levels 1 or 2\n");
-	printf("\t--surfid=<surfid>\t\tweston surface ID of the surface "
+	PRINT("\t--dbglvl=<level>\t\t0 (default) = Only critical messages\n"
+			"\t1 = Info messages\n"
+			"\t2 = Debug messages\n"
+			"\t3 = Verbose messages\n");
+	PRINT("\t--profile=<level>\t\tenable profiling trace at levels 1 or 2\n");
+	PRINT("\t--surfid=<surfid>\t\tweston surface ID of the surface "
 		"to be captured\n");
-	printf("\t--output=<output_number>\tweston output to capture, starting"
+	PRINT("\t--output=<output_number>\tweston output to capture, starting"
 		" from 0 - ignored if surfid is given\n");
-	printf("\t--fps=<fps>\tapproximate frames to encode and transport\n");
-	printf("\t--x=<x_coordinate>\t\tx coordinate of region of surface"
+	PRINT("\t--fps=<fps>\tapproximate frames to encode and transport\n");
+	PRINT("\t--x=<x_coordinate>\t\tx coordinate of region of surface"
 		" to be captured\n"
 		"\t--y=<x_coordinate>\t\ty coordinate of region of surface "
 		"to be captured\n"
 		"\t--w=<width>\t\t\twidth of region of surface to be captured\n"
 		"\t--h=<height>\t\t\theight of region of surface "
 		"to be captured\n");
-	printf("\t--nv12=<filename>\t\tDump nv12 data to file (quality check only !!)\n"
+	PRINT("\t--nv12=<filename>\t\tDump nv12 data to file (quality check only !!)\n"
 		"\t\t\t\t\tThis will generate huge data flow and significanly slow\n"
 		"\t\t\t\t\tdown the encoder process.\n");
-	printf("\t--help\t\t\t\tshow this help text and exit\n\n");
-	printf("Note that all options other than state default to zero.\n"
+	PRINT("\t--help\t\t\t\tshow this help text and exit\n\n");
+	PRINT("Note that all options other than state default to zero.\n"
 		"A width or height of zero is taken to mean that the entire "
 		"width or height of the surface should be captured.\n"
 		"A surface ID of zero means that the whole framebuffer for the "
 		"selected output will be captured.\n");
 
-	printf("\nTransport plugin help:\n");
+	PRINT("\nTransport plugin help:\n");
 
 	plugin_print_help();
 
@@ -656,7 +640,7 @@ init_wl(struct app_state *app_state)
 
 	app_state->display = wl_display_connect(NULL);
 	if (!app_state->display) {
-		fprintf(stderr, "Failed to open wayland display.\n");
+		ERROR("Failed to open wayland display.\n");
 		return -1;
 	}
 
@@ -674,14 +658,14 @@ init_enc(struct app_state *app_state, int *argc, char **argv)
 {
 	int ret;
 	if (app_state->surfid) {
-		printf("Controlling recording from surface %u...\n", app_state->surfid);
+		INFO("Controlling recording from surface %u...\n", app_state->surfid);
 		ret = get_surface_size(app_state, &app_state->src_width,
 				&app_state->src_height);
 		 if (ret != 0) {
 			return -1;
 		 }
 	} else {
-		printf("Controlling recording from output %d...\n", app_state->output_number);
+		INFO("Controlling recording from output %d...\n", app_state->output_number);
 		ret = get_output_size(app_state, &app_state->src_width,
 				&app_state->src_height);
 		if (ret != 0) {
@@ -693,7 +677,7 @@ init_enc(struct app_state *app_state, int *argc, char **argv)
 		rd_encoder_create(app_state, argc, argv);
 
 	if (app_state->rd_encoder == NULL) {
-		fprintf(stderr, "Failed to create Remote Display encoder\n");
+		ERROR("Failed to create Remote Display encoder\n");
 		return -1;
 	}
 
@@ -704,7 +688,7 @@ init_enc(struct app_state *app_state, int *argc, char **argv)
 	app_state->encoder_state = ENC_STATE_NONE;
 
 	if (init_encoder(app_state) != 0) {
-		fprintf(stderr, "RD-Encoder error: Bad init\n");
+		ERROR("RD-Encoder error: Bad init\n");
 		app_state->recording = 0;
 		return -1;
 	}
@@ -718,20 +702,14 @@ destroy(struct app_state *app_state)
 	struct surf_list *s, *tmp;
 	struct output *output, *temp_output;
 
-	if (app_state->verbose) {
-		printf("Flushing...\n");
-	}
+	DBG("Flushing...\n");
 	wl_display_flush(app_state->display);
 
-	if (app_state->verbose) {
-		printf("Waiting for completion...\n");
-	}
+	DBG("Waiting for completion...\n");
 	wl_display_roundtrip(app_state->display);
 
 	if (app_state->rd_encoder) {
-		if (app_state->verbose) {
-			printf("Destroying encoder...\n");
-		}
+		DBG("Destroying encoder...\n");
 		rd_encoder_destroy(app_state->rd_encoder);
 	}
 
@@ -739,37 +717,27 @@ destroy(struct app_state *app_state)
 		free(app_state->plugin_fullname);
 	}
 
-	if (app_state->verbose) {
-		printf("Disconnecting...\n");
-	}
+	DBG("Disconnecting...\n");
 	wl_display_disconnect(app_state->display);
 
-	if (app_state->verbose) {
-		printf("Freeing surface list...\n");
-	}
+	DBG("Freeing surface list...\n");
 	wl_list_for_each_safe(s, tmp, &app_state->surface_list, link) {
 		wl_list_remove(&s->link);
 		free(s->name);
 		free(s);
 	}
 
-	if (app_state->verbose) {
-		printf("Freeing output list...\n");
-	}
+	DBG("Freeing output list...\n");
 	wl_list_for_each_safe(output, temp_output, &app_state->output_list, link) {
 		free(output);
 	}
 
 	if (app_state->encoder_init_thread) {
-		if (app_state->verbose) {
-			printf("Freeing encoder init thread\n");
-		}
+		DBG("Freeing encoder init thread\n");
 		pthread_join(app_state->encoder_init_thread, NULL);
 	}
 
-	if (app_state->verbose) {
-		printf("App state destroyed.\n");
-	}
+	DBG("App state destroyed.\n");
 
 	return 0;
 }
@@ -796,7 +764,7 @@ main(int argc, char **argv)
 	app_state.output_number = -1;
 	const struct weston_option options[] = {
 		{ WESTON_OPTION_INTEGER, "state", 0, &state},
-		{ WESTON_OPTION_INTEGER, "verbose", 0, &app_state.verbose},
+		{ WESTON_OPTION_INTEGER, "dbglvl", 0, &debug_level},
 		{ WESTON_OPTION_INTEGER, "profile", 0, &app_state.profile},
 		{ WESTON_OPTION_STRING,  "plugin", 0, &app_state.transport_plugin},
 		{ WESTON_OPTION_STRING,  "surfname", 0, &app_state.surfname},
@@ -819,7 +787,7 @@ main(int argc, char **argv)
 
 	if (help) {
 		if (app_state.transport_plugin == NULL) {
-			fprintf(stderr, "No transport plugin name given.\n");
+			ERROR("No transport plugin name given.\n");
 		} else {
 			plugin_fullname_helper();
 		}
@@ -828,13 +796,13 @@ main(int argc, char **argv)
 
 	if (state == INVALID_DISPLAY_STATE) {
 		state = START_DISPLAY;
-		printf("Defaulting to starting display...\n");
+		INFO("Defaulting to starting display...\n");
 	}
 
 	if (app_state.transport_plugin == NULL) {
 		/* Transport plugin name is not needed to stop displaying. */
 		if (state == START_DISPLAY) {
-			fprintf(stderr, "No transport plugin name given.\n");
+			ERROR("No transport plugin name given.\n");
 			usage(-EINVAL);
 		}
 	} else {
@@ -876,9 +844,9 @@ main(int argc, char **argv)
 			err = init_enc(&app_state, &argc, argv);
 		}
 		if ((err == 0) && state) {
-			printf("Starting event listener...\n");
+			INFO("Starting event listener...\n");
 			start_event_listener(&app_state, &argc, argv);
-			printf("Starting recording...\n");
+			INFO("Starting recording...\n");
 			start_recording(&app_state);
 			while (app_state.recording) {
 				our_wl_poll();
@@ -886,14 +854,14 @@ main(int argc, char **argv)
 		}
 	}
 
-	printf("Stopping recording...\n");
+	INFO("Stopping recording...\n");
 	stop_recording(&app_state);
 
-	printf("Stopping event listener...\n");
+	INFO("Stopping event listener...\n");
 	stop_event_listener(app_state.ir_priv);
 
 	destroy(&app_state);
 
-	printf("Exiting %s...\n", argv[0]);
+	INFO("Exiting %s...\n", argv[0]);
 	return 0;
 }

@@ -64,10 +64,11 @@
 #include "ias-shell-client-protocol.h"
 #include "../shared/config-parser.h"
 #include "../shared/helpers.h"
+#include "debug.h"
 
 #define FREE_IF_NEEDED(X) if (X) free(X);
 
-int g_Dbg = 0;
+int debug_level = DBG_OFF;
 GLfloat vVertices[] = {
 	-1.0f,  1.0f, 0.0f,  // Position 0   A    A----D
 	 0.0f,  0.0f,        // TexCoord 0        |    |
@@ -180,21 +181,23 @@ load_prime(struct display *disp, uint32_t surf_width, uint32_t surf_height,uint3
 		EGL_DMA_BUF_PLANE0_PITCH_EXT, stride,
 		EGL_NONE
 	};
-	EGLImageKHR image  = (EGLImageKHR) (uintptr_t) create_image(disp->dpy, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT,
+	EGLImageKHR image  = (EGLImageKHR) (uintptr_t) create_image(disp->dpy,
+			EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT,
 			(EGLClientBuffer) NULL, imageAttributes);
-	if (g_Dbg) {
-		printf("eglCreateImageKHR 0x%x [%dx%d - P=%d S=%d]\n", eglGetError (), surf_width, surf_height, dmabuf_fd, stride);
-	}
+	DBG("eglCreateImageKHR 0x%x [%dx%d - P=%d S=%d]\n",
+			eglGetError (), surf_width, surf_height, dmabuf_fd, stride);
 	image_target_texture_2d(GL_TEXTURE_2D, image);
-	if (g_Dbg) {
-		printf("glEGLImageTargetTexture2DOES 0x%x\n", eglGetError ());
-	}
+	DBG("glEGLImageTargetTexture2DOES 0x%x\n", eglGetError ());
 	destroy_image(disp->dpy, image);
 	return 0;
 }
 
 static int
-load_shm(struct display *disp, uint32_t surf_width, uint32_t surf_height, int32_t handle, uint32_t stride)
+load_shm(struct display *disp,
+		uint32_t surf_width,
+		uint32_t surf_height,
+		int32_t handle,
+		uint32_t stride)
 {
 	EGLint imageAttributes[] = {
 		EGL_WIDTH,                  surf_width,
@@ -203,15 +206,20 @@ load_shm(struct display *disp, uint32_t surf_width, uint32_t surf_height, int32_
 		EGL_DRM_BUFFER_FORMAT_MESA, EGL_DRM_BUFFER_FORMAT_ARGB32_MESA,
 		EGL_NONE
 	};
-	EGLImageKHR image  = (EGLImageKHR) (uintptr_t) create_image(disp->dpy, EGL_NO_CONTEXT, EGL_DRM_BUFFER_MESA,
-			(EGLClientBuffer)handle, imageAttributes);
-	if (g_Dbg) {
-		printf("eglCreateImageKHR 0x%x [%dx%d - H=%d S=%d]\n", eglGetError (), surf_width, surf_height, handle, stride);
-	}
+	EGLImageKHR image  = (EGLImageKHR) (uintptr_t) create_image(disp->dpy,
+			EGL_NO_CONTEXT,
+			EGL_DRM_BUFFER_MESA,
+			(EGLClientBuffer)handle,
+			imageAttributes);
+
+	DBG("eglCreateImageKHR 0x%x [%dx%d - H=%d S=%d]\n",
+			eglGetError (),
+			surf_width,
+			surf_height,
+			handle,
+			stride);
 	image_target_texture_2d(GL_TEXTURE_2D, image);
-	if (g_Dbg) {
-		printf("glEGLImageTargetTexture2DOES 0x%x\n", eglGetError ());
-	}
+	DBG("glEGLImageTargetTexture2DOES 0x%x\n", eglGetError ());
 	destroy_image(disp->dpy, image);
 	return 0;
 }
@@ -250,21 +258,21 @@ init_egl(struct display *display, int opaque)
 	if (!create_image) {
 		create_image = (void *) eglGetProcAddress("eglCreateImageKHR");
 		if (!create_image)
-			printf("get eglCreateImageKHR error\n");
+			ERROR("get eglCreateImageKHR error\n");
 	}
 	if (!image_target_texture_2d) {
 		image_target_texture_2d = (void *) eglGetProcAddress("glEGLImageTargetTexture2DOES");
 		if (!image_target_texture_2d)
-			printf("get glEGLImageTargetTexture2DOES error\n");
+			ERROR("get glEGLImageTargetTexture2DOES error\n");
 	}
 	if (!destroy_image) {
 		destroy_image = (void *) eglGetProcAddress("eglDestroyImageKHR");
 		if (!destroy_image)
-			printf("get eglDestroyImageKHR error\n");
+			ERROR("get eglDestroyImageKHR error\n");
 	}
 }
 
-	static void
+static void
 fini_egl(struct display *display)
 {
 	eglMakeCurrent(display->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -272,7 +280,7 @@ fini_egl(struct display *display)
 	eglReleaseThread();
 }
 
-	static GLuint
+static GLuint
 create_shader(struct window *window, const char *source, GLenum shader_type)
 {
 	GLuint shader;
@@ -286,7 +294,7 @@ create_shader(struct window *window, const char *source, GLenum shader_type)
 		char log[1000];
 		GLsizei len;
 		glGetShaderInfoLog(shader, 1000, &len, log);
-		fprintf(stderr, "Error: compiling %s: %*s\n",
+		ERROR("Error: compiling %s: %*s\n",
 				shader_type == GL_VERTEX_SHADER ? "vertex" : "fragment",
 				len, log);
 		exit(1);
@@ -310,7 +318,7 @@ init_gl(struct window *window)
 		char log[1000];
 		GLsizei len;
 		glGetProgramInfoLog(window->program, 1000, &len, log);
-		fprintf(stderr, "Error: linking:\n%*s\n", len, log);
+		ERROR("Error: linking:\n%*s\n", len, log);
 		exit(1);
 	}
 	glUseProgram(window->program);
@@ -343,14 +351,12 @@ handle_configure(void *data, struct wl_shell_surface *shell_surface,
 
 	window->geometry.width = width;
 	window->geometry.height = height;
-	if (g_Dbg) {
-		printf("handle_configure %dx%d\n", window->geometry.width, window->geometry.height);
-	}
+	DBG("handle_configure %dx%d\n", window->geometry.width, window->geometry.height);
 	if (!window->fullscreen)
 		window->window_size = window->geometry;
 }
 
-	static void
+static void
 handle_popup_done(void *data, struct wl_shell_surface *shell_surface)
 {
 }
@@ -381,7 +387,7 @@ static struct wl_callback_listener configure_callback_listener = {
 	configure_callback,
 };
 
-	static void
+static void
 toggle_fullscreen(struct window *window, int fullscreen)
 {
 	struct wl_callback *callback;
@@ -415,26 +421,23 @@ create_surface(struct window *window)
 	window->native = wl_egl_window_create(window->surface,
 			window->window_size.width,
 			window->window_size.height);
-	if (g_Dbg) {
-		printf("Create with: %dx%d\n", window->window_size.width, window->window_size.height);
-	}
+	DBG("Create with: %dx%d\n", window->window_size.width, window->window_size.height);
+
 	window->egl_surface = eglCreateWindowSurface(display->dpy, display->egl_conf, window->native, NULL);
 	wl_shell_surface_set_title(window->shell_surface, window->winname);
 	ret = eglMakeCurrent(display->dpy, window->egl_surface, window->egl_surface, display->ctx);
 	assert(ret == EGL_TRUE);
 	toggle_fullscreen(window, window->fullscreen);
-	if (g_Dbg) {
-		printf("GL_RENDERER   = %s\n", (char *)glGetString(GL_RENDERER));
-		printf("GL_VERSION    = %s\n", (char *)glGetString(GL_VERSION));
-		printf("GL_VENDOR     = %s\n", (char *)glGetString(GL_VENDOR));
-		printf("GL_EXTENSIONS = %s\n", (char *)glGetString(GL_EXTENSIONS));
-		printf("EGL_VENDOR    = %s\n", (char *)eglQueryString(window->display->dpy, EGL_VENDOR));
-		printf("EGL_VERSION   = %s\n", (char *)eglQueryString(window->display->dpy, EGL_VERSION));
-		printf("EGL_EXTENSIONS= %s\n", (char *)eglQueryString(window->display->dpy, EGL_EXTENSIONS));
-	}
+	DBG("GL_RENDERER   = %s\n", (char *)glGetString(GL_RENDERER));
+	DBG("GL_VERSION    = %s\n", (char *)glGetString(GL_VERSION));
+	DBG("GL_VENDOR     = %s\n", (char *)glGetString(GL_VENDOR));
+	DBG("GL_EXTENSIONS = %s\n", (char *)glGetString(GL_EXTENSIONS));
+	DBG("EGL_VENDOR    = %s\n", (char *)eglQueryString(window->display->dpy, EGL_VENDOR));
+	DBG("EGL_VERSION   = %s\n", (char *)eglQueryString(window->display->dpy, EGL_VERSION));
+	DBG("EGL_EXTENSIONS= %s\n", (char *)eglQueryString(window->display->dpy, EGL_EXTENSIONS));
 }
 
-	static void
+static void
 destroy_surface(struct window *window)
 {
 	wl_egl_window_destroy(window->native);
@@ -460,9 +463,7 @@ static void redraw(void *data, struct wl_callback *callback, uint32_t time)
 	if (w->opaque || w->fullscreen) {
 		region = wl_compositor_create_region(w->display->compositor);
 		wl_region_add(region, 0, 0, w->geometry.width, w->geometry.height);
-		if (g_Dbg) {
-			printf("%d : geometry %i x %i \n" , __LINE__ , w->geometry.width , w->geometry.height );
-		}
+		DBG("%d : geometry %i x %i \n" , __LINE__ , w->geometry.width , w->geometry.height );
 		wl_surface_set_opaque_region(w->surface, region);
 		wl_region_destroy(region);
 	}
@@ -484,9 +485,9 @@ static void redraw(void *data, struct wl_callback *callback, uint32_t time)
 	glUniform1i(w->gl.texture, 0);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	if (g_Dbg) {
+	if (debug_level == DBG_DBG) {
 		static uint32_t x = 0;
-		printf("swap %u\n", x++);
+		DBG("swap %u\n", x++);
 	}
 	eglSwapBuffers(w->display->dpy, w->egl_surface);
 }
@@ -496,26 +497,26 @@ static const struct wl_callback_listener frame_listener = {
 	redraw
 };
 
-	static void
+static void
 pointer_handle_enter(void *data, struct wl_pointer *pointer,
 		uint32_t serial, struct wl_surface *surface,
 		wl_fixed_t sx, wl_fixed_t sy)
 {
 }
 
-	static void
+static void
 pointer_handle_leave(void *data, struct wl_pointer *pointer,
 		uint32_t serial, struct wl_surface *surface)
 {
 }
 
-	static void
+static void
 pointer_handle_motion(void *data, struct wl_pointer *pointer,
 		uint32_t time, wl_fixed_t sx, wl_fixed_t sy)
 {
 }
 
-	static void
+static void
 pointer_handle_button(void *data, struct wl_pointer *wl_pointer,
 		uint32_t serial, uint32_t time, uint32_t button,
 		uint32_t state)
@@ -527,7 +528,7 @@ pointer_handle_button(void *data, struct wl_pointer *wl_pointer,
 				display->seat, serial);
 }
 
-	static void
+static void
 pointer_handle_axis(void *data, struct wl_pointer *wl_pointer,
 		uint32_t time, uint32_t axis, wl_fixed_t value)
 {
@@ -541,26 +542,26 @@ static const struct wl_pointer_listener pointer_listener = {
 	pointer_handle_axis,
 };
 
-	static void
+static void
 keyboard_handle_keymap(void *data, struct wl_keyboard *keyboard,
 		uint32_t format, int fd, uint32_t size)
 {
 }
 
-	static void
+static void
 keyboard_handle_enter(void *data, struct wl_keyboard *keyboard,
 		uint32_t serial, struct wl_surface *surface,
 		struct wl_array *keys)
 {
 }
 
-	static void
+static void
 keyboard_handle_leave(void *data, struct wl_keyboard *keyboard,
 		uint32_t serial, struct wl_surface *surface)
 {
 }
 
-	static void
+static void
 keyboard_handle_key(void *data, struct wl_keyboard *keyboard,
 		uint32_t serial, uint32_t time, uint32_t key,
 		uint32_t state)
@@ -589,7 +590,7 @@ static const struct wl_keyboard_listener keyboard_listener = {
 	keyboard_handle_modifiers,
 };
 
-	static void
+static void
 seat_handle_capabilities(void *data, struct wl_seat *seat,
 		enum wl_seat_capability caps)
 {
@@ -634,24 +635,22 @@ handle_raw_buffer_handle(void *data,
 		uint32_t image_id)
 {
 	struct display *d = data;
-	if (g_Dbg) {
-		printf("ias_hmi_raw_buffer_handle:\n"
-				"h: %d "
-				"timestamp: %u "
-				"frame_number: %u "
-				"stride0: %u "
-				"stride1: %u "
-				"stride2: %u "
-				"format: %u "
-				"width: %u "
-				"height: %u "
-				"shm_surf_id: %u "
-				"buf_id: %u "
-				"image_id: %u\n",
-				handle, timestamp, frame_number, stride0, stride1,
-				stride2, format, out_width, out_height, shm_surf_id,
-				buf_id, image_id);
-	}
+	DBG("ias_hmi_raw_buffer_handle:\n"
+			"h: %d "
+			"timestamp: %u "
+			"frame_number: %u "
+			"stride0: %u "
+			"stride1: %u "
+			"stride2: %u "
+			"format: %u "
+			"width: %u "
+			"height: %u "
+			"shm_surf_id: %u "
+			"buf_id: %u "
+			"image_id: %u\n",
+			handle, timestamp, frame_number, stride0, stride1,
+			stride2, format, out_width, out_height, shm_surf_id,
+			buf_id, image_id);
 	glBindTexture(GL_TEXTURE_2D, window.textureId);
 	load_shm(d, out_width, out_height, handle, stride0);
 	ias_hmi_release_buffer_handle(ias_hmi, shm_surf_id, buf_id, image_id,
@@ -672,20 +671,18 @@ handle_raw_buffer_fd(void *data,
               uint32_t out_height)
 {
 	struct display *d = data;
-	if (g_Dbg) {
-		printf("handle_raw_buffer_fd: %d "
-				"ts: %u "
-				"fn: %u "
-				"str0: %u "
-				"str1: %u "
-				"str2: %u "
-				"f: %u "
-				"w: %u "
-				"h: %u\n",
-				prime_fd, timestamp, frame_number,
-				stride0, stride1, stride2, format,
-				out_width, out_height);
-	}
+	DBG("handle_raw_buffer_fd: %d "
+			"ts: %u "
+			"fn: %u "
+			"str0: %u "
+			"str1: %u "
+			"str2: %u "
+			"f: %u "
+			"w: %u "
+			"h: %u\n",
+			prime_fd, timestamp, frame_number,
+			stride0, stride1, stride2, format,
+			out_width, out_height);
 	glBindTexture(GL_TEXTURE_2D, window.textureId);
 	if (d->surfid) {
 		load_prime(d, d->prime_w,d->prime_h, format, prime_fd, stride0);
@@ -706,17 +703,17 @@ handle_surface_destroyed(void *data,
 		const char *pname)
 {
 	struct display *d = data;
-	fprintf(stderr, "Destroy '%s' id=%u P=%4d p=%s\n", name, id, pid, pname);
+	INFO("Destroy '%s' id=%u P=%4d p=%s\n", name, id, pid, pname);
 	if (id == d->surfid) {
 		if (d->on) {
 			d->on = 0;
-			printf("Stop\n");
+			INFO("Stop\n");
 			ias_hmi_stop_capture(d->hmi, d->surfid, d->output_number);
 		}
 	}
 }
 
-	static void
+static void
 handle_capture_error(void *data,
 		struct ias_hmi *hmi,
 		int32_t pid,
@@ -724,21 +721,21 @@ handle_capture_error(void *data,
 {
 	struct display *d = data;
 	if (d->pid == (uint32_t)pid) {
-		printf("Error: %d\n", error);
+		ERROR("%d\n", error);
 		int new_state = 1;
 		switch(error) {
 			case IAS_HMI_FCAP_ERROR_NO_CAPTURE_PROXY:
-				fprintf(stderr, "Capture proxy error: No proxy.\n");
+				ERROR("Capture proxy error: No proxy.\n");
 				break;
 			case IAS_HMI_FCAP_ERROR_DUPLICATE:
-				fprintf(stderr, "Capture error: Duplicate "
+				ERROR("Capture error: Duplicate "
 						"surface/output requested.\n");
 				break;
 			case IAS_HMI_FCAP_ERROR_NOT_BUILT_IN:
-				fprintf(stderr, "Capture proxy not built into Weston!\n");
+				ERROR("Capture proxy not built into Weston!\n");
 				break;
 			case IAS_HMI_FCAP_ERROR_INVALID:
-				fprintf(stderr, "Capture proxy error: Invalid parameter\n");
+				ERROR("Capture proxy error: Invalid parameter\n");
 				break;
 			case IAS_HMI_FCAP_ERROR_OK:
 				/* No actual error. */
@@ -771,7 +768,7 @@ handle_surface_info(void *data,
 {
 	struct display *d = data;
 	int attempt_start = 0;
-	fprintf(stderr, "S='%s' id=%u  %4dx%4d (%4d,%4d)"
+	DBG("S='%s' id=%u  %4dx%4d (%4d,%4d)"
 			" Z=0x%02x a=%3d P=%4d N='%s' B=0x%02x f=%d\n",
 			name,
 			id, width, height, x, y, zorder, alpha, pid, pname, behavior_bits, flipped);
@@ -796,7 +793,7 @@ handle_surface_info(void *data,
 		if (d->on == 0 && width && height) {
 			d->prime_w = width;
 			d->prime_h = height;
-			printf("start\n");
+			INFO("start\n");
 			ias_hmi_start_capture(d->hmi, d->surfid,
 					d->output_number, d->profile, d->verbose);
 			d->on = 1;
@@ -806,7 +803,7 @@ handle_surface_info(void *data,
 	if (d->pid == pid) {
 		if (width && !d->configured) {
 			d->configured = 1;
-			printf("Initial config: %dx%d z=%d\n",  d->px, d->py, d->zorder);
+			INFO("Initial config: %dx%d z=%d\n",  d->px, d->py, d->zorder);
 			ias_hmi_zorder_surface(d->hmi, id, d->zorder);
 			if (d->px || d->py) {
 				ias_hmi_move_surface(d->hmi, id, d->px, d->py);
@@ -882,7 +879,7 @@ signal_int(int signum)
 static void
 usage(int error_code)
 {
-	fprintf(stderr, "Usage: [OPTIONS]\n\n"
+	PRINT("Usage: [OPTIONS]\n\n"
 			"  --winname=<ias surface name>\n"
 			"  --surfid=<surfid> or --surfname=<surfname> or --pname=<process name>\n"
 			"  --output=<output>\n"
@@ -911,7 +908,7 @@ main(int argc, char **argv)
 	display.output_number = -1;
 
 	const struct weston_option options[] = {
-		{ WESTON_OPTION_INTEGER, "dbg", 0, &g_Dbg},
+		{ WESTON_OPTION_INTEGER, "dbg", 0, &debug_level},
 		{ WESTON_OPTION_UNSIGNED_INTEGER, "surfid", 0, &display.tracksurfid},
 		{ WESTON_OPTION_INTEGER, "output", 0, &display.output_number},
 		{ WESTON_OPTION_STRING,  "surfname", 0, &display.surfname},
@@ -926,16 +923,27 @@ main(int argc, char **argv)
 		{ WESTON_OPTION_STRING,  "trsf", 0, &display.trsf},
 		{ WESTON_OPTION_BOOLEAN, "help", 0, &help },
 	};
-	if (argc<2) help=1;
+
+	if (argc<2)
+		help=1;
+
 	parse_options(options, ARRAY_LENGTH(options), &argc, argv);
-	if ((!display.surfname && !display.pname && (!display.tracksurfid)) && (display.output_number<0)) help = 1;
+	if ((!display.surfname && !display.pname &&
+			(!display.tracksurfid)) && (display.output_number<0))
+		help = 1;
+
 	if (help) {
 		usage(0);
 	}
-	if (!window.window_size.width) window.window_size.width = 960;
-	if (!window.window_size.height) window.window_size.height = 540;
+
+	if (!window.window_size.width)
+		window.window_size.width = 960;
+	if (!window.window_size.height)
+		window.window_size.height = 540;
+
 	display.running = 1;
 	display.pid = getpid();
+
 	if (!window.winname) {
 		char tmp_name[256] = {"show"};
 		if (display.tracksurfid) {
@@ -951,7 +959,7 @@ main(int argc, char **argv)
 	}
 	if (display.trsf) {
 		if (sscanf(display.trsf,"%f,%f,%f,%f", &display.tl,&display.tr,&display.tt,&display.tb) == 4) {
-			printf("trsf: %.4f %.4f %.4f %.4f\n", display.tl, display.tr, display.tt, display.tb);
+			INFO("trsf: %.4f %.4f %.4f %.4f\n", display.tl, display.tr, display.tt, display.tb);
 			vVertices[3] = display.tl;
 			vVertices[4] = display.tt;
 			vVertices[8] = display.tl;
@@ -961,25 +969,39 @@ main(int argc, char **argv)
 			vVertices[18] = display.tr;
 			vVertices[19] = display.tt;
 		} else {
-			printf("Wrong trsf: '%s'\n", display.trsf);
+			ERROR("Wrong trsf: '%s'\n", display.trsf);
 			return -1;
 		}
 	}
+
 	display.display = wl_display_connect(NULL);
 	assert(display.display);
+
 	init_egl(&display, window.opaque);
 	display.registry = wl_display_get_registry(display.display);
 	wl_registry_add_listener(display.registry, &registry_listener, &display);
 	wl_display_dispatch(display.display);
+
 	create_surface(&window);
 	init_gl(&window);
 	signal(SIGINT, signal_int);
 	signal(SIGTERM, signal_int);
-	printf("surf=%u output=%d w=%d h=%d\n", display.tracksurfid, display.output_number, window.window_size.width, window.window_size.height);
+
+	INFO("surf=%u output=%d w=%d h=%d\n",
+			display.tracksurfid,
+			display.output_number,
+			window.window_size.width,
+			window.window_size.height);
+
 	if (display.output_number>=0) {
-		ias_hmi_start_capture(display.hmi, display.surfid, display.output_number, display.profile, display.verbose);
+		ias_hmi_start_capture(display.hmi,
+				display.surfid,
+				display.output_number,
+				display.profile,
+				display.verbose);
 		display.on = 1;
 	}
+
 	while (display.running && ret != -1) {
 		wl_display_roundtrip(display.display);
 		pfd.fd =  wl_display_get_fd(display.display);
@@ -987,7 +1009,8 @@ main(int argc, char **argv)
 		pfd.revents = 0;
 		poll(&pfd, 1, 500);
 	}
-	printf("Stop\n");
+
+	INFO("Stop\n");
 	if (display.on) {
 		ias_hmi_stop_capture(display.hmi, display.surfid, display.output_number);
 	}
@@ -1009,4 +1032,3 @@ main(int argc, char **argv)
 	FREE_IF_NEEDED(window.winname);
 	return 0;
 }
-

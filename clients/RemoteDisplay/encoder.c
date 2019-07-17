@@ -53,6 +53,7 @@
 #include "ias-shell-client-protocol.h"
 #include "../../shared/timespec-util.h"
 #include "../../shared/zalloc.h"
+#include "debug.h"
 
 #define NAL_REF_IDC_NONE        0
 #define NAL_REF_IDC_LOW         1
@@ -249,7 +250,7 @@ bitstream_end(struct bitstream * const bs)
 	int bit_left = 32 - bit_offset;
 
 	if (!bs->buffer) {
-		fprintf(stderr, "ERROR - No valid bitstream buffer.\n");
+		ERROR("No valid bitstream buffer.\n");
 		return;
 	}
 
@@ -270,7 +271,7 @@ bitstream_put_ui(struct bitstream * const bs, const unsigned int val,
 		return;
 
 	if (!bs->buffer) {
-		fprintf(stderr, "ERROR - No valid bitstream buffer.\n");
+		ERROR("No valid bitstream buffer.\n");
 		return;
 	}
 
@@ -372,7 +373,7 @@ encoder_create_config(struct rd_encoder * const encoder)
 	bool lp_support = false;
 
 	if (entrypoints == NULL) {
-		fprintf(stderr, "encoder_create_config : failed to allocate entrypoints.\n");
+		ERROR("encoder_create_config : failed to allocate entrypoints.\n");
 		return VA_STATUS_ERROR_INVALID_CONFIG;
 	}
 
@@ -446,7 +447,7 @@ encoder_init_seq_parameters(struct rd_encoder * const encoder)
 	int i;
 
 	if (encoder == NULL) {
-		fprintf(stderr, "encoder_init_seq_parameters : No encoder.\n");
+		ERROR("encoder_init_seq_parameters : No encoder.\n");
 		return;
 	}
 
@@ -458,7 +459,7 @@ encoder_init_seq_parameters(struct rd_encoder * const encoder)
 	if (status == VA_STATUS_SUCCESS) {
 		encoder->encoder.param.buffers[EncoderBufferSequence] = seq_buf;
 	} else {
-		printf("ERROR - failed to create encoder parameter sequence buffer.\n");
+		ERROR("failed to create encoder parameter sequence buffer.\n");
 		return;
 	}
 
@@ -466,7 +467,7 @@ encoder_init_seq_parameters(struct rd_encoder * const encoder)
 	 * constant between frames. */
 	status = vaMapBuffer(encoder->va_dpy, seq_buf, (void **) &seq_param);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("ERROR - failed to map sequence parameter buffer %d for init.\n",
+		ERROR("failed to map sequence parameter buffer %d for init.\n",
 				seq_buf);
 		return;
 	}
@@ -519,7 +520,7 @@ encoder_update_seq_parameters(struct rd_encoder * const encoder)
 	uint32_t delta_t;
 
 	if (encoder == NULL) {
-		fprintf(stderr, "encoder_update_seq_parameters : No encoder.\n");
+		ERROR("encoder_update_seq_parameters : No encoder.\n");
 		return VA_INVALID_ID;
 	}
 
@@ -570,7 +571,7 @@ encoder_update_seq_parameters(struct rd_encoder * const encoder)
 
 		status = vaMapBuffer(encoder->va_dpy, seq_buf, (void **) &seq_param);
 		if (status != VA_STATUS_SUCCESS) {
-			printf("WARNING - failed to map sequence parameter buffer %d for update.\n",
+			WARN("failed to map sequence parameter buffer %d for update.\n",
 					seq_buf);
 		} else {
 			seq_param->num_units_in_tick = num_units_in_tick;
@@ -600,7 +601,7 @@ encoder_init_pic_parameters(struct rd_encoder * const encoder)
 	const int num_ref_frames = 16;
 
 	if (encoder == NULL) {
-		fprintf(stderr, "encoder_init_pic_parameters : No encoder.\n");
+		ERROR("encoder_init_pic_parameters : No encoder.\n");
 		return;
 	}
 
@@ -612,7 +613,7 @@ encoder_init_pic_parameters(struct rd_encoder * const encoder)
 	if (status == VA_STATUS_SUCCESS) {
 		encoder->encoder.param.buffers[EncoderBufferPicture] = pic_param_buf;
 	} else {
-		printf("ERROR - failed to create encoder picture parameter buffer.\n");
+		ERROR("failed to create encoder picture parameter buffer.\n");
 		return;
 	}
 
@@ -620,7 +621,7 @@ encoder_init_pic_parameters(struct rd_encoder * const encoder)
 	 * constant between frames. */
 	status = vaMapBuffer(encoder->va_dpy, pic_param_buf, (void **) &pic_param);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("ERROR - failed to map picture parameter buffer %d for init.\n",
+		ERROR("failed to map picture parameter buffer %d for init.\n",
 				pic_param_buf);
 		return;
 	}
@@ -652,14 +653,14 @@ encoder_update_pic_parameters(struct rd_encoder * const encoder,
 	VABufferID buffer = VA_INVALID_ID;;
 
 	if (encoder == NULL) {
-		fprintf(stderr, "encoder_init_pic_parameters : No encoder.\n");
+		ERROR("encoder_init_pic_parameters : No encoder.\n");
 		return VA_INVALID_ID;
 	}
 
 	buffer = encoder->encoder.param.buffers[EncoderBufferPicture];
 	status = vaMapBuffer(encoder->va_dpy, buffer, (void **) &pic_param);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("ERROR - failed to map picture parameter buffer %d.\n",
+		ERROR("failed to map picture parameter buffer %d.\n",
 				buffer);
 		return VA_INVALID_ID;
 	}
@@ -699,7 +700,7 @@ encoder_init_slice_parameter(struct rd_encoder * const encoder)
 	int j;
 
 	if (encoder == NULL) {
-		fprintf(stderr, "encoder_init_slice_parameter : No encoder.\n");
+		ERROR("encoder_init_slice_parameter : No encoder.\n");
 		return;
 	}
 
@@ -713,13 +714,13 @@ encoder_init_slice_parameter(struct rd_encoder * const encoder)
 	if (status == VA_STATUS_SUCCESS) {
 		encoder->encoder.param.buffers[EncoderBufferSlice] = slice_param_buf;
 	} else {
-		printf("ERROR - failed to create encoder slice parameter buffer.\n");
+		ERROR("failed to create encoder slice parameter buffer.\n");
 		return;
 	}
 
 	status = vaMapBuffer(encoder->va_dpy, slice_param_buf, (void **) &slice);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("ERROR - failed to map slice parameter buffer %d for init.\n",
+		ERROR("failed to map slice parameter buffer %d for init.\n",
 				slice_param_buf);
 		return;
 	}
@@ -761,14 +762,14 @@ encoder_update_slice_parameter(struct rd_encoder * const encoder,
 	VABufferID slice_param_buf = VA_INVALID_ID;
 
 	if (encoder == NULL) {
-		fprintf(stderr, "encoder_update_slice_parameter : No encoder.\n");
+		ERROR("encoder_update_slice_parameter : No encoder.\n");
 		return VA_INVALID_ID;
 	}
 
 	slice_param_buf = encoder->encoder.param.buffers[EncoderBufferSlice];
 	status = vaMapBuffer(encoder->va_dpy, slice_param_buf, (void **) &slice);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("ERROR - failed to map slice parameter buffer %d for update.\n",
+		ERROR("failed to map slice parameter buffer %d for update.\n",
 				slice_param_buf);
 		return VA_INVALID_ID;
 	}
@@ -800,7 +801,7 @@ encoder_init_misc_parameters(struct rd_encoder * const encoder)
 
 
 	if (encoder == NULL) {
-		fprintf(stderr, "%s : No encoder.\n", __func__);
+		ERROR("%s : No encoder.\n", __func__);
 		return;
 	}
 
@@ -814,7 +815,7 @@ encoder_init_misc_parameters(struct rd_encoder * const encoder)
 	if (status == VA_STATUS_SUCCESS) {
 		encoder->encoder.param.buffers[EncoderBufferHRD] = buffer;
 	} else {
-		printf("ERROR - failed to create encoder HRD parameter buffer.\n");
+		ERROR("failed to create encoder HRD parameter buffer.\n");
 	}
 	buffer = VA_INVALID_ID;
 
@@ -825,12 +826,12 @@ encoder_init_misc_parameters(struct rd_encoder * const encoder)
 			VAEncMiscParameterBufferType, total_size,
 			1, NULL, &buffer);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("ERROR - failed to create encoder quality level parameter buffer.\n");
+		ERROR("failed to create encoder quality level parameter buffer.\n");
 	} else {
 		encoder->encoder.param.buffers[EncoderBufferQualityLevel] = buffer;
 		status = vaMapBuffer(encoder->va_dpy, buffer,(void **)&quality_param_buf);
 		if (status != VA_STATUS_SUCCESS) {
-			printf("ERROR - failed to map quality level parameter buffer %d for update.\n",
+			ERROR("failed to map quality level parameter buffer %d for update.\n",
 					buffer);
 		} else {
 			quality_param_buf->type = VAEncMiscParameterTypeQualityLevel;
@@ -851,14 +852,14 @@ encoder_update_HRD_parameters(const struct rd_encoder * const encoder)
 	VAStatus status;
 
 	if (encoder == NULL) {
-		fprintf(stderr, "%s : No encoder.\n", __func__);
+		ERROR("%s : No encoder.\n", __func__);
 		return VA_INVALID_ID;
 	}
 
 	buffer = encoder->encoder.param.buffers[EncoderBufferHRD];
 	status = vaMapBuffer(encoder->va_dpy, buffer, (void **) &misc_param);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("ERROR - failed to map HRD parameter buffer %d for update.\n",
+		ERROR("failed to map HRD parameter buffer %d for update.\n",
 				buffer);
 		return VA_INVALID_ID;
 	}
@@ -881,7 +882,7 @@ setup_encoder(struct rd_encoder * const encoder)
 	int i;
 
 	if (encoder == NULL) {
-		fprintf(stderr, "setup_encoder : No encoder.\n");
+		ERROR("setup_encoder : No encoder.\n");
 		return -1;
 	}
 
@@ -922,7 +923,7 @@ encoder_destroy_encode_session(struct rd_encoder * const encoder)
 	int i;
 
 	if (encoder == NULL) {
-		fprintf(stderr, "encoder_destroy_encode_session : No encoder.\n");
+		ERROR("encoder_destroy_encode_session : No encoder.\n");
 		return;
 	}
 
@@ -1054,7 +1055,7 @@ static void pps_rbsp(struct bitstream *bs,
 
 	status = vaMapBuffer(encoder->va_dpy, buffer, (void **) &pic);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("ERROR - pps_rbsp failed to map picture parameter buffer %d.\n",
+		ERROR("pps_rbsp failed to map picture parameter buffer %d.\n",
 				buffer);
 	} else {
 		/* pic_parameter_set_id, seq_parameter_set_id */
@@ -1130,7 +1131,7 @@ build_packed_seq_buffer(const struct rd_encoder * const encoder,
 	seq_buf = encoder->encoder.param.buffers[EncoderBufferSequence];
 	status = vaMapBuffer(encoder->va_dpy, seq_buf, (void **) &seq);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("ERROR - build_packed_seq_buffer failed to map sequence parameter buffer %d.\n",
+		ERROR("build_packed_seq_buffer failed to map sequence parameter buffer %d.\n",
 				seq_buf);
 	} else {
 		sps_rbsp(&bs, seq, encoder->encoder.constraint_set_flag);
@@ -1161,7 +1162,7 @@ create_packed_header_buffers(const struct rd_encoder * const encoder,
 				sizeof packed_header, 1, &packed_header,
 				&buffers[0]);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("WARNING - failed to create PackedHeaderParameterBuffer.\n");
+		WARN("failed to create PackedHeaderParameterBuffer.\n");
 		buffers[0] = VA_INVALID_ID;
 		return 0;
 	}
@@ -1170,7 +1171,7 @@ create_packed_header_buffers(const struct rd_encoder * const encoder,
 				VAEncPackedHeaderDataBufferType,
 				(bit_length + 7) / 8, 1, data, &buffers[1]);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("WARNING - failed to create PackedHeaderDataBuffer.\n");
+		WARN("failed to create PackedHeaderDataBuffer.\n");
 		vaDestroyBuffer(encoder->va_dpy, buffers[0]);
 		buffers[0] = VA_INVALID_ID;
 		buffers[1] = VA_INVALID_ID;
@@ -1194,7 +1195,7 @@ encoder_prepare_headers(struct rd_encoder * const encoder,
 			status = vaDestroyBuffer(encoder->va_dpy,
 					encoder->encoder.param.buffers[EncoderBufferSPSHeader]);
 			if (status != VA_STATUS_SUCCESS) {
-				printf("Failed to destroy SPSHeader buffer %d.\n",
+				ERROR("Failed to destroy SPSHeader buffer %d.\n",
 					encoder->encoder.param.buffers[EncoderBufferSPSHeader]);
 			}
 		}
@@ -1202,7 +1203,7 @@ encoder_prepare_headers(struct rd_encoder * const encoder,
 			status = vaDestroyBuffer(encoder->va_dpy,
 					encoder->encoder.param.buffers[EncoderBufferSPSData]);
 			if (status != VA_STATUS_SUCCESS) {
-				printf("Failed to destroy SPSData buffer %d.\n",
+				ERROR("Failed to destroy SPSData buffer %d.\n",
 					encoder->encoder.param.buffers[EncoderBufferSPSData]);
 			}
 		}
@@ -1224,7 +1225,7 @@ encoder_prepare_headers(struct rd_encoder * const encoder,
 		status = vaDestroyBuffer(encoder->va_dpy,
 				encoder->encoder.param.buffers[EncoderBufferPPSHeader]);
 		if (status != VA_STATUS_SUCCESS) {
-			printf("Failed to destroy PPSHeader buffer %d.\n",
+			ERROR("Failed to destroy PPSHeader buffer %d.\n",
 				encoder->encoder.param.buffers[EncoderBufferPPSHeader]);
 		}
 	}
@@ -1232,7 +1233,7 @@ encoder_prepare_headers(struct rd_encoder * const encoder,
 		status = vaDestroyBuffer(encoder->va_dpy,
 				encoder->encoder.param.buffers[EncoderBufferPPSData]);
 		if (status != VA_STATUS_SUCCESS) {
-			printf("Failed to destroy PPSData buffer %d.\n",
+			ERROR("Failed to destroy PPSData buffer %d.\n",
 				encoder->encoder.param.buffers[EncoderBufferPPSData]);
 		}
 	}
@@ -1255,20 +1256,20 @@ encoder_render_picture(const struct rd_encoder * const encoder,
 
 	status = vaBeginPicture(encoder->va_dpy, encoder->encoder.ctx, input);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("WARNING - vaBeginPicture failed.\n");
+		WARN("vaBeginPicture failed.\n");
 		return status;
 	}
 
 	status = vaRenderPicture(encoder->va_dpy, encoder->encoder.ctx,
 			buffers, num_buffers);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("WARNING - vaRenderPicture failed.\n");
+		WARN("vaRenderPicture failed.\n");
 		return status;
 	}
 
 	status = vaEndPicture(encoder->va_dpy, encoder->encoder.ctx);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("WARNING - vaEndPicture failed.\n");
+		WARN("vaEndPicture failed.\n");
 	}
 	return status;
 }
@@ -1280,7 +1281,7 @@ encoder_get_output_buffer(struct rd_encoder * const encoder)
 	int i;
 
 	if (encoder == NULL) {
-		fprintf(stderr, "encoder_get_output_buffer : No encoder.\n");
+		ERROR("encoder_get_output_buffer : No encoder.\n");
 		return VA_INVALID_ID;
 	}
 
@@ -1291,7 +1292,7 @@ encoder_get_output_buffer(struct rd_encoder * const encoder)
 		}
 	}
 	if (i == MAX_FRAMES) {
-		printf("WARNING - no output buffer available.\n");
+		WARN("no output buffer available.\n");
 		return VA_INVALID_ID;
 	}
 
@@ -1321,7 +1322,7 @@ rd_encoder_release_buffer(struct rd_encoder *encoder, int buf_id)
 	int i;
 
 	if (encoder == NULL) {
-		fprintf(stderr, "rd_encoder_release_buffer : No encoder.\n");
+		ERROR("rd_encoder_release_buffer : No encoder.\n");
 		return status;
 	}
 
@@ -1329,7 +1330,7 @@ rd_encoder_release_buffer(struct rd_encoder *encoder, int buf_id)
 		if ((VABufferID)buf_id == encoder->out_buf[i].bufferID) {
 			status = vaReleaseBufferHandle(encoder->va_dpy, buf_id);
 			if (status != VA_STATUS_SUCCESS) {
-				fprintf(stderr, "Failed to release handle for buffer %d.\n", buf_id);
+				ERROR("Failed to release handle for buffer %d.\n", buf_id);
 				return status;
 			}
 			encoder->out_buf[i].bufferStatus = BUFFER_STATUS_FREE;
@@ -1337,7 +1338,7 @@ rd_encoder_release_buffer(struct rd_encoder *encoder, int buf_id)
 		}
 	}
 	if (i == MAX_FRAMES) {
-		fprintf(stderr, "WARNING - can't release: no match for buffer ID.\n");
+		WARN("can't release: no match for buffer ID.\n");
 	}
 
 	return status;
@@ -1364,7 +1365,7 @@ encoder_write_output(struct rd_encoder * const encoder,
 #endif
 
 	if (encoder == NULL) {
-		fprintf(stderr, "encoder_write_output : No encoder.\n");
+		ERROR("encoder_write_output : No encoder.\n");
 		return OUTPUT_WRITE_FATAL;
 	}
 
@@ -1382,7 +1383,7 @@ encoder_write_output(struct rd_encoder * const encoder,
 		clock_gettime(CLOCK_MONOTONIC_RAW, &end_spec);
 		duration = ( timespec_to_nsec(&end_spec) -
 			timespec_to_nsec(&start_spec) ) / NS_IN_US;
-		printf("RD-ENCODER:\tFrame[%d] Send synced in %ld us.\n",
+		INFO("RD-ENCODER:\tFrame[%d] Send synced in %ld us.\n",
 					frame_number, duration);
 		start_spec = end_spec;
 	}
@@ -1391,7 +1392,7 @@ encoder_write_output(struct rd_encoder * const encoder,
 	/* We need to map the buffer so that we can get the segment size. */
 	status = vaMapBuffer(encoder->va_dpy, output_buf, (void **) &segment);
 	if (status != VA_STATUS_SUCCESS) {
-		fprintf(stderr, "encoder_write_output : vaMapBuffer failed for frame %d.\n",
+		ERROR("encoder_write_output : vaMapBuffer failed for frame %d.\n",
 			frame_number);
 		return OUTPUT_WRITE_FATAL;
 	}
@@ -1400,7 +1401,7 @@ encoder_write_output(struct rd_encoder * const encoder,
 		clock_gettime(CLOCK_MONOTONIC_RAW, &end_spec);
 		duration = ( timespec_to_nsec(&end_spec) -
 			timespec_to_nsec(&start_spec) ) / NS_IN_US;
-		printf("RD-ENCODER:\tFrame[%d] Buffer mapped in %ld us.\n",
+		INFO("RD-ENCODER:\tFrame[%d] Buffer mapped in %ld us.\n",
 					frame_number, duration);
 		start_spec = end_spec;
 	}
@@ -1419,7 +1420,7 @@ encoder_write_output(struct rd_encoder * const encoder,
 		clock_gettime(CLOCK_MONOTONIC_RAW, &end_spec);
 		duration = ( timespec_to_nsec(&end_spec) -
 			timespec_to_nsec(&start_spec) ) / NS_IN_US;
-		printf("RD-ENCODER:\tFrame[%d] Buffer modified in %ld us.\n",
+		INFO("RD-ENCODER:\tFrame[%d] Buffer modified in %ld us.\n",
 					frame_number, duration);
 		start_spec = end_spec;
 	}
@@ -1431,7 +1432,7 @@ encoder_write_output(struct rd_encoder * const encoder,
 		clock_gettime(CLOCK_MONOTONIC_RAW, &end_spec);
 		duration = ( timespec_to_nsec(&end_spec) -
 			timespec_to_nsec(&start_spec) ) / NS_IN_US;
-		printf("RD-ENCODER:\tFrame[%d] Buffer unmapped in %ld us.\n",
+		INFO("RD-ENCODER:\tFrame[%d] Buffer unmapped in %ld us.\n",
 					frame_number, duration);
 		start_spec = end_spec;
 	}
@@ -1443,14 +1444,14 @@ encoder_write_output(struct rd_encoder * const encoder,
 	/* The output buffer is released in rd_encoder_release_buffer(). */
 	status = vaAcquireBufferHandle(encoder->va_dpy, output_buf, &buf_info);
 	if (status != VA_STATUS_SUCCESS) {
-		fprintf(stderr, "Failed to acquire buffer handle for frame %d.\n",
+		ERROR("Failed to acquire buffer handle for frame %d.\n",
 			frame_number);
 		return OUTPUT_WRITE_FATAL;
 	}
 
 	pthread_mutex_lock(&encoder->transport_mutex);
 	if (encoder->next_transport.valid == 1) {
-		fprintf(stderr, "WARNING: transport dropping frame %d.\n",
+		WARN("transport dropping frame %d.\n",
 			encoder->next_transport.frame_number);
 			rd_encoder_release_buffer(encoder, encoder->next_transport.output_buf);
 	}
@@ -1470,7 +1471,7 @@ encoder_write_output(struct rd_encoder * const encoder,
 		clock_gettime(CLOCK_MONOTONIC_RAW, &end_spec);
 		finish = timespec_to_nsec(&end_spec);
 		duration = ( finish - timespec_to_nsec(&start_spec) ) / NS_IN_US;
-		printf("RD-ENCODER:\tFrame[%d] New frame sent to transport in %ld us, "
+		INFO("RD-ENCODER:\tFrame[%d] New frame sent to transport in %ld us, "
 					"submitted: %ld ns\n",
 					frame_number, duration, finish);
 	}
@@ -1494,7 +1495,7 @@ encoder_encode(struct rd_encoder * const encoder, const VASurfaceID input)
 #endif
 
 	if (encoder == NULL) {
-		fprintf(stderr, "encoder_encode : No encoder.\n");
+		ERROR("encoder_encode : No encoder.\n");
 		return;
 	}
 
@@ -1505,9 +1506,7 @@ encoder_encode(struct rd_encoder * const encoder, const VASurfaceID input)
 #endif
 
 	frame_number = encoder->current_encode.frame_number;
-	if (encoder->verbose > 2) {
-		printf("Encoding frame %d.\n", frame_number);
-	}
+	VERBOSE("Encoding frame %d.\n", frame_number);
 
 	if ((encoder->frame_count % encoder->encoder.intra_period) == 0)
 		slice_type = SLICE_TYPE_I;
@@ -1521,7 +1520,7 @@ encoder_encode(struct rd_encoder * const encoder, const VASurfaceID input)
 
 	for (i = 0; i < numParamBuffers; i++)
 		if (buffers[i] == VA_INVALID_ID) {
-			printf("Invalid parameter buffer.\n");
+			ERROR("Invalid parameter buffer.\n");
 			return;
 		}
 
@@ -1539,21 +1538,21 @@ encoder_encode(struct rd_encoder * const encoder, const VASurfaceID input)
 		/* Keep retrying with larger buffer sizes until we have success. */
 		output_buf = encoder_get_output_buffer(encoder);
 		if (output_buf == VA_INVALID_ID) {
-			printf("Invalid output buffer.\n");
+			ERROR("Invalid output buffer.\n");
 			return;
 		}
 
 		buffers[bufferCount++] =
 			encoder_update_pic_parameters(encoder, output_buf, slice_type);
 		if (buffers[bufferCount - 1] == VA_INVALID_ID) {
-			printf("Invalid pic parameters buffer.\n");
+			ERROR("Invalid pic parameters buffer.\n");
 			return;
 		}
 
 		buffers[bufferCount++] = encoder_update_slice_parameter(encoder,
 				slice_type);
 		if (buffers[bufferCount - 1] == VA_INVALID_ID) {
-			printf("Invalid image data buffer.\n");
+			ERROR("Invalid image data buffer.\n");
 			return;
 		}
 
@@ -1564,7 +1563,7 @@ encoder_encode(struct rd_encoder * const encoder, const VASurfaceID input)
 		clock_gettime(CLOCK_MONOTONIC_RAW, &end_spec);
 		duration = ( timespec_to_nsec(&end_spec) -
 			timespec_to_nsec(&start_spec) ) / NS_IN_US;
-		printf("RD-ENCODER:\tFrame[%d] Buffer %d encoded in %ld us.\n",
+		INFO("RD-ENCODER:\tFrame[%d] Buffer %d encoded in %ld us.\n",
 					frame_number, output_buf, duration);
 		start_spec = end_spec;
 	}
@@ -1576,14 +1575,14 @@ encoder_encode(struct rd_encoder * const encoder, const VASurfaceID input)
 		 * in the normal case but we need to destroy it before creating
 		 * a larger one. */
 		if (ret == OUTPUT_WRITE_OVERFLOW) {
-			printf("\n !!! Buffer too small, so re-try needed!!!\n\n");
+			ERROR("\n !!! Buffer too small, so re-try needed!!!\n\n");
 			vaDestroyBuffer(encoder->va_dpy, output_buf);
 			output_buf = VA_INVALID_ID;
 		}
 	} while (ret == OUTPUT_WRITE_OVERFLOW);
 
 	if (ret == OUTPUT_WRITE_FATAL) {
-		printf("Fatal output write error.\n");
+		ERROR("Fatal output write error.\n");
 		encoder->error = errno;
 	}
 
@@ -1593,7 +1592,7 @@ encoder_encode(struct rd_encoder * const encoder, const VASurfaceID input)
 		clock_gettime(CLOCK_MONOTONIC_RAW, &end_spec);
 		duration = ( timespec_to_nsec(&end_spec) -
 			timespec_to_nsec(&start_spec) ) / NS_IN_US;
-		printf("RD-ENCODER:\tFrame[%d] New frame sent to be written out in %ld us.\n",
+		INFO("RD-ENCODER:\tFrame[%d] New frame sent to be written out in %ld us.\n",
 					frame_number, duration);
 	}
 #endif
@@ -1607,7 +1606,7 @@ setup_vpp(struct rd_encoder * const encoder)
 	VAStatus status;
 
 	if (encoder == NULL) {
-		fprintf(stderr, "setup_vpp : No encoder.\n");
+		ERROR("setup_vpp : No encoder.\n");
 		return -1;
 	}
 
@@ -1615,14 +1614,14 @@ setup_vpp(struct rd_encoder * const encoder)
 				VAEntrypointVideoProc, NULL, 0,
 				&encoder->vpp.cfg);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("encoder: failed to create VPP config\n");
+		ERROR("encoder: failed to create VPP config\n");
 		return -1;
 	}
 
 	status = vaCreateContext(encoder->va_dpy, encoder->vpp.cfg, encoder->width, encoder->height,
 				 0, NULL, 0, &encoder->vpp.ctx);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("encoder: failed to create VPP context\n");
+		ERROR("encoder: failed to create VPP context\n");
 		goto err_cfg;
 	}
 
@@ -1631,7 +1630,7 @@ setup_vpp(struct rd_encoder * const encoder)
 				sizeof(VAProcPipelineParameterBuffer),
 				1, NULL, &encoder->vpp.pipeline_buf);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("encoder: failed to create VPP pipeline buffer\n");
+		ERROR("encoder: failed to create VPP pipeline buffer\n");
 		goto err_ctx;
 	}
 
@@ -1639,7 +1638,7 @@ setup_vpp(struct rd_encoder * const encoder)
 				  encoder->region.w, encoder->region.h, &encoder->vpp.output, 1,
 				  NULL, 0);
 	if (status != VA_STATUS_SUCCESS) {
-		printf("encoder: failed to create YUV surface\n");
+		ERROR("encoder: failed to create YUV surface\n");
 		goto err_buf;
 	}
 
@@ -1680,23 +1679,23 @@ setup_encoder_thread(struct rd_encoder * const encoder)
 	int err;
 
 	if (encoder == NULL) {
-		fprintf(stderr, "setup_encoder_thread : No encoder.\n");
+		ERROR("setup_encoder_thread : No encoder.\n");
 		return -1;
 	}
 
 	err = pthread_mutex_init(&encoder->encoder_mutex, NULL);
 	if (err != 0) {
-		fprintf(stderr, "Encoder mutex init failure: %d\n", err);
+		ERROR("Encoder mutex init failure: %d\n", err);
 		return err;
 	}
 	err = pthread_cond_init(&encoder->encoder_cond, NULL);
 	if (err != 0) {
-		fprintf(stderr, "Encoder condition init failure: %d\n", err);
+		ERROR("Encoder condition init failure: %d\n", err);
 		return err;
 	}
 	err = pthread_create(&encoder->encoder_thread, NULL, encoder_thread_function, encoder);
 	if (err != 0) {
-		fprintf(stderr, "Encoder thread creation failure: %d\n", err);
+		ERROR("Encoder thread creation failure: %d\n", err);
 		return err;
 	}
 
@@ -1709,23 +1708,23 @@ setup_transport_thread(struct rd_encoder * const encoder)
 	int err;
 
 	if (encoder == NULL) {
-		fprintf(stderr, "setup_transport_thread : No encoder.\n");
+		ERROR("setup_transport_thread : No encoder.\n");
 		return -1;
 	}
 
 	err = pthread_mutex_init(&encoder->transport_mutex, NULL);
 	if (err != 0) {
-		fprintf(stderr, "Transport mutex init failure: %d\n", err);
+		ERROR("Transport mutex init failure: %d\n", err);
 		return err;
 	}
 	err = pthread_cond_init(&encoder->transport_cond, NULL);
 	if (err != 0) {
-		fprintf(stderr, "Transport condition init failure: %d\n", err);
+		ERROR("Transport condition init failure: %d\n", err);
 		return err;
 	}
 	err = pthread_create(&encoder->transport_thread, NULL, transport_thread_function, encoder);
 	if (err != 0) {
-		fprintf(stderr, "Transport thread creation failure: %d\n", err);
+		ERROR("Transport thread creation failure: %d\n", err);
 		return err;
 	}
 
@@ -1737,17 +1736,13 @@ destroy_encoder_thread(struct rd_encoder * const encoder)
 {
 	if (encoder->encoder_thread) {
 		/* Make sure the encoder thread finishes... */
-		if (encoder->verbose > 1) {
-			printf("Waiting for encoder thread mutex...\n");
-		}
+		DBG("Waiting for encoder thread mutex...\n");
 		pthread_mutex_lock(&encoder->encoder_mutex);
 		encoder->destroying_encoder = 1;
 		pthread_cond_signal(&encoder->encoder_cond);
 		pthread_mutex_unlock(&encoder->encoder_mutex);
 
-		if (encoder->verbose > 1) {
-			printf("Waiting for encoder thread to finish...\n");
-		}
+		DBG("Waiting for encoder thread to finish...\n");
 		pthread_join(encoder->encoder_thread, NULL);
 		pthread_mutex_destroy(&encoder->encoder_mutex);
 		pthread_cond_destroy(&encoder->encoder_cond);
@@ -1759,17 +1754,13 @@ destroy_transport_thread(struct rd_encoder * const encoder)
 {
 	if (encoder->transport_thread) {
 		/* Make sure the transport thread finishes... */
-		if (encoder->verbose > 1) {
-			printf("Waiting for transport thread mutex...\n");
-		}
+		DBG("Waiting for transport thread mutex...\n");
 		pthread_mutex_lock(&encoder->transport_mutex);
 		encoder->destroying_transport = 1;
 		pthread_cond_signal(&encoder->transport_cond);
 		pthread_mutex_unlock(&encoder->transport_mutex);
 
-		if (encoder->verbose > 1) {
-			printf("Waiting for transport thread to finish...\n");
-		}
+		DBG("Waiting for transport thread to finish...\n");
 		pthread_join(encoder->transport_thread, NULL);
 		pthread_mutex_destroy(&encoder->transport_mutex);
 		pthread_cond_destroy(&encoder->transport_cond);
@@ -1784,44 +1775,43 @@ load_transport_plugin(const char *plugin, struct rd_encoder *encoder,
 	int (*plugin_init_fptr)(int *argc, char **argv, int verbose);
 
 	if (plugin == NULL) {
-		fprintf(stderr, "load_transport_plugin : no plugin name provided\n");
+		ERROR("load_transport_plugin : no plugin name provided\n");
 		return -1;
 	}
 
 	if (encoder == NULL) {
-		fprintf(stderr, "load_transport_plugin : No encoder.\n");
+		ERROR("load_transport_plugin : No encoder.\n");
 		return -1;
 	}
 
 	encoder->transport_handle = dlopen(plugin, RTLD_LAZY | RTLD_LOCAL);
 	if (encoder->transport_handle == NULL) {
-			fprintf(stderr, "Failed to load transport plugin at %s.\n",
+			ERROR("Failed to load transport plugin: %s.\n",
 				plugin);
 		return -1;
 	}
-	if (encoder->verbose) {
-		printf("Loaded transport plugin at %s...\n",
-						plugin);
-	}
+
+	DBG("Loaded transport plugin at %s...\n",
+					plugin);
 
 	plugin_init_fptr = dlsym(encoder->transport_handle, "init");
 	if (plugin_init_fptr) {
-		int ret = (*plugin_init_fptr)(argc, argv, encoder->verbose);
+		int ret = (*plugin_init_fptr)(argc, argv, debug_level);
 
 		if (ret) {
-			fprintf(stderr, "Init function in %s transport plugin "
+			ERROR("Init function in %s transport plugin "
 				"failed with %d.\n", plugin, ret);
 			return -1;
 		}
 	} else {
-		fprintf(stderr, "No init function found in %s transport plugin.\n",
+		ERROR("No init function found in %s transport plugin.\n",
 				plugin);
 		return -1;
 	}
 	encoder->transport_send_fptr = dlsym(encoder->transport_handle,
 			"send_frame");
 	if (encoder->transport_send_fptr == NULL) {
-		fprintf(stderr, "No send function found in %s transport plugin.\n",
+		ERROR("No send function found in %s transport plugin.\n",
 				plugin);
 		return -1;
 	}
@@ -1840,9 +1830,7 @@ load_transport_plugin(const char *plugin, struct rd_encoder *encoder,
 static int
 destroy_transport_plugin(struct rd_encoder *encoder)
 {
-	if (encoder->verbose) {
-		printf("Destroy transport plugin...\n");
-	}
+	DBG("Destroy transport plugin...\n");
 
 	if (encoder->transport_handle) {
 		void (*transport_destroy_fptr)();
@@ -1851,12 +1839,10 @@ destroy_transport_plugin(struct rd_encoder *encoder)
 		if (transport_destroy_fptr) {
 			(*transport_destroy_fptr)();
 		} else {
-			fprintf(stderr, "No destroy function found in transport plugin.\n");
+			ERROR("No destroy function found in transport plugin.\n");
 		}
 
-		if (encoder->verbose) {
-			printf("Closing DLL...\n");
-		}
+		DBG("Closing DLL...\n");
 		dlclose(encoder->transport_handle);
 	}
 	return 0;
@@ -1866,7 +1852,6 @@ struct rd_encoder *
 rd_encoder_create(void *as, int *argc, char **argv)
 {
 	struct app_state *app_state = (struct app_state *) as;
-	const int verbose = app_state->verbose;
 	char *plugin = app_state->plugin_fullname;
 	struct rd_encoder *encoder;
 	VAStatus status;
@@ -1879,12 +1864,9 @@ rd_encoder_create(void *as, int *argc, char **argv)
 		return NULL;
 	}
 
-	encoder->drm_fd = -1;
-	encoder->verbose = verbose;
-
 	encoder->drm_fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
 	if(encoder->drm_fd < 0) {
-		fprintf(stderr, "Failed to open card0.\n");
+		ERROR("Failed to open card0.\n");
 		goto err_encoder;
 	}
 
@@ -1909,13 +1891,13 @@ rd_encoder_create(void *as, int *argc, char **argv)
 
 	encoder->va_dpy = vaGetDisplayDRM(encoder->drm_fd);
 	if (!encoder->va_dpy) {
-		fprintf(stderr, "encoder: Failed to create VA display.\n");
+		ERROR("encoder: Failed to create VA display.\n");
 		goto err_encoder;
 	}
 
 	status = vaInitialize(encoder->va_dpy, &major, &minor);
 	if (status != VA_STATUS_SUCCESS) {
-		fprintf(stderr, "encoder: Failed to initialize display.\n");
+		ERROR("encoder: Failed to initialize display.\n");
 		goto err_encoder;
 	}
 
@@ -1940,7 +1922,7 @@ rd_encoder_init(struct rd_encoder * const encoder,
 	int err;
 
 	if (encoder == NULL) {
-		fprintf(stderr, "rd_encoder_init : No encoder.\n");
+		ERROR("rd_encoder_init : No encoder.\n");
 		return -1;
 	}
 
@@ -1959,7 +1941,7 @@ rd_encoder_init(struct rd_encoder * const encoder,
 	encoder->output_number = output_number;
 	encoder->fps = options->fps;
 	if (setup_vpp(encoder) < 0) {
-		fprintf(stderr, "encoder: Failed to initialize VPP pipeline.\n");
+		ERROR("encoder: Failed to initialize VPP pipeline.\n");
 		goto err_va_dpy;
 	}
 
@@ -1979,15 +1961,13 @@ rd_encoder_init(struct rd_encoder * const encoder,
 	if (options->nv12_filename) {
 		encoder->nv12 = fopen(options->nv12_filename, "wb");
 		if (encoder->nv12) {
-			fprintf(stderr, "*** QUALITY CHECK - Dumping NV12 to %s ***\n", options->nv12_filename);
+			ERROR("*** QUALITY CHECK - Dumping NV12 to %s ***\n", options->nv12_filename);
 		}
 	}
-	if (encoder->verbose) {
-		printf("Recorder created... %dx%d R(%d,%d %dx%d)\n",
-				encoder->width, encoder->height,
-				encoder->region.x, encoder->region.y,
-				encoder->region.w, encoder->region.h);
-	}
+	DBG("Recorder created... %dx%d R(%d,%d %dx%d)\n",
+			encoder->width, encoder->height,
+			encoder->region.x, encoder->region.y,
+			encoder->region.w, encoder->region.h);
 
 	return 0;
 
@@ -2008,20 +1988,16 @@ rd_encoder_destroy(struct rd_encoder *encoder)
 
 	destroy_encoder_thread(encoder);
 	destroy_transport_thread(encoder);
-	if (encoder->verbose) {
-		printf("Worker threads destroyed...\n");
-	}
+	DBG("Worker threads destroyed...\n");
 
 	destroy_transport_plugin(encoder);
-	if (encoder->verbose) {
-		printf("Transport plugin destroyed...\n");
-	}
+	DBG("Transport plugin destroyed...\n");
 
 	for (i = 0; i < MAX_FRAMES; i++) {
 		if (encoder->out_buf[i].bufferID != VA_INVALID_ID) {
 			status = vaDestroyBuffer(encoder->va_dpy, encoder->out_buf[i].bufferID);
 			if (status != VA_STATUS_SUCCESS) {
-				fprintf(stderr, "Failed to destroy buffer %d.\n",
+				ERROR("Failed to destroy buffer %d.\n",
 						encoder->out_buf[i].bufferID);
 			} else {
 				encoder->out_buf[i].bufferID = VA_INVALID_ID;
@@ -2032,18 +2008,14 @@ rd_encoder_destroy(struct rd_encoder *encoder)
 	encoder_destroy_encode_session(encoder);
 	vpp_destroy(encoder);
 	vaTerminate(encoder->va_dpy);
-	if (encoder->verbose) {
-		printf("libva context destroyed...\n");
-	}
+	DBG("libva context destroyed...\n");
 	if (encoder->nv12) {
 		fclose(encoder->nv12);
 	}
 	close(encoder->drm_fd);
 
 	free(encoder);
-	if (encoder->verbose) {
-		printf("Recorder destroyed...\n");
-	}
+	DBG("Recorder destroyed...\n");
 }
 
 static VAStatus
@@ -2085,7 +2057,7 @@ create_surface_from_handle(struct rd_encoder * const encoder,
 					encoder->width, encoder->height, surface, 1,
 					va_attribs, 2);
 	} else {
-		printf("Unsupported colour format for shared memory buffer.\n");
+		ERROR("Unsupported colour format for shared memory buffer.\n");
 	}
 
 	return status;
@@ -2157,7 +2129,7 @@ convert_rgb_to_yuv(struct rd_encoder * const encoder, const VASurfaceID src_surf
 	status = vaMapBuffer(encoder->va_dpy, encoder->vpp.pipeline_buf,
 				(void **) &pipeline_param);
 	if (status != VA_STATUS_SUCCESS) {
-		fprintf(stderr, "vaMapBuffer failed\n");
+		ERROR("vaMapBuffer failed\n");
 		return status;
 	}
 
@@ -2188,7 +2160,7 @@ convert_rgb_to_yuv(struct rd_encoder * const encoder, const VASurfaceID src_surf
 
 	status = vaUnmapBuffer(encoder->va_dpy, encoder->vpp.pipeline_buf);
 	if (status != VA_STATUS_SUCCESS){
-		fprintf(stderr, "convert_rgb_to_yuv() vaUnmapBuffer failed\n");
+		ERROR("convert_rgb_to_yuv() vaUnmapBuffer failed\n");
 		return status;
 	}
 
@@ -2196,20 +2168,20 @@ convert_rgb_to_yuv(struct rd_encoder * const encoder, const VASurfaceID src_surf
 
 	status = vaBeginPicture(encoder->va_dpy, encoder->vpp.ctx, encoder->vpp.output);
 	if (status != VA_STATUS_SUCCESS) {
-		fprintf(stderr, "vaBeginPicture failed\n");
+		ERROR("vaBeginPicture failed\n");
 		return status;
 	}
 
 	status = vaRenderPicture(encoder->va_dpy, encoder->vpp.ctx,
 				 &encoder->vpp.pipeline_buf, 1);
 	if (status != VA_STATUS_SUCCESS) {
-		fprintf(stderr, "vaRenderPicture failed\n");
+		ERROR("vaRenderPicture failed\n");
 		return status;
 	}
 
 	status = vaEndPicture(encoder->va_dpy, encoder->vpp.ctx);
 	if (status != VA_STATUS_SUCCESS) {
-		fprintf(stderr, "vaEndPicture failed\n");
+		ERROR("vaEndPicture failed\n");
 		return status;
 	}
 
@@ -2218,18 +2190,16 @@ convert_rgb_to_yuv(struct rd_encoder * const encoder, const VASurfaceID src_surf
 		void *pbuffer=NULL;
 		status = vaDeriveImage(encoder->va_dpy, encoder->vpp.output, &image);
 		if (status != VA_STATUS_SUCCESS) {
-			fprintf(stderr, "vaDeriveImage failed\n");
+			ERROR("vaDeriveImage failed\n");
 		}
 		status = vaMapBuffer(encoder->va_dpy, image.buf, &pbuffer);
 		if (status != VA_STATUS_SUCCESS) {
-			fprintf(stderr, "vaMapBuffer failed\n");
+			ERROR("vaMapBuffer failed\n");
 		}
 		if (image.format.fourcc == VA_FOURCC_NV12) {
 			uint32_t row;
 			int ret;
-			if (encoder->verbose) {
-				printf("NV12: %d %d - [%d/%d]\n", image.width, image.height, image.pitches[0], image.pitches[1] );
-			}
+			DBG("NV12: %d %d - [%d/%d]\n", image.width, image.height, image.pitches[0], image.pitches[1] );
 			unsigned char *data = (unsigned char*)pbuffer;
 			data += image.offsets[0];
 			uint32_t height = image.height;
@@ -2239,7 +2209,7 @@ convert_rgb_to_yuv(struct rd_encoder * const encoder, const VASurfaceID src_surf
 			for (row = 0; row < height; row++) {
 				ret = fwrite(data, image.width, 1, encoder->nv12);
 				if (ret != 1) {
-					printf("error writing nv12 - stop dumping\n");
+					ERROR("error writing nv12 - stop dumping\n");
 					fclose(encoder->nv12);
 					encoder->nv12 = NULL;
 				}
@@ -2251,7 +2221,7 @@ convert_rgb_to_yuv(struct rd_encoder * const encoder, const VASurfaceID src_surf
 				for (row = 0; row < height/2; row++) {
 					ret = fwrite(data, image.width, 1, encoder->nv12);
 					if (ret != 1) {
-						printf("error writing nv12 - stop dumping\n");
+						ERROR("error writing nv12 - stop dumping\n");
 						fclose(encoder->nv12);
 						encoder->nv12 = NULL;
 					}
@@ -2261,11 +2231,11 @@ convert_rgb_to_yuv(struct rd_encoder * const encoder, const VASurfaceID src_surf
 		}
 		status = vaUnmapBuffer(encoder->va_dpy, image.buf);
 		if (status != VA_STATUS_SUCCESS) {
-			fprintf(stderr, "vaUnmapBuffer failed\n");
+			ERROR("vaUnmapBuffer failed\n");
 		}
 		status = vaDestroyImage(encoder->va_dpy, image.image_id);
 		if (status != VA_STATUS_SUCCESS) {
-			fprintf(stderr, "vaDestroyImagefailed\n");
+			ERROR("vaDestroyImagefailed\n");
 		}
 	}
 	return status;
@@ -2295,7 +2265,7 @@ encoder_frame(struct rd_encoder * const encoder)
 		/* We assume that all shm buffers contain RGB data. */
 		status = create_surface_from_handle(encoder, &src_surface);
 		if (status != VA_STATUS_SUCCESS) {
-			fprintf(stderr, "[libva encoder] failed to create surface from handle for frame %d.\n",
+			ERROR("[libva encoder] failed to create surface from handle for frame %d.\n",
 				frame_number);
 			return;
 		}
@@ -2303,14 +2273,12 @@ encoder_frame(struct rd_encoder * const encoder)
 		/* Not a shared memory buffer... */
 		status = create_surface_from_fd(encoder, &src_surface);
 		if (status != VA_STATUS_SUCCESS) {
-			fprintf(stderr, "[libva encoder] failed to create surface from fd for frame %d.\n",
+			ERROR("[libva encoder] failed to create surface from fd for frame %d.\n",
 				frame_number);
 			return;
 		}
 	}
-	if (encoder->verbose > 2) {
-		printf("Surface created for frame %d.\n", frame_number);
-	}
+	VERBOSE("Surface created for frame %d.\n", frame_number);
 
 	conv_status = convert_rgb_to_yuv(encoder, src_surface);
 
@@ -2318,13 +2286,13 @@ encoder_frame(struct rd_encoder * const encoder)
 	if (encoder->profile_level > 1) {
 		clock_gettime(CLOCK_MONOTONIC_RAW, &end_spec);
 		duration = timespec_to_nsec(&end_spec) - start;
-		printf("RD-ENCODER:\tFrame[%d] New frame converted in %ld us.\n",
+		INFO("RD-ENCODER:\tFrame[%d] New frame converted in %ld us.\n",
 					frame_number, duration / NS_IN_US);
 	}
 #endif
 
 	if (conv_status != VA_STATUS_SUCCESS) {
-		fprintf(stderr, "[libva encoder] color space conversion failed for frame %d.\n",
+		ERROR("[libva encoder] color space conversion failed for frame %d.\n",
 			frame_number);
 		return;
 	}
@@ -2333,16 +2301,14 @@ encoder_frame(struct rd_encoder * const encoder)
 	if (encoder->profile_level > 1) {
 		clock_gettime(CLOCK_MONOTONIC_RAW, &end_spec);
 		finish = timespec_to_nsec(&end_spec);
-		printf("RD-ENCODER:\tFrame[%d] Encoder completed at: %ld ns.\n",
+		INFO("RD-ENCODER:\tFrame[%d] Encoder completed at: %ld ns.\n",
 			frame_number, finish);
 	}
 
 	vaDestroySurfaces(encoder->va_dpy, &src_surface, 1);
 	close(encoder->current_encode.prime_fd);
 
-	if (encoder->verbose > 2) {
-		printf("Releasing buffer for frame %d...\n", frame_number);
-	}
+	VERBOSE("Releasing buffer for frame %d...\n", frame_number);
 	if (encoder->current_encode.va_buffer_handle) {
 		/* Shared memory surface. */
 		ias_hmi_release_buffer_handle(encoder->hmi,
@@ -2366,7 +2332,7 @@ encoder_frame(struct rd_encoder * const encoder)
 		clock_gettime(CLOCK_MONOTONIC_RAW, &end_spec);
 		finish = timespec_to_nsec(&end_spec);
 		duration = finish - start;
-		printf("RD-ENCODER:\tFrame[%d] processed - start: %ld ns, "
+		INFO("RD-ENCODER:\tFrame[%d] processed - start: %ld ns, "
 					"finish: %ld ns, duration: %ld ns.\n",
 					frame_number, start, finish, duration);
 	}
@@ -2382,21 +2348,15 @@ encoder_thread_function(void * const data)
 		pthread_mutex_lock(&encoder->encoder_mutex);
 
 		if (!encoder->next_encode.valid) {
-			if (encoder->verbose > 1) {
-				printf("Waiting on encoder condition...\n");
-			}
+			DBG("Waiting on encoder condition...\n");
 			pthread_cond_wait(&encoder->encoder_cond, &encoder->encoder_mutex);
 		}
-		if (encoder->verbose > 1) {
-			printf("Encoder thread running...\n");
-		}
+		DBG("Encoder thread running...\n");
 
 		/* If the thread is woken by destroy_encoder_thread()
 		 * then there might not be valid input. */
 		if (!encoder->next_encode.valid) {
-			if (encoder->verbose > 1) {
-				printf("No encode in queue.\n");
-			}
+			DBG("No encode in queue.\n");
 			pthread_mutex_unlock(&encoder->encoder_mutex);
 			continue;
 		}
@@ -2415,21 +2375,15 @@ encoder_thread_function(void * const data)
 			encoder->next_encode.valid = 0;
 			pthread_mutex_unlock(&encoder->encoder_mutex);
 
-			if (encoder->verbose > 2) {
-				printf("RD-ENCODER:\tFrame[%d] encode starting.\n",
+			VERBOSE("RD-ENCODER:\tFrame[%d] encode starting.\n",
 					encoder->current_encode.frame_number);
-			}
 			encoder_frame(encoder);
-			if (encoder->verbose > 2) {
-				printf("RD-ENCODER:\tFrame[%d] encode completed.\n",
-					encoder->current_encode.frame_number);
-			}
+			VERBOSE("RD-ENCODER:\tFrame[%d] encode completed.\n",
+				encoder->current_encode.frame_number);
 
 		} else {
 			pthread_mutex_unlock(&encoder->encoder_mutex);
-			if (encoder->verbose) {
-				printf("encoder_thread_function skipping frame since encoder is being destroyed...\n");
-			}
+			DBG("encoder_thread_function skipping frame since encoder is being destroyed...\n");
 		}
 	}
 
@@ -2456,9 +2410,7 @@ transport_thread_function(void * const data)
 		/* If the thread is woken by destroy_encoder_thread()
 		 * then there might not be valid input. */
 		if (!encoder->next_transport.valid) {
-			if (encoder->verbose > 1) {
-				printf("No transport in queue.\n");
-			}
+			DBG("No transport in queue.\n");
 			pthread_mutex_unlock(&encoder->transport_mutex);
 			continue;
 		}
@@ -2482,7 +2434,7 @@ transport_thread_function(void * const data)
 									encoder->current_transport.handle);
 
 			if (drm_bo == NULL) {
-				fprintf(stderr, "Failed to create drm buffer.\n");
+				ERROR("Failed to create drm buffer.\n");
 				rd_encoder_release_buffer(encoder, encoder->current_transport.output_buf);
 				return NULL;
 			}
@@ -2497,9 +2449,7 @@ transport_thread_function(void * const data)
 			drm_intel_bo_unreference(drm_bo);
 		} else {
 			pthread_mutex_unlock(&encoder->transport_mutex);
-			if (encoder->verbose) {
-				printf("transport_thread_function skipping since encoder is being destroyed...\n");
-			}
+			DBG("transport_thread_function skipping since encoder is being destroyed...\n");
 		}
 
 		rd_encoder_release_buffer(encoder, encoder->current_transport.output_buf);
@@ -2508,7 +2458,7 @@ transport_thread_function(void * const data)
 		if (encoder->profile_level) {
 			clock_gettime(CLOCK_MONOTONIC_RAW, &end_spec);
 			finish = timespec_to_nsec(&end_spec);
-			printf("RD-ENCODER:\tFrame[%d] transport_thread_function - "
+			INFO("RD-ENCODER:\tFrame[%d] transport_thread_function - "
 						"finish: %ld ns\n",
 						encoder->current_transport.frame_number, finish);
 		}
@@ -2544,12 +2494,10 @@ rd_encoder_frame(struct rd_encoder * const encoder,
 		uint32_t buf_id, uint32_t image_id)
 {
 	/* TODO: Added additional strides, need to use them */
-	if (encoder->verbose > 1) {
-		printf("Frame %d received...\n", frame_number);
-	}
+	DBG("Frame %d received...\n", frame_number);
 
 	if (encoder->error) {
-		printf("WARNING: Dropping frame, owing to previous error...\n");
+		WARN("Dropping frame, owing to previous error...\n");
 		ias_hmi_release_buffer_handle(encoder->hmi,
 			shm_surf_id, buf_id, image_id, encoder->surfid,
 					encoder->output_number);
@@ -2560,7 +2508,7 @@ rd_encoder_frame(struct rd_encoder * const encoder,
 		encoder->first_frame = 1;
 		/* First notification is with a stale buffer */
 		if (encoder->verbose || encoder->profile_level) {
-			printf("RD-ENCODER:\tFrame[%d] dropped.\n",
+			INFO("RD-ENCODER:\tFrame[%d] dropped.\n",
 						encoder->current_encode.frame_number);
 		}
 
@@ -2582,7 +2530,7 @@ rd_encoder_frame(struct rd_encoder * const encoder,
 
 		if (encoder->next_encode.valid) {
 			/* Drop queued frame... */
-			printf("WARNING: Dropping frame %d, since a newer frame is available to encode.\n",
+			WARN("Dropping frame %d, since a newer frame is available to encode.\n",
 					encoder->next_encode.frame_number);
 		}
 
@@ -2614,9 +2562,7 @@ rd_encoder_frame(struct rd_encoder * const encoder,
 	}
 
 	/* Add current frame to queue... */
-	if (encoder->verbose > 2) {
-		printf("Updating queued buffer...\n");
-	}
+	VERBOSE("Updating queued buffer...\n");
 	encoder->next_encode.prime_fd = prime_fd;
 	/* TODO - Once we have a version of mesa that supports
 	 * gbm_bo_get_stride_for_plane(), we should send an array of
@@ -2641,12 +2587,10 @@ rd_encoder_enable_profiling(struct rd_encoder *encoder, int profile_level)
 {
 	if (encoder) {
 		encoder->profile_level = profile_level;
-		if (encoder->verbose) {
-			printf("Using profile level of %d.\n",
-				encoder->profile_level);
-		}
+		DBG("Using profile level of %d.\n",
+			encoder->profile_level);
 	} else {
-		fprintf(stderr, "rd_encoder_enable_profiling : No encoder.\n");
+		ERROR("rd_encoder_enable_profiling : No encoder.\n");
 	}
 }
 
