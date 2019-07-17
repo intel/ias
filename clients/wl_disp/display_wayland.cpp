@@ -158,6 +158,7 @@ void
 disp_wl::ias_handle_ping(void *data, struct ias_surface *ias_surface,
 		uint32_t serial)
 {
+	UNUSED(data);
 	ias_surface_pong(ias_surface, serial);
 }
 
@@ -200,6 +201,7 @@ void
 disp_wl::ias_handle_configure(void *data, struct ias_surface *ias_surface,
 		int32_t width, int32_t height)
 {
+	UNUSED(ias_surface);
 	disp_wl *d = (disp_wl *) data;
 	d->configure(width, height);
 }
@@ -253,6 +255,9 @@ void disp_wl::handle_toplevel_configure(void *data,
 		int32_t width, int32_t height,
 		struct wl_array *states)
 {
+	UNUSED(toplevel);
+	UNUSED(states);
+
 	disp_wl *d = (disp_wl *) data;
 	d->configure(width, height);
 }
@@ -270,6 +275,8 @@ void disp_wl::handle_toplevel_configure(void *data,
 void disp_wl::handle_toplevel_close(void *data,
 		struct xdg_toplevel *xdg_toplevel)
 {
+	UNUSED(data);
+	UNUSED(xdg_toplevel);
 }
 
 static const struct xdg_toplevel_listener xdg_toplevel_listener = {

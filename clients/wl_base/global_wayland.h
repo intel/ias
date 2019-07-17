@@ -38,6 +38,10 @@ enum _caps {
 #define MAKE_LEVEL(lvl, caps) (lvl<<4 | caps)
 #define MAX_ITER_TO_WAIT 10
 
+#ifndef UNUSED
+#define UNUSED(a) (void)(a)
+#endif
+
 struct crtc {
 	struct ias_crtc *ias_crtc;
 	uint32_t id;

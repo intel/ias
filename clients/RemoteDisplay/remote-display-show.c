@@ -209,7 +209,7 @@ load_shm(struct display *disp,
 	EGLImageKHR image  = (EGLImageKHR) (uintptr_t) create_image(disp->dpy,
 			EGL_NO_CONTEXT,
 			EGL_DRM_BUFFER_MESA,
-			(EGLClientBuffer)handle,
+			(EGLClientBuffer)(uintptr_t) handle,
 			imageAttributes);
 
 	DBG("eglCreateImageKHR 0x%x [%dx%d - H=%d S=%d]\n",
