@@ -590,3 +590,38 @@ bind_ias_hmi(struct wl_client *client,
 							ias_surface_is_flipped(shsurf));
 	}
 }
+
+static void
+destroy_ias_metrics_resource(struct wl_resource *resource)
+{
+	struct hmi_callback *hmi, *next;
+	struct ias_shell *shell = resource->data;
+	wl_list_for_each_safe(hmi, next, &shell->ias_metrics_callbacks, link) {
+		if (resource == hmi->resource) {
+			wl_list_remove(&hmi->link);
+			free(hmi);
+			return;
+		}
+	}
+}
+
+
+
+void
+bind_ias_metrics(struct wl_client *client,
+		void *data, uint32_t version, uint32_t id)
+{
+	struct ias_shell *shell = data;
+	struct hmi_callback *cb;
+	cb = calloc(1, sizeof *cb);
+	if (!cb) {
+		IAS_ERROR("Failed to allocate layout callback.");
+		return;
+	}
+	cb->resource = wl_resource_create(client,
+			&ias_metrics_interface, 1, id);
+	wl_resource_set_implementation(cb->resource,
+			NULL,
+			shell, destroy_ias_metrics_resource);
+	wl_list_insert(&shell->ias_metrics_callbacks, &cb->link);
+}

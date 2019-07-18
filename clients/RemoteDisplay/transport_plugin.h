@@ -32,16 +32,14 @@
 
 /**
  * Initialisation of the plugin.
- * This must clean up after itself and set *plugin_private_data to
- * NULL if returning failure.
+ * This must clean up after itself
  *
  * @param argc Passed straight through from the main application.
  * @param argv Passed straight through from the main application.
- * @param plugin_private_data Output to hold pointer to plugin private data.
  * @param verbose Flag to indicate trace level.
  * @return Error code. 0 on success.
  */
-int init(int *argc, char **argv, void **plugin_private_data, int verbose);
+int init(int *argc, char **argv, int verbose);
 
 /**
  * Print help information specific to the plugin.
@@ -52,23 +50,17 @@ void help(void);
 /**
  * Send a frame over the plugin-specific transport.
  *
- * @param plugin_private_data Pointer to plugin private data.
  * @param drm_bo Buffer of data to be sent.
  * @param stream_size Size of data to be sent.
  * @param timestamp RTP-style timestamp for frame.
  * @return Error code. 0 on success.
  */
-int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo,
-		int32_t stream_size, uint32_t timestamp);
+int send_frame(drm_intel_bo *drm_bo, int32_t stream_size, uint32_t timestamp);
 
 /**
  * Destruction of the plugin.
- * This must clean up any resources that are tracked using
- * plugin_private_data, including the private data itself, and set
- * *plugin_private_data to NULL.
- *
- * @param plugin_private_data Pointer to pointer to plugin private data.
+ * This must clean up any resources
  */
-void destroy(void **plugin_private_data);
+void destroy();
 
 #endif /* __REMOTE_DISPLAY_TRANSPORT_PLUGIN_H__ */

@@ -48,4 +48,8 @@ void
 bind_ias_hmi(struct wl_client *client,
 		void *data, uint32_t version, uint32_t id);
 
+void
+bind_ias_metrics(struct wl_client *client,
+		void *data, uint32_t version, uint32_t id);
+
 #endif

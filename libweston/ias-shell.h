@@ -120,6 +120,9 @@ struct ias_shell {
 	struct wl_list wl_shell_clients;
 	struct wl_list ias_shell_clients;
 
+	/* Metrics reporting */
+	struct wl_list ias_metrics_callbacks;
+
 	/*
 	 * Note for future expansion:  At the moment we assume that lockscreens,
 	 * screensavers, and built-in panels aren't a feature that makes sense for

@@ -38,6 +38,9 @@
 #include "../shared/helpers.h"
 
 #include "transport_plugin.h"
+#include "debug.h"
+
+int debug_level = DBG_OFF;
 
 
 struct tcpSocket {
@@ -53,17 +56,17 @@ struct private_data {
 	unsigned short port;
 };
 
+struct private_data *private_data = NULL;
 
-WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbose)
+WL_EXPORT int init(int *argc, char **argv, int verbose)
 {
-	printf("Using TCP remote display transport plugin...\n");
-	struct private_data *private_data = calloc(1, sizeof(*private_data));
-	*plugin_private_data = (void *)private_data;
-	if (private_data) {
-		private_data->verbose = verbose;
-	} else {
+	debug_level = verbose;
+	private_data = calloc(1, sizeof(*private_data));
+
+	if (!private_data) {
 		return(-ENOMEM);
 	}
+	INFO("Using TCP remote display transport plugin...\n");
 
 	int port = 0;
 	const struct weston_option options[] = {
@@ -74,19 +77,17 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 	private_data->port = port;
 
 	if ((private_data->ipaddr != NULL) && (private_data->ipaddr[0] != 0)) {
-		printf("Sending to %s:%d.\n", private_data->ipaddr, port);
+		INFO("Sending to %s:%d.\n", private_data->ipaddr, port);
 	} else {
-		fprintf(stderr, "Invalid network configuration.\n");
+		ERROR("Invalid network configuration.\n");
 		free(private_data);
-		*plugin_private_data = NULL;
 		return -1;
 	}
 
 	private_data->socket.sockDesc = socket(AF_INET, SOCK_STREAM, 0);
 	if (private_data->socket.sockDesc < 0) {
-		fprintf(stderr, "Socket creation failed.\n");
+		ERROR("Socket creation failed.\n");
 		free(private_data);
-		*plugin_private_data = NULL;
 		return -1;
 	}
 
@@ -96,9 +97,8 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 	if (connect(private_data->socket.sockDesc,
 			(struct sockaddr *) &private_data->socket.sockAddr,
 			sizeof(private_data->socket.sockAddr)) < 0) {
-		fprintf(stderr, "Error connecting to receiver.\n");
+		ERROR("Error connecting to receiver.\n");
 		free(private_data);
-		*plugin_private_data = NULL;
 		return -1;
 	}
 
@@ -108,56 +108,45 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 
 WL_EXPORT void help(void)
 {
-	printf("\tThe tcp plugin uses the following parameters:\n");
-	printf("\t--ipaddr=<ip_address>\t\tIP address of receiver.\n");
-	printf("\t--port=<port_number>\t\tPort to use on receiver.\n");
-	printf("\n\tThe receiver should be started using:\n");
-	printf("\t\"gst-launch-1.0 tcpserversrc  host=<ip_address> port=<port_number> ! h264parse ! mfxdecode live-mode=true ! mfxsinkelement\"\n");
+	PRINT("\tThe tcp plugin uses the following parameters:\n");
+	PRINT("\t--ipaddr=<ip_address>\t\tIP address of receiver.\n");
+	PRINT("\t--port=<port_number>\t\tPort to use on receiver.\n");
+	PRINT("\n\tThe receiver should be started using:\n");
+	PRINT("\t\"gst-launch-1.0 tcpserversrc  host=<ip_address> port=<port_number> ! h264parse ! mfxdecode live-mode=true ! mfxsinkelement\"\n");
 }
 
 
-WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo,
-		int32_t stream_size, uint32_t timestamp)
+WL_EXPORT int send_frame(drm_intel_bo *drm_bo, int32_t stream_size, uint32_t timestamp)
 {
 	uint8_t *bufdata = (uint8_t *)(drm_bo->virtual);
-	struct private_data *private_data = (struct private_data *)plugin_private_data;
 
 	if (private_data == NULL) {
-		fprintf(stderr, "Private data is null!\n");
+		ERROR("Private data is null!\n");
 		return -1;
 	}
 
-	if (private_data->verbose) {
-		printf("Sending frame over TCP...\n");
-	}
+	DBG("Sending frame over TCP...\n");
 
 	int rval = write(private_data->socket.sockDesc, bufdata, stream_size);
 
 	if (rval <= 0) {
-		fprintf(stderr, "Send failed.\n");
+		ERROR("Send failed.\n");
 	}
 
 	return 0;
 }
 
-WL_EXPORT void destroy(void **plugin_private_data)
+WL_EXPORT void destroy()
 {
-	struct private_data *private_data = (struct private_data *)*plugin_private_data;
-
 	if (private_data == NULL) {
 		return;
 	}
 
-	if (private_data->verbose) {
-		fprintf(stdout, "Closing network connection...\n");
-	}
+	DBG("Closing network connection...\n");
 	close(private_data->socket.sockDesc);
 	private_data->socket.sockDesc = -1;
 	memset(&private_data->socket.sockAddr, 0, sizeof(private_data->socket.sockAddr));
 
-	if (private_data->verbose) {
-		fprintf(stdout, "Freeing plugin private data...\n");
-	}
+	DBG("Freeing plugin private data...\n");
 	free(private_data);
-	*plugin_private_data = NULL;
 }

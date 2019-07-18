@@ -155,8 +155,8 @@ struct gears_data {
    EGLSurface egl_surface;
    struct wl_list output_list;
    struct ias_surface *shell_surface;
-   struct zxdg_surface_v6 *xdg_surface;
-   struct zxdg_toplevel_v6 *xdg_toplevel;
+   struct xdg_surface *xdg_surface;
+   struct xdg_toplevel *xdg_toplevel;
    bool wait_for_configure;
 
    PFNEGLSWAPBUFFERSWITHDAMAGEEXTPROC swap_buffers_with_damage;

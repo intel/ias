@@ -131,6 +131,9 @@ void ias_hmi_reg::ias_hmi_surface_info(void *data,
 		uint32_t dispno,
 		uint32_t flipped)
 {
+	UNUSED(hmi);
+	UNUSED(pid);
+	UNUSED(pname);
 	surf_info_t *s, *existing;
 	ias_hmi_reg *d = (ias_hmi_reg *) data;
 
@@ -196,6 +199,10 @@ void ias_hmi_reg::ias_hmi_surface_destroyed(void *data,
 		uint32_t pid,
 		const char *pname)
 {
+	UNUSED(hmi);
+	UNUSED(name);
+	UNUSED(pid);
+	UNUSED(pname);
 	surf_info_t *s, *tmp;
 	ias_hmi_reg *d = (ias_hmi_reg *) data;
 
@@ -208,12 +215,99 @@ void ias_hmi_reg::ias_hmi_surface_destroyed(void *data,
 			return;
 		}
 	}
+}
 
+void ias_hmi_reg::ias_hmi_surface_sharing_info(void *data,
+		struct ias_hmi *ias_hmi,
+		uint32_t id,
+		const char *title,
+		uint32_t shareable,
+		uint32_t pid,
+		const char *pname)
+{
+	UNUSED(data);
+	UNUSED(ias_hmi);
+	UNUSED(id);
+	UNUSED(title);
+	UNUSED(shareable);
+	UNUSED(pid);
+	UNUSED(pname);
+}
+
+void ias_hmi_reg::ias_hmi_raw_buffer_handle(void *data,
+		struct ias_hmi *ias_hmi,
+		int32_t handle,
+		uint32_t timestamp,
+		uint32_t frame_number,
+		uint32_t stride0,
+		uint32_t stride1,
+		uint32_t stride2,
+		uint32_t format,
+		uint32_t out_width,
+		uint32_t out_height,
+		uint32_t shm_surf_id,
+		uint32_t buf_id,
+		uint32_t image_id)
+{
+	UNUSED(data);
+	UNUSED(ias_hmi);
+	UNUSED(handle);
+	UNUSED(timestamp);
+	UNUSED(frame_number);
+	UNUSED(stride0);
+	UNUSED(stride1);
+	UNUSED(stride2);
+	UNUSED(format);
+	UNUSED(out_width);
+	UNUSED(out_height);
+	UNUSED(shm_surf_id);
+	UNUSED(buf_id);
+	UNUSED(image_id);
+}
+
+void ias_hmi_reg::ias_hmi_raw_buffer_fd(void *data,
+		struct ias_hmi *ias_hmi,
+		int32_t prime_fd,
+		uint32_t timestamp,
+		uint32_t frame_number,
+		uint32_t stride0,
+		uint32_t stride1,
+		uint32_t stride2,
+		uint32_t format,
+		uint32_t out_width,
+		uint32_t out_height)
+{
+	UNUSED(data);
+	UNUSED(ias_hmi);
+	UNUSED(prime_fd);
+	UNUSED(timestamp);
+	UNUSED(frame_number);
+	UNUSED(stride0);
+	UNUSED(stride1);
+	UNUSED(stride2);
+	UNUSED(format);
+	UNUSED(out_width);
+	UNUSED(out_height);
+}
+
+void ias_hmi_reg::ias_hmi_capture_error(void *data,
+		struct ias_hmi *ias_hmi,
+		int32_t pid,
+		int32_t error)
+{
+	UNUSED(data);
+	UNUSED(ias_hmi);
+	UNUSED(pid);
+	UNUSED(error);
 }
 
 static const struct ias_hmi_listener hmi_listener = {
 	ias_hmi_reg::ias_hmi_surface_info,
 	ias_hmi_reg::ias_hmi_surface_destroyed,
+	ias_hmi_reg::ias_hmi_surface_sharing_info,
+	ias_hmi_reg::ias_hmi_raw_buffer_handle,
+	ias_hmi_reg::ias_hmi_raw_buffer_fd,
+	ias_hmi_reg::ias_hmi_capture_error,
 };
 
 /*******************************************************************************

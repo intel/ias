@@ -52,16 +52,9 @@
 #include "input_receiver.h"
 #include "ias-shell-client-protocol.h"
 #include "main.h" /* Need access to app_state */
+#include "udp_socket.h"
+#include "debug.h"
 
-
-struct tcpTransport {
-	int sockDesc;
-	struct sockaddr_in sockAddr;
-	socklen_t len;
-	char *ipaddr;
-	unsigned short port;
-	int connected;
-};
 
 struct remoteDisplayInput {
 	int uinput_touch_fd;
@@ -77,7 +70,8 @@ struct remoteDisplayButtonState{
 	};
 
 struct input_receiver_private_data {
-	struct tcpTransport transport;
+	struct udp_socket *udp_socket;
+	int num_addr;
 	struct remoteDisplayInput input;
 	volatile int running;
 	int verbose;
@@ -96,7 +90,7 @@ init_output_touch(int *uinput_touch_fd_out)
 
 	*uinput_touch_fd_out = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
 	if (*uinput_touch_fd_out < 0) {
-		printf("Cannot open uinput.\n");
+		ERROR("Cannot open uinput.\n");
 		return -1;
 	}
 	uinput_touch_fd = *uinput_touch_fd_out;
@@ -156,7 +150,7 @@ write_touch_slot(int uinput_touch_fd, uint32_t id)
 	ev.value = id;
 	ret = write(uinput_touch_fd, &ev, sizeof(ev));
 	if (ret < 0) {
-		fprintf(stderr, "Failed to add slot to touch uinput.\n");
+		ERROR("Failed to add slot to touch uinput.\n");
 	}
 }
 
@@ -173,7 +167,7 @@ write_touch_tracking_id(int uinput_touch_fd, uint32_t id)
 	ev.value = id;
 	ret = write(uinput_touch_fd, &ev, sizeof(ev));
 	if (ret < 0) {
-		fprintf(stderr, "Failed to add tracking id to touch uinput.\n");
+		ERROR("Failed to add tracking id to touch uinput.\n");
 	}
 }
 
@@ -193,7 +187,7 @@ write_touch_event_coords(struct app_state *appstate, uint32_t x, uint32_t y)
 	ev.value = (x + offset_x) * MAX_TOUCH_X / appstate->output_width;
 	ret = write(touch_fd, &ev, sizeof(ev));
 	if (ret < 0) {
-		fprintf(stderr, "Failed to add x value to touch uinput.\n");
+		ERROR("Failed to add x value to touch uinput.\n");
 	}
 
 	memset(&ev, 0, sizeof(ev));
@@ -202,7 +196,7 @@ write_touch_event_coords(struct app_state *appstate, uint32_t x, uint32_t y)
 	ev.value = (y + offset_y) * MAX_TOUCH_Y / appstate->output_height;
 	ret = write(touch_fd, &ev, sizeof(ev));
 	if (ret < 0) {
-		fprintf(stderr, "Failed to add y value to touch uinput.\n");
+		ERROR("Failed to add y value to touch uinput.\n");
 	}
 }
 
@@ -217,7 +211,7 @@ write_syn(int uinput_touch_fd)
 	ev.type = EV_SYN;
 	ret = write(uinput_touch_fd, &ev, sizeof(ev));
 	if (ret < 0) {
-		fprintf(stderr, "Failed to add syn to touch uinput.\n");
+		ERROR("Failed to add syn to touch uinput.\n");
 	}
 }
 
@@ -232,7 +226,7 @@ static void write_msc(int fd)
 	ev.value = 90001;
 	ret = write(fd, &ev, sizeof(ev));
 	if (ret < 0) {
-		fprintf(stderr, "Failed to write button.\n");
+		ERROR("Failed to write button.\n");
 		return;
 	}
 }
@@ -248,7 +242,7 @@ static void write_key(int fd, uint32_t btn, uint32_t state)
 	ev.value = state;
 	ret = write(fd, &ev, sizeof(ev));
 	if (ret < 0) {
-		fprintf(stderr, "Failed to write button.\n");
+		ERROR("Failed to write button.\n");
 		return;
 	}
 }
@@ -265,7 +259,7 @@ static void write_rel(int fd, uint32_t xy, uint32_t pos)
 	ev.value = pos;
 	ret = write(fd, &ev, sizeof(ev));
 	if (ret < 0) {
-		fprintf(stderr, "Failed to write button.\n");
+		ERROR("Failed to write button.\n");
 		return;
 	}
 }
@@ -328,7 +322,7 @@ static void pointer_motion_func(struct app_state *appstate, gstInputMsg *msg)
 #if 0
 	int uinput_pointer_fd = appstate->ir_priv->input.uinput_pointer_fd;
 
-	printf("%s: %d, x = %u, fixed_x = %f, y = %u, fixed_y = %f\n",
+	DBG("%s: %d, x = %u, fixed_x = %f, y = %u, fixed_y = %f\n",
 			__FUNCTION__, __LINE__, msg->p.x, wl_fixed_to_double(msg->p.x),
 			msg->p.y, wl_fixed_to_double(msg->p.y));
 
@@ -447,7 +441,7 @@ init_output_pointer(int *uinput_pointer_fd_out)
 
 	*uinput_pointer_fd_out = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
 	if (*uinput_pointer_fd_out < 0) {
-		printf("Cannot open uinput.\n");
+		ERROR("Cannot open uinput.\n");
 		return -1;
 	}
 	uinput_pointer_fd = *uinput_pointer_fd_out;
@@ -490,7 +484,7 @@ init_output_keyboard(int *uinput_keyboard_fd_out)
 
 	*uinput_keyboard_fd_out = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
 	if (*uinput_keyboard_fd_out < 0) {
-		printf("Cannot open uinput.\n");
+		ERROR("Cannot open uinput.\n");
 		return -1;
 	}
 	uinput_keyboard_fd = *uinput_keyboard_fd_out;
@@ -520,16 +514,8 @@ init_output_keyboard(int *uinput_keyboard_fd_out)
 }
 
 static void
-close_transport(struct tcpTransport *transport)
+close_transport()
 {
-	printf("Closing transport...\n");
-	if (transport->sockDesc >= 0) {
-		close(transport->sockDesc);
-		transport->sockDesc = -1;
-	}
-	transport->connected = 0;
-	/* May need to consider tracking the state, so that any multi-touch slots
-	 * that are currently "down" are sent an up event. */
 }
 
 static void
@@ -556,42 +542,45 @@ cleanup_input(struct remoteDisplayInput *input)
 
 
 static void
-init_transport(struct tcpTransport *transport)
+init_transport(struct input_receiver_private_data *data)
 {
 	int ret = 0;
 	char *hello = "Hello";
 	struct timeval optTime = {0, 10}; /* {sec, msec} */
-	transport->len = sizeof(transport->sockAddr);
 
-	printf("Initialising transport on input receiver...\n");
-	transport->sockDesc = socket(AF_INET , SOCK_DGRAM , 0);
-	if (transport->sockDesc == -1) {
-		fprintf(stderr, "Socket creation failed.\n");
+	/* TODO: This 0 will have to change if we have more than one udp sockets */
+	struct udp_socket *transport = &data->udp_socket[0];
+
+	transport->input.len = sizeof(transport->input.addr);
+
+	INFO("Initialising transport on input receiver...\n");
+	transport->input.sock_desc = socket(AF_INET, SOCK_DGRAM , 0);
+	if (transport->input.sock_desc == -1) {
+		ERROR("Socket creation failed.\n");
 		return;
 	}
-	if (setsockopt(transport->sockDesc, SOL_SOCKET, SO_SNDTIMEO, &optTime, sizeof(optTime)) < 0) {
-		fprintf(stderr, "sendto timeout configuration failed\n");
+	if (setsockopt(transport->input.sock_desc, SOL_SOCKET, SO_SNDTIMEO, &optTime, sizeof(optTime)) < 0) {
+		ERROR("sendto timeout configuration failed\n");
 		return;
 	}
 
-	transport->sockAddr.sin_family = AF_INET;
-	transport->sockAddr.sin_addr.s_addr = inet_addr(transport->ipaddr);
-	transport->sockAddr.sin_port = htons(transport->port);
+	transport->input.addr.sin_family = AF_INET;
+	transport->input.addr.sin_addr.s_addr = inet_addr(transport->str_ipaddr);
+	transport->input.addr.sin_port = htons(transport->input.port);
 
 	/* Send a simple hello message to the server so that it knows about us */
-	ret = sendto(transport->sockDesc, (const char *)hello, strlen(hello),
-			0, (const struct sockaddr *) &transport->sockAddr,
-			transport->len);
+	ret = sendto(transport->input.sock_desc, (const char *)hello, strlen(hello),
+			0, (const struct sockaddr *) &transport->input.addr,
+			transport->input.len);
 
 	if (ret < 0) {
-		fprintf(stderr, "Error with sending message to the server.\n");
-		close(transport->sockDesc);
-		transport->sockDesc = -1;
+		ERROR("Error with sending message to the server.\n");
+		close(transport->input.sock_desc);
+		transport->input.sock_desc = -1;
 		return;
 	}
 
-	printf("Read to accept input events.\n");
-	transport->connected = 1;
+	INFO("Read to accept input events.\n");
 }
 
 static void *
@@ -602,23 +591,23 @@ receive_events(void * const priv_data)
 	gstInputMsg msg;
 	struct event_conv *ev;
 
-	init_transport(&data->transport);
+	/* TODO: This 0 will have to change if we have more than one udp sockets */
+	struct udp_socket *transport = &data->udp_socket[0];
+
+	init_transport(data);
 	data->running = 1;
 
 	while (data->running) {
-		if (data->transport.connected) {
-			ret = recvfrom(data->transport.sockDesc, &msg, sizeof(msg), 0,
-					(struct sockaddr *) &data->transport.sockAddr,
-					&data->transport.len);
-		}
+		ret = recvfrom(transport->input.sock_desc, &msg, sizeof(msg), 0,
+				(struct sockaddr *) &transport->input.addr,
+				&transport->input.len);
+
 		if (data->running == 0) {
-			printf("Receive interrupted by shutdown.\n");
+			INFO("Receive interrupted by shutdown.\n");
 			continue;
 		}
-		if (data->transport.connected == 0) {
-			/* Do nothing. */
-		} else if (ret <= 0) {
-			printf("Header receive failed.\n");
+		if (ret <= 0) {
+			INFO("Receive failed.\n");
 		} else if (data->appstate->surfid) {
 			ev = get_matching_event(msg.type);
 			if(ev && ev->surf_event_func) {
@@ -633,23 +622,13 @@ receive_events(void * const priv_data)
 				ev->output_event_func(data->appstate, &msg);
 			}
 		}
-		if (ret <= 0) {
-			if (data->transport.connected) {
-				printf("Sender has closed socket. Attempting to reconnect...\n");
-				close_transport(&data->transport);
-			}
-			init_transport(&data->transport);
-			if (!data->transport.connected) {
-				sleep(1);
-			}
-		}
 	}
 
-	close_transport(&data->transport);
+	close_transport();
 	cleanup_input(&data->input);
 	free(priv_data);
 
-	printf("Receive thread finished.\n");
+	INFO("Receive thread finished.\n");
 	return 0;
 }
 
@@ -662,28 +641,24 @@ start_event_listener(struct app_state *appstate, int *argc, char **argv)
 	int touch_ret = 0;
 	int keyb_ret = 0;
 	int pointer_ret = 0;
-
+	struct udp_socket *transport;
 
 	data = calloc(1, sizeof(*data));
-	if (!data) {
-		fprintf(stderr, "Failed to allocate memory for input receiver private data.\n");
-		return;
-	} else {
-		int port = 0;
-		const struct weston_option options[] = {
-			{ WESTON_OPTION_STRING,  "relay_input_ipaddr", 0, &data->transport.ipaddr},
-			{ WESTON_OPTION_INTEGER, "relay_input_port", 0, &port},
-		};
 
-		parse_options(options, ARRAY_LENGTH(options), argc, argv);
-		data->transport.port = port;
+	/* In case of udp transport, we should get the  */
+	if(!strcmp(appstate->transport_plugin, "udp") &&
+		appstate->get_sockaddr_fptr) {
+		appstate->get_sockaddr_fptr(&data->udp_socket, &data->num_addr);
 	}
 
-	if ((data->transport.ipaddr != NULL) && (data->transport.ipaddr[0] != 0)) {
-		printf("Receiving input events from %s:%d.\n", data->transport.ipaddr,
-			data->transport.port);
+	/* TODO: This 0 will have to change if we have more than one udp sockets */
+	transport = &data->udp_socket[0];
+
+	if (transport && transport->input.port != 0) {
+		INFO("Receiving input events from %s:%d.\n", transport->str_ipaddr,
+			transport->input.port);
 	} else {
-		printf("Not listening for input events; network configuration not set.\n");
+		INFO("Not listening for input events; network configuration not set.\n");
 		free(data);
 		data = NULL;
 		return;
@@ -696,9 +671,9 @@ start_event_listener(struct app_state *appstate, int *argc, char **argv)
 		touch_ret = init_output_touch(&(data->input.uinput_touch_fd));
 		/* Assume that the outputs are listed in the same order. */
 		wl_list_for_each_reverse(output, &appstate->output_list, link) {
-			printf("Output %d is at %d, %d.\n", i, output->x, output->y);
+			DBG("Output %d is at %d, %d.\n", i, output->x, output->y);
 			if (appstate->output_number == i) {
-				printf("Sending events to output %d at %d, %d.\n",
+				DBG("Sending events to output %d at %d, %d.\n",
 					i, output->x, output->y);
 				appstate->output_origin_x = output->x;
 				appstate->output_origin_y = output->y;
@@ -712,17 +687,17 @@ start_event_listener(struct app_state *appstate, int *argc, char **argv)
 	}
 
 	if (touch_ret) {
-		fprintf(stderr, "Error initialising touch input - %d.\n", touch_ret);
+		ERROR("Error initialising touch input - %d.\n", touch_ret);
 		free(data);
 		return;
 	}
 	if (keyb_ret) {
-		fprintf(stderr, "Error initialising keyboard input - %d.\n", keyb_ret);
+		ERROR("Error initialising keyboard input - %d.\n", keyb_ret);
 		free(data);
 		return;
 	}
 	if (pointer_ret) {
-		fprintf(stderr, "Error initialising pointer input - %d.\n", keyb_ret);
+		ERROR("Error initialising pointer input - %d.\n", keyb_ret);
 		free(data);
 		return;
 	}
@@ -730,28 +705,25 @@ start_event_listener(struct app_state *appstate, int *argc, char **argv)
 
 	ret = pthread_create(&data->input_thread, NULL, receive_events, data);
 	if (ret) {
-		fprintf(stderr, "Transport thread creation failure: %d\n", ret);
+		ERROR("Transport thread creation failure: %d\n", ret);
 		free(data);
 		return;
 	}
 
 	data->appstate = appstate;
-	data->verbose = appstate->verbose;
 	appstate->ir_priv = data;
-	printf("Input receiver started.\n");
+	INFO("Input receiver started.\n");
 }
 
 void
 stop_event_listener(struct input_receiver_private_data *priv_data)
 {
-	if (!priv_data) {
+	if (!priv_data || !priv_data->udp_socket) {
 		return;
 	}
 	priv_data->running = 0;
-	if (priv_data->verbose) {
-		printf("Waiting for input receiver thread to finish...\n");
-	}
-	shutdown(priv_data->transport.sockDesc, SHUT_RDWR);
+	DBG("Waiting for input receiver thread to finish...\n");
+	shutdown(priv_data->udp_socket[0].input.sock_desc, SHUT_RDWR);
 	pthread_join(priv_data->input_thread, NULL);
-	printf("Input receiver thread stopped.\n");
+	INFO("Input receiver thread stopped.\n");
 }
