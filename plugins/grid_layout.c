@@ -1114,20 +1114,24 @@ ias_plugin_init(struct ias_plugin_info *info,
 	switch(spug_get_output_transform(output)) {
 		case SPUG_OUTPUT_TRANSFORM_FLIPPED:
 			weston_matrix_scale(&projmat, -1.0f, 1.0f, 1.0f);
+			__attribute__ ((fallthrough));
 		case SPUG_OUTPUT_TRANSFORM_NORMAL:
 			break;
 		case SPUG_OUTPUT_TRANSFORM_FLIPPED_90:
 			weston_matrix_scale(&projmat, -1.0f, 1.0f, 1.0f);
+			__attribute__ ((fallthrough));
 		case SPUG_OUTPUT_TRANSFORM_90:
 			spug_matrix_rotate_xy(&projmat, 0.0f, 1.0f);
 			break;
 		case SPUG_OUTPUT_TRANSFORM_FLIPPED_180:
 			weston_matrix_scale(&projmat, -1.0f, 1.0f, 1.0f);
+			__attribute__ ((fallthrough));
 		case SPUG_OUTPUT_TRANSFORM_180:
 			spug_matrix_rotate_xy(&projmat, -1.0f, 0.0f);
 			break;
 		case SPUG_OUTPUT_TRANSFORM_FLIPPED_270:
 			weston_matrix_scale(&projmat, -1.0f, 1.0f, 1.0f);
+			__attribute__ ((fallthrough));
 		case SPUG_OUTPUT_TRANSFORM_270:
 			spug_matrix_rotate_xy(&projmat, 0.0f, -1.0f);
 			break;
