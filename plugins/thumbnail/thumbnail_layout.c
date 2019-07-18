@@ -692,8 +692,8 @@ thumb_grab_touch_up(struct weston_touch_grab *grab, const struct timespec *time,
 	int which_thumb = -1;
 
 	if (thumb.swiped) {
-		if ((abs(thumb.swipe_x - thumb.swipe_end_x) > 100) ||
-				(abs(thumb.swipe_y - thumb.swipe_end_y) > 80)) {
+		if ((abs((int)(thumb.swipe_x - thumb.swipe_end_x)) > 100) ||
+				(abs((int)(thumb.swipe_y - thumb.swipe_end_y)) > 80)) {
 			/*
 			 * Attempting to make the interface respond to swipe/
 			 * drag type events. The difference between a swipe

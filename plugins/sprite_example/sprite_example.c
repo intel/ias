@@ -341,7 +341,7 @@ view_draw(	struct spug_view_draw_info *view_draw_info,
 		glUniform1i(tex_uniform, 0);
 		glUniform1i(timedout_uniform, spug_has_surface_timedout(view_draw_info->id));
 		glUniform1f(opacity_uniform, (i == selected_tile) ?
-				abs(60.0 - (float)(frame%120)) / 60.0 :
+				abs((int)(60.0 - (float)(frame%120) / 60.0)) :
 				1.0);
 		
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
@@ -379,7 +379,7 @@ grid_draw(spug_view_list view_list)
 		glUniform1i(gray_uniform, 1);
 		glUniform1i(timedout_uniform, 0);
 		glUniform1f(opacity_uniform, (i == selected_tile) ?
-				abs(60.0 - (float)(frame%120)) / 60.0 :
+				abs((int)(60.0 - (float)(frame%120) / 60.0)) :
 				1.0);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	}
