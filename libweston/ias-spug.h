@@ -141,10 +141,6 @@ WL_EXPORT spug_global_id spug_global_create(const struct spug_interface *interfa
 /* wrapper for wl_global_destroy() */
 WL_EXPORT void spug_global_destroy(spug_global_id global);
 
-/* wrapper for wl_client_add_resource */
-WL_EXPORT uint32_t
-spug_client_add_resource(spug_client_id client_id, spug_resource *resource);
-
 /* typedef of the function pointer passed to glib for destroying any elements
  * remaining in a hash table when that table is destroyed */
 typedef void
