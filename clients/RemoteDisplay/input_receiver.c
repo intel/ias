@@ -42,6 +42,7 @@
 #include <fcntl.h>
 #include <linux/uinput.h>
 #include <pthread.h>
+#include <errno.h>
 
 #include <wayland-util.h>
 
@@ -545,7 +546,6 @@ static void
 init_transport(struct input_receiver_private_data *data)
 {
 	int ret = 0;
-	char *hello = "Hello";
 	struct timeval optTime = {0, 10}; /* {sec, msec} */
 
 	/* TODO: This 0 will have to change if we have more than one udp sockets */
@@ -565,22 +565,20 @@ init_transport(struct input_receiver_private_data *data)
 	}
 
 	transport->input.addr.sin_family = AF_INET;
-	transport->input.addr.sin_addr.s_addr = inet_addr(transport->str_ipaddr);
+	transport->input.addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	transport->input.addr.sin_port = htons(transport->input.port);
 
-	/* Send a simple hello message to the server so that it knows about us */
-	ret = sendto(transport->input.sock_desc, (const char *)hello, strlen(hello),
-			0, (const struct sockaddr *) &transport->input.addr,
-			transport->input.len);
-
+	ret = bind(transport->input.sock_desc, (struct sockaddr *) &transport->input.addr,
+			sizeof (transport->input.addr));
 	if (ret < 0) {
-		ERROR("Error with sending message to the server.\n");
+		ERROR("bind function failed. errno is %d.\n",errno);
 		close(transport->input.sock_desc);
 		transport->input.sock_desc = -1;
 		return;
 	}
 
-	INFO("Read to accept input events.\n");
+	data->running = 1;
+	INFO("Ready to accept input events.\n");
 }
 
 static void *
@@ -595,7 +593,6 @@ receive_events(void * const priv_data)
 	struct udp_socket *transport = &data->udp_socket[0];
 
 	init_transport(data);
-	data->running = 1;
 
 	while (data->running) {
 		ret = recvfrom(transport->input.sock_desc, &msg, sizeof(msg), 0,
