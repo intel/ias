@@ -41,7 +41,7 @@ dir_module_libweston = join_paths(dir_lib, 'libias-@0@'.format(libweston_major))
 dir_data_pc = join_paths(dir_data, 'pkgconfig')
 dir_lib_pc = join_paths(dir_lib, 'pkgconfig')
 dir_man = join_paths(dir_prefix, get_option('mandir'))
-dir_protocol_libweston = 'libias/protocols' 
+dir_protocol_libweston = join_paths('libias-@0@'.format(libweston_major), 'protocols')
 
 public_inc = include_directories('include')
 
