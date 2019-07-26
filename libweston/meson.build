@@ -619,8 +619,8 @@ endif
 
 if get_option('profile-remote-display')
 	if not get_option('enable-remote-display')
-		error('profile-remote-display requires enable-remote-display which
-		 was not found. Or, you can use \'-Dprofile-remote-display=false\'.')
+		error('''profile-remote-display requires enable-remote-display which
+		 was not found. Or, you can use \'-Dprofile-remote-display=false\'.''')
 	endif
 
 	config_h.set('PROFILE_REMOTE_DISPLAY', '1')

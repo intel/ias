@@ -42,6 +42,13 @@
 
 #define CFG_FILENAME "ias.conf"
 
+#ifndef IAS_SHELL_ERROR_ENUM
+#define IAS_SHELL_ERROR_ENUM
+enum ias_shell_error {
+	IAS_SHELL_ERROR_ROLE = 0,
+};
+#endif /* IAS_SHELL_ERROR_ENUM */
+
 struct ias_shell;
 
 WL_EXPORT struct ias_surface*
@@ -95,6 +102,7 @@ struct ias_shell {
 	struct wl_list background_surfaces;
 	struct wl_list popup_surfaces;
 	struct wl_list client_surfaces;
+	struct wl_list soc_list;
 
 #ifdef IASDEBUG
 	/*
@@ -119,6 +127,9 @@ struct ias_shell {
 	/* Keep track of which clients are bound to which shell interface */
 	struct wl_list wl_shell_clients;
 	struct wl_list ias_shell_clients;
+
+	/* Metrics reporting */
+	struct wl_list ias_metrics_callbacks;
 
 	/*
 	 * Note for future expansion:  At the moment we assume that lockscreens,
@@ -250,6 +261,14 @@ struct ias_surface {
 	int wl_shell_interface;
 	/* flag that indicates if surface could be shared */
 	int shareable;
+	/*
+	 * A bitmask that indicates which SoCs is this surface for. If this surface
+	 * is meant for local display only, then bit 0 should be set. If it is for
+	 * SoC 1, then Bit 1 should be set and so on. By default, we expect each
+	 * surface to be only locally displayable so this variable will be init to
+	 * 1.
+	 */
+	uint32_t soc;
 };
 
 // whether surface is directly flipped or composited

@@ -37,6 +37,9 @@
 #include "../shared/helpers.h"
 
 #include "transport_plugin.h"
+#include "debug.h"
+
+int debug_level = DBG_OFF;
 
 struct private_data {
 	int verbose;
@@ -49,12 +52,12 @@ struct private_data {
 	GstElement *appsrc;
 };
 
+struct private_data *private_data = NULL;
 
-WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data,
-			int verbose)
+WL_EXPORT int init(int *argc, char **argv, int verbose)
 {
-	printf("Using avb remote display transport plugin...\n");
-	struct private_data *private_data = calloc(1, sizeof(*private_data));
+	debug_level = verbose;
+	private_data = calloc(1, sizeof(*private_data));
 
 	GstElement *pipeline    = NULL;
 	GstElement *appsrc      = NULL;
@@ -62,12 +65,10 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data,
 	GstElement *rtph264pay  = NULL;
 	GstElement *avbh264sink = NULL;
 
-	*plugin_private_data = (void *)private_data;
-	if (private_data) {
-		private_data->verbose = verbose;
-	} else {
+	if (!private_data) {
 		return(-ENOMEM);
 	}
+	INFO("Using avb remote display transport plugin...\n");
 
 	const struct weston_option options[] = {
 		{ WESTON_OPTION_INTEGER, "debug_packets", 0, &private_data->debug_packetisation},
@@ -80,15 +81,12 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data,
 
 	if (private_data->avb_channel == NULL) {
 		private_data->avb_channel = "media_transport.avb_streaming.1";
-		if (private_data->verbose) {
-			printf("Defaulting to avb channel %s.\n", private_data->avb_channel);
-		}
+		DBG("Defaulting to avb channel %s.\n", private_data->avb_channel);
 	}
 
 	if ((private_data->dump_packets != 0) && (private_data->packet_path == 0)) {
-		fprintf(stderr, "No packet path provided - see help (remotedisplay --plugin=avb --help).\n");
+		ERROR("No packet path provided - see help (remotedisplay --plugin=avb --help).\n");
 		free(private_data);
-		*plugin_private_data = NULL;
 		return -1;
 	}
 
@@ -101,9 +99,8 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data,
 			max_write = PATH_MAX - strlen(tmp) - 1;
 			strncat(tmp, "packets.rtp", max_write);
 		} else {
-			fprintf(stderr, "Failed to create packet file path.\n");
+			ERROR("Failed to create packet file path.\n");
 			free(private_data);
-			*plugin_private_data = NULL;
 			return -1;
 		}
 		private_data->packet_path = tmp;
@@ -114,9 +111,7 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data,
 		 */
 	}
 
-	if (private_data->verbose) {
-		printf("Create AVB sender...\n");
-	}
+	DBG("Create AVB sender...\n");
 
 	(void) gst_init (NULL, NULL);
 
@@ -157,7 +152,7 @@ gst_free_pipeline:
 		(void) gst_object_unref (GST_OBJECT (pipeline));
 	}
 
-	fprintf(stderr, "Failed to create sender.\n");
+	ERROR("Failed to create sender.\n");
 
 	return -1;
 }
@@ -165,36 +160,32 @@ gst_free_pipeline:
 
 WL_EXPORT void help(void)
 {
-	printf("\tThe avb plugin uses the following parameters:\n");
-	printf("\t--packet_path=<packet_path>\tset path for local capture of RTP packets to a file\n"
-		"\t--dump_packets=1\t\tappend a copy of each RTP packet to <packet_path>/packets.rtp\n");
-	printf("\t--ufipc=1\t\t\tvideo frames will be split into RTP packets and the packets sent over ufipc\n");
-	printf("\t--channel=<avb_channel>\t\tufipc channel over which to send"
-		" the image stream (e.g. 'media_transport.avb_streaming.3')\n");
-	printf("\n\tNote that the default avb_channel is 'media_transport.avb_streaming.1'.\n\n");
-	printf("\n\tThe receiver should be started using:\n");
-	printf("\t\"gst-launch-1.0 avbvideosrc stream-type=\"rtp-h264\" stream-name=\"media_transport.avb_streaming.7 "
+	PRINT("\tThe avb plugin uses the following parameters:\n");
+	PRINT("\t--packet_path=<packet_path>\tset path for local capture of RTP packets to a file\n"
+			"\t--dump_packets=1\t\tappend a copy of each RTP packet to <packet_path>/packets.rtp\n");
+	PRINT("\t--ufipc=1\t\t\tvideo frames will be split into RTP packets and the packets sent over ufipc\n");
+	PRINT("\t--channel=<avb_channel>\t\tufipc channel over which to send"
+			" the image stream (e.g. 'media_transport.avb_streaming.3')\n");
+	PRINT("\n\tNote that the default avb_channel is 'media_transport.avb_streaming.1'.\n\n");
+	PRINT("\n\tThe receiver should be started using:\n");
+	PRINT("\t\"gst-launch-1.0 avbvideosrc stream-type=\"rtp-h264\" stream-name=\"media_transport.avb_streaming.7 "
 			"! rtph264depay ! h264parse ! mfxdecode live-mode=true ! mfxsinkelement\"\n");
 }
 
 
-WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo,
-		int32_t stream_size, uint32_t timestamp)
+WL_EXPORT int send_frame(drm_intel_bo *drm_bo, int32_t stream_size, uint32_t timestamp)
 {
 	uint8_t *readptr = drm_bo->virtual;
-	struct private_data *private_data = (struct private_data *)plugin_private_data;
 
 	GstBuffer *gstbuf = NULL;
 	GstMapInfo gstmap;
 
 	if (!private_data) {
-		fprintf(stderr, "No private data!\n");
+		ERROR("No private data!\n");
 		goto error;
 	}
 
-	if (private_data->verbose) {
-		printf("Sending frame over AVB...\n");
-	}
+	DBG("Sending frame over AVB...\n");
 
 	gstbuf = gst_buffer_new_and_alloc (stream_size);
 	if (!readptr || !gstbuf)
@@ -213,7 +204,7 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo,
 	return 0;
 
 error:
-	fprintf(stderr, "Send failed.\n");
+	ERROR("Send failed.\n");
 
 	if (gstbuf)
 		gst_buffer_unref (gstbuf);
@@ -222,11 +213,10 @@ error:
 }
 
 
-WL_EXPORT void destroy(void **plugin_private_data)
+WL_EXPORT void destroy()
 {
-	struct private_data *private_data = (struct private_data *)*plugin_private_data;
 	if (private_data == NULL) {
-		fprintf(stderr, "Invalid avb plugin private data passed to destroy.\n");
+		ERROR("Invalid avb plugin private data passed to destroy.\n");
 		return;
 	}
 
@@ -242,9 +232,6 @@ WL_EXPORT void destroy(void **plugin_private_data)
 
 	free(private_data->packet_path);
 
-	if (private_data && private_data->verbose) {
-		printf("Freeing avb plugin private data...\n");
-	}
+	DBG("Freeing avb plugin private data...\n");
 	free(private_data);
-	*plugin_private_data = NULL;
 }

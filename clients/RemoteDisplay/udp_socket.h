@@ -23,44 +23,26 @@
  * SOFTWARE.
  */
 
-/*
- * This file defines the API for a Remote Display transport plugin.
- */
+#ifndef _UDP_SOCKET_H
+#define _UDP_SOCKET_H
 
-#ifndef __REMOTE_DISPLAY_TRANSPORT_PLUGIN_H__
-#define __REMOTE_DISPLAY_TRANSPORT_PLUGIN_H__
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
 
-/**
- * Initialisation of the plugin.
- * This must clean up after itself
- *
- * @param argc Passed straight through from the main application.
- * @param argv Passed straight through from the main application.
- * @param verbose Flag to indicate trace level.
- * @return Error code. 0 on success.
- */
-int init(int *argc, char **argv, int verbose);
+struct sock_type {
+	int sock_desc;
+	struct sockaddr_in addr;
+	int port;
+	socklen_t len;
+	bool available;
+};
 
-/**
- * Print help information specific to the plugin.
- *
- */
-void help(void);
+struct udp_socket {
+	struct sock_type data;
+	struct sock_type input;
+	char str_ipaddr[256];
+};
 
-/**
- * Send a frame over the plugin-specific transport.
- *
- * @param drm_bo Buffer of data to be sent.
- * @param stream_size Size of data to be sent.
- * @param timestamp RTP-style timestamp for frame.
- * @return Error code. 0 on success.
- */
-int send_frame(drm_intel_bo *drm_bo, int32_t stream_size, uint32_t timestamp);
 
-/**
- * Destruction of the plugin.
- * This must clean up any resources
- */
-void destroy();
-
-#endif /* __REMOTE_DISPLAY_TRANSPORT_PLUGIN_H__ */
+#endif

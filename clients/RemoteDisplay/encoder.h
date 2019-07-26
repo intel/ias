@@ -50,7 +50,7 @@ struct encoder_options {
 
 
 struct rd_encoder *
-rd_encoder_create(const int verbose, char *plugin, int *argc, char **argv);
+rd_encoder_create(void *as, int *argc, char **argv);
 int
 rd_encoder_init(struct rd_encoder * const encoder,
 				const int width, const int height,

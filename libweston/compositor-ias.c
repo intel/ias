@@ -142,6 +142,7 @@ static int use_xkbcommon;
 static int normalized_rotation;
 
 static int print_fps = 0;
+static int metrics_timing = 0;
 static int use_nuclear_flip = 1;
 static int no_flip_event = 0;
 static int no_color_correction = 0;
@@ -1721,19 +1722,12 @@ ias_output_render(struct ias_output *output, pixman_region32_t *new_damage)
 		return;
 	}
 
-	if (output->disabled) {
-		/*
-		 * If the output is disabled, we want to clear it to black rather than
-		 * drawing it.
-		 */
-		/*glGetFloatv(GL_COLOR_CLEAR_VALUE, saved_clearcolor);
-		glClearColor(0.0, 0.0, 0.0, 1.0);
-		glClear(GL_COLOR_BUFFER_BIT);
-		glClearColor(saved_clearcolor[0],
-				saved_clearcolor[1],
-				saved_clearcolor[2],
-				saved_clearcolor[3]);*/
-	} else {
+	/*
+	 * If the output is disabled or it's a virtual connector, then we don't
+	 * waste our time compositing a scanout buffer for it.
+	 */
+	if (!output->disabled &&
+			ias_crtc->connector_type != DRM_MODE_CONNECTOR_VIRTUAL) {
 		if (output->plugin) {
 			/* This output might be scaled.  Setup the real viewport for the output */
 			//glViewport(0, 0, output->width, output->height);
@@ -1812,6 +1806,34 @@ page_flip_handler(int fd, unsigned int frame,
 	}
 }
 
+/*
+ * Emulate page flip even for virtual display,
+ * so that weston repaint timer will be reset correctly
+ */
+static int
+virtual_pageflip(void *data)
+{
+	struct ias_crtc *ias_crtc = (struct ias_crtc *) data;
+	struct timespec ts;
+
+	clock_gettime(ias_crtc->backend->clock, &ts);
+	/*
+	 * For simplicity, as each output model is tracking flip state in private data,
+	 * assume that if its page_flip_handler will be called without any pending flip it
+	 * will handle that gracefully
+	 */
+	page_flip_handler(-1, 0, ts.tv_sec, ts.tv_nsec/1000, data);
+
+	/*
+	 * There may be issue with precision of below timer,
+	 * as its resolution is in ms, so it is hard to match
+	 * actuall refresh rate of display which may be eg. 16.66 ms
+	 */
+	wl_event_source_timer_update(ias_crtc->pageflip_timer,
+			 1000000/ias_crtc->current_mode->base.refresh);
+
+	return 0;
+}
 #if 0
 static void
 atomic_handler(int fd, unsigned int frame,
@@ -2180,6 +2202,19 @@ ias_assign_planes(struct weston_output *output, void *repaint_data)
 	wl_list_for_each_safe(ev, next, &backend->compositor->view_list, link) {
 		if (!(ev->output_mask & (1 <<output->id)))
 			continue;
+
+		/*
+		 * If this surface is meant for remote SoC, then we must hide it from
+		 * the local one by assigning it to NULL plane. This way, the client
+		 * will continue to provide us with buffers but we will just not be
+		 * showing them on any Wayland output.
+		 */
+		if(ev->surface->role_name &&
+				!strcmp(ev->surface->role_name, "remote_soc")) {
+			weston_view_move_to_plane(ev, NULL);
+			continue;
+		}
+
 		/*
 		 * Surfaces that can be flipped onto the display plane or the cursor plane
 		 * need to have their buffer kept around.
@@ -2529,42 +2564,47 @@ create_crtc_for_connector(struct ias_backend *backend,
 	drmModeEncoder *encoder;
 	int i;
 
-	/*
-	 * Grab the connector's encoder since it's really the encoder
-	 * that's associated with a CRTC.
-	 */
-	encoder = drmModeGetEncoder(backend->drm.fd, connector->encoders[0]);
-	if (encoder == NULL) {
-		weston_log("No encoder for connector.\n");
-		return NULL;
-	}
+	if (connector->connector_type != DRM_MODE_CONNECTOR_VIRTUAL) {
+		/*
+		 * Grab the connector's encoder since it's really the encoder
+		 * that's associated with a CRTC.
+		 */
+		encoder = drmModeGetEncoder(backend->drm.fd, connector->encoders[0]);
+		if (encoder == NULL) {
+			weston_log("No encoder for connector.\n");
+			return NULL;
+		}
 
-	/* Is there already a CRTC associated? */
-	if (encoder->crtc_id) {
-		ias_crtc->crtc_id = encoder->crtc_id;
-		goto found_crtc;
-	}
+		/* Is there already a CRTC associated? */
+		if (encoder->crtc_id) {
+			ias_crtc->crtc_id = encoder->crtc_id;
+			goto found_crtc;
+		}
 
-	/* No CRTC associated with the connector yet.  Find a suitable one. */
-	for (i = 0; i < resources->count_crtcs; i++) {
-		if (encoder->possible_crtcs & (1 << i) &&
-		    !(backend->crtc_allocator & (1 << resources->crtcs[i])))
-			break;
-	}
+		/* No CRTC associated with the connector yet.  Find a suitable one. */
+		for (i = 0; i < resources->count_crtcs; i++) {
+			if (encoder->possible_crtcs & (1 << i) &&
+			    !(backend->crtc_allocator & (1 << resources->crtcs[i])))
+				break;
+		}
 
-	/* Did we find a suitable CRTC? that isn't already in use? */
-	if (i == resources->count_crtcs) {
-		/* Couldn't find a suitable CRTC */
-		drmModeFreeEncoder(encoder);
-		weston_log("No suitable CRTC for connector\n");
-		return NULL;
+		/* Did we find a suitable CRTC? that isn't already in use? */
+		if (i == resources->count_crtcs) {
+			/* Couldn't find a suitable CRTC */
+			drmModeFreeEncoder(encoder);
+			weston_log("No suitable CRTC for connector\n");
+			return NULL;
+		} else {
+			ias_crtc->crtc_id = resources->crtcs[i];
+		}
 	} else {
-		ias_crtc->crtc_id = resources->crtcs[i];
+		ias_crtc->crtc_id = -1;
 	}
 
 found_crtc:
 	ias_crtc->connector_id = connector->connector_id;
 	ias_crtc->subpixel = connector->subpixel;
+	ias_crtc->connector_type = connector->connector_type;
 
 	/*
 	 * Mark the CRTC as used.  This is a bit strange since crtc_id will
@@ -2573,10 +2613,13 @@ found_crtc:
 	 */
 	backend->crtc_allocator |= (1 << ias_crtc->crtc_id);
 
-	/* Save original settings for CRTC */
-	ias_crtc->original_crtc = drmModeGetCrtc(backend->drm.fd, ias_crtc->crtc_id);
+	if (ias_crtc->connector_type != DRM_MODE_CONNECTOR_VIRTUAL) {
+		/* Save original settings for CRTC */
+		ias_crtc->original_crtc = drmModeGetCrtc(backend->drm.fd, ias_crtc->crtc_id);
 
-	drmModeFreeEncoder(encoder);
+		drmModeFreeEncoder(encoder);
+	}
+
 	return ias_crtc;
 }
 
@@ -2610,10 +2653,12 @@ destroy_sprites_atomic(struct ias_backend *backend)
 			free(sprite);
 		}
 
-		ret = drmModeAtomicCommit(backend->drm.fd, ias_crtc->prop_set, 0, ias_crtc);
-		if (ret) {
-			IAS_ERROR("Queueing atomic pageflip failed: %m (%d)", ret);
-			IAS_ERROR("This failure will prevent clients from updating.");
+		if (ias_crtc->connector_type != DRM_MODE_CONNECTOR_VIRTUAL) {
+			ret = drmModeAtomicCommit(backend->drm.fd, ias_crtc->prop_set, 0, ias_crtc);
+			if (ret) {
+				IAS_ERROR("Queueing atomic pageflip failed: %m (%d)", ret);
+				IAS_ERROR("This failure will prevent clients from updating.");
+			}
 		}
 
 		drmModeAtomicFree(ias_crtc->prop_set);
@@ -3013,7 +3058,8 @@ create_single_crtc(struct ias_backend *backend,
 	}
 	if (j == resources->count_crtcs) {
 		/* Couldn't find a suitable CRTC */
-		weston_log("No suitable CRTC found\n");
+		if (ias_crtc->connector_type != DRM_MODE_CONNECTOR_VIRTUAL)
+			weston_log("No suitable CRTC found\n");
 		ias_crtc->index=0;
 	} else {
 		ias_crtc->index = j;
@@ -3137,6 +3183,20 @@ create_single_crtc(struct ias_backend *backend,
 
 	ias_crtc->current_mode = crtc_mode;
 
+	/* Setup virtual page flip timer for virtual connectors */
+	if (ias_crtc->connector_type == DRM_MODE_CONNECTOR_VIRTUAL) {
+		struct wl_event_loop *loop = NULL;
+		struct weston_compositor *ec = backend->compositor;
+
+		loop = wl_display_get_event_loop(ec->wl_display);
+		assert(loop);
+		ias_crtc->pageflip_timer = wl_event_loop_add_timer(loop,
+				virtual_pageflip,
+				ias_crtc);
+		wl_event_source_timer_update(ias_crtc->pageflip_timer,
+				1000000/ias_crtc->current_mode->base.refresh);
+	}
+
 	/* Allocate cursor scanout buffers */
 	ias_crtc->cursor_bo[0] =
 		gbm_bo_create(backend->gbm, 64, 64, GBM_FORMAT_ARGB8888,
@@ -3178,13 +3238,15 @@ create_single_crtc(struct ias_backend *backend,
 	}
 
 	/* Make sure we do the drmModeSetCrtc on the next repaint */
-	ias_crtc->request_set_mode = 1;
+	if (ias_crtc->connector_type != DRM_MODE_CONNECTOR_VIRTUAL)
+		ias_crtc->request_set_mode = 1;
 
 	ias_crtc->brightness = 0x808080;
 	ias_crtc->contrast = 0x808080;
 	ias_crtc->gamma = 0x808080;
 
-	if (no_color_correction == 0) {
+	if (no_color_correction == 0 &&
+	    ias_crtc->connector_type != DRM_MODE_CONNECTOR_VIRTUAL) {
 		ias_crtc->request_color_correction_reset = 1;
 	}
 
@@ -4416,6 +4478,7 @@ ias_compositor_create(struct weston_compositor *compositor,
 	compositor->damage_outputs_on_init = damage_outputs_on_init;
 
 	backend->print_fps = print_fps;
+	backend->metrics_timing = metrics_timing;
 	backend->no_flip_event = no_flip_event;
 
 	if (config->gbm_format) {
@@ -5311,6 +5374,8 @@ void backend_begin(void *userdata, const char **attrs) {
 			normalized_rotation = atoi(attrs[1]);
 		} else if (strcmp(attrs[0], "print_fps") == 0) {
 			print_fps = atoi(attrs[1]);
+		} else if (strcmp(attrs[0], "metrics_timing") == 0) {
+			metrics_timing = atoi(attrs[1]);
 		} else if (strcmp(attrs[0], "use_nuclear_flip") == 0) {
 			use_nuclear_flip = atoi(attrs[1]);
 		} else if (strcmp(attrs[0], "no_flip_event") == 0) {

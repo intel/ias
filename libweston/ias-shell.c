@@ -42,14 +42,14 @@
 #include "ias-shell.h"
 #include "shared/helpers.h"
 
-#define TARGET_NUM_SECONDS 5
 
 static struct ias_shell *self;
 
 static void (*renderer_attach)(struct weston_surface *es, struct weston_buffer *buffer);
 
 static struct timeval curr_time;
-
+static uint32_t metrics_timing = 0;
+static uint32_t do_print_fps = 0;
 /*
  * Custom zorder (layer).
  */
@@ -864,6 +864,9 @@ ias_shell_get_ias_surface_internal(struct wl_client *client,
 
 	/* Surface sharing is disabled by default for the new surface */
 	shsurf->shareable = 0;
+
+	/* By default a surface is only locally displayable */
+	shsurf->soc = 1;
 
 	/* get pid and pname for this surface and store them into shsurf */
 	get_process_info(shsurf, name);
@@ -1814,20 +1817,33 @@ print_fps(struct wl_listener *listener, void *data)
 	struct ias_shell *shell = self;
 	float time_diff_secs;
 	uint32_t curr_time_ms;
+	uint32_t diff_time_ms;
 	struct ias_surface *shsurf;
 	struct ias_output *ias_output = data;
 	struct frame_data *fd;
+	int    timehit = 0;
+	int    do_print = 0;
+	struct hmi_callback *cb;
 
 	gettimeofday(&curr_time, NULL);
 	curr_time_ms = (curr_time.tv_sec * 1000 + curr_time.tv_usec / 1000);
+	diff_time_ms = curr_time_ms - ias_output->prev_time_ms;
 
-	time_diff_secs = (curr_time_ms - ias_output->prev_time_ms) / 1000;
+	time_diff_secs = (diff_time_ms) / 1000;
 
-	if (time_diff_secs >= TARGET_NUM_SECONDS) {
-		fprintf(stdout, "--------------------------------------------------------\n");
+	if (time_diff_secs >= metrics_timing) {
+		timehit = 1;
+		if (do_print_fps) {
+			do_print = 1;
+			fprintf(stdout, "--------------------------------------------------------\n");
+			fprintf(stdout, "%s[%d]: output %d flips\n", ias_output->name, ias_output->base.id,
+				ias_output->flip_count-ias_output->last_flip_count);
+		}
 
-		fprintf(stdout, "%s: output %d flips\n", ias_output->name,
-				ias_output->flip_count);
+		wl_list_for_each(cb, &shell->ias_metrics_callbacks, link) {
+			ias_metrics_send_output_info(cb->resource, diff_time_ms, ias_output->name, ias_output->base.id, ias_output->flip_count-ias_output->last_flip_count);
+		}
+		ias_output->last_flip_count = ias_output->flip_count;
 	}
 
 	wl_list_for_each(shsurf, &shell->client_surfaces, surface_link) {
@@ -1842,13 +1858,19 @@ print_fps(struct wl_listener *listener, void *data)
 		wl_list_for_each(fd, &shsurf->output_list, output_link) {
 			if (ias_output->base.id == fd->output_id) {
 				fd->flip_count++;
-
-				if (time_diff_secs >= TARGET_NUM_SECONDS) {
-
-					fprintf(stdout, "%s: %d frames, %d flips in %6.3f seconds = %6.3f FPS\n",
-							shsurf->pname, fd->frame_count, fd->flip_count, time_diff_secs,
+				if (timehit) {
+					if (do_print) {
+						fprintf(stdout, "%s:%u: %d frames, %d flips in %6.3f seconds = %6.3f FPS\n",
+							shsurf->pname, SURFPTR2ID(shsurf), fd->frame_count, fd->flip_count, time_diff_secs,
 							fd->frame_count / time_diff_secs);
-					fflush(stdout);
+						fflush(stdout);
+					}
+
+					wl_list_for_each(cb, &shell->ias_metrics_callbacks, link) {
+						ias_metrics_send_process_info(cb->resource, SURFPTR2ID(shsurf), shsurf->title, 
+								shsurf->pid, shsurf->pname, ias_output->base.id, 
+								diff_time_ms, fd->frame_count, fd->flip_count);
+					}
 
 					fd->frame_count = 0;
 					fd->flip_count = 0;
@@ -1858,8 +1880,11 @@ print_fps(struct wl_listener *listener, void *data)
 			}
 		}
 	}
+	if (timehit) {
+		ias_output->prev_time_ms = curr_time_ms;
+	}
 
-	if (time_diff_secs >= TARGET_NUM_SECONDS) {
+	if (do_print) {
 		fprintf(stdout, "--------------------------------------------------------\n");
 		fflush(stdout);
 	}
@@ -2506,6 +2531,8 @@ WL_EXPORT int wet_shell_init(struct weston_compositor *compositor,
 
 	shell->compositor = compositor;
 
+	wl_display_set_global_filter(compositor->wl_display, global_filter_func, shell);
+
 	/*
 	 * Hook the shell destructor to the compositor's destruction signal.  We
 	 * don't need to hook anything to the lock/unlock signals since those
@@ -2547,6 +2574,7 @@ WL_EXPORT int wet_shell_init(struct weston_compositor *compositor,
 	wl_list_init(&shell->background_surfaces);
 	wl_list_init(&shell->popup_surfaces);
 	wl_list_init(&shell->client_surfaces);
+	wl_list_init(&shell->soc_list);
 
 	/* Initialize hmi callback list */
 	wl_list_init(&shell->sfc_change_callbacks);
@@ -2554,6 +2582,7 @@ WL_EXPORT int wet_shell_init(struct weston_compositor *compositor,
 	/* Initialize shell client lists */
 	wl_list_init(&shell->ias_shell_clients);
 	wl_list_init(&shell->wl_shell_clients);
+	wl_list_init(&shell->ias_metrics_callbacks);
 
 	/*
 	 * Initialize standard layers.  The organization for our shell is:
@@ -2592,7 +2621,9 @@ WL_EXPORT int wet_shell_init(struct weston_compositor *compositor,
 			wl_signal_add(&ias_output->update_signal,
 					&ias_output->update_listener);
 
-			if (ias_compositor->print_fps) {
+			if (ias_compositor->metrics_timing) {
+				do_print_fps = ias_compositor->print_fps;
+				metrics_timing = ias_compositor->metrics_timing;
 				ias_output->printfps_listener.notify = print_fps;
 				wl_signal_add(&ias_output->printfps_signal,
 						&ias_output->printfps_listener);
@@ -2640,6 +2671,11 @@ WL_EXPORT int wet_shell_init(struct weston_compositor *compositor,
 	}
 	if (!wl_global_create(compositor->wl_display,
 				&ias_relay_input_interface, 1, shell, bind_ias_relay_input))
+	{
+		return -1;
+	}
+	if (!wl_global_create(compositor->wl_display,
+				&ias_metrics_interface, 1, shell, bind_ias_metrics))
 	{
 		return -1;
 	}

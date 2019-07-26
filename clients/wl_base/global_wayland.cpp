@@ -65,6 +65,7 @@ global_wl::global_wl()
 void
 global_wl::xdg_wm_base_ping(void *data, struct xdg_wm_base *shell, uint32_t serial)
 {
+	UNUSED(data);
 	xdg_wm_base_pong(shell, serial);
 }
 
@@ -77,7 +78,12 @@ void global_wl::modelist_event(void *data,
 		uint32_t mode_number,
 		uint32_t width, uint32_t height, uint32_t refresh)
 {
-
+	UNUSED(data);
+	UNUSED(ias_crtc);
+	UNUSED(mode_number);
+	UNUSED(width);
+	UNUSED(height);
+	UNUSED(refresh);
 }
 
 void global_wl::gamma_event(void *data,
@@ -86,7 +92,11 @@ void global_wl::gamma_event(void *data,
 		uint32_t green,
 		uint32_t blue)
 {
-
+	UNUSED(data);
+	UNUSED(ias_crtc);
+	UNUSED(red);
+	UNUSED(green);
+	UNUSED(blue);
 }
 
 void global_wl::contrast_event(void *data,
@@ -95,7 +105,11 @@ void global_wl::contrast_event(void *data,
 		uint32_t green,
 		uint32_t blue)
 {
-
+	UNUSED(data);
+	UNUSED(ias_crtc);
+	UNUSED(red);
+	UNUSED(green);
+	UNUSED(blue);
 }
 
 void global_wl::brightness_event(void *data,
@@ -104,13 +118,18 @@ void global_wl::brightness_event(void *data,
 		uint32_t green,
 		uint32_t blue)
 {
-
+	UNUSED(data);
+	UNUSED(ias_crtc);
+	UNUSED(red);
+	UNUSED(green);
+	UNUSED(blue);
 }
 
 void global_wl::id_event(void *data,
 	   struct ias_crtc *ias_crtc,
 	   uint32_t id)
 {
+	UNUSED(ias_crtc);
 	struct crtc *crtc = (struct crtc *) data;
 
 	crtc->id = id;
@@ -118,6 +137,7 @@ void global_wl::id_event(void *data,
 
 void global_wl::cp_enabled_event(void *data, struct ias_crtc *ias_crtc)
 {
+	UNUSED(ias_crtc);
 	struct crtc *crtc = (struct crtc *) data;
 
 	crtc->cp_status = true;
@@ -152,6 +172,7 @@ void
 global_wl::registry_handle_global(void *data, struct wl_registry *registry,
 		uint32_t name, const char *interface, uint32_t version)
 {
+	UNUSED(version);
 	global_wl *d = (global_wl *) data;
 	struct crtc *c;
 
@@ -201,6 +222,9 @@ void
 global_wl::registry_handle_global_remove(void *data, struct wl_registry *registry,
 			      uint32_t name)
 {
+	UNUSED(data);
+	UNUSED(registry);
+	UNUSED(name);
 }
 
 /*******************************************************************************

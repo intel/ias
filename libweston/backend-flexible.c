@@ -151,6 +151,12 @@ create_sprites_for_crtc(struct ias_crtc *ias_crtc)
 	struct drm_i915_get_pipe_from_crtc_id pipeinfo;
 	uint32_t have_first_overlay_plane = 0;
 
+	/* Virtual connectors does not have sprites */
+	if (ias_crtc->connector_type == DRM_MODE_CONNECTOR_VIRTUAL) {
+		ias_crtc->num_outputs = ias_crtc->configuration->output_num;
+		return;
+	}
+
 	/* plane_res = drmModeGetPlaneResources(backend->drm.fd); */
 	plane_res = DRM_GET_PLANE_RESOURCES(backend, backend->drm.fd);
 	if (!plane_res) {
@@ -820,10 +826,13 @@ commit(struct ias_crtc *ias_crtc)
 	priv->rp_needed = 0;
 	priv->commited = priv->pending;
 	priv->pending = 0;
-	ret = drmModeAtomicCommit(priv->drm_fd, ias_crtc->prop_set, flags, ias_crtc);
-	if (ret) {
-		IAS_ERROR("Queueing atomic pageflip failed: %m (%d)", ret);
-		IAS_ERROR("This failure will prevent clients from updating.");
+
+	if (ias_crtc->connector_type != DRM_MODE_CONNECTOR_VIRTUAL) {
+		ret = drmModeAtomicCommit(priv->drm_fd, ias_crtc->prop_set, flags, ias_crtc);
+		if (ret) {
+			IAS_ERROR("Queueing atomic pageflip failed: %m (%d)", ret);
+			IAS_ERROR("This failure will prevent clients from updating.");
+		}
 	}
 
 	mode_id = 0;

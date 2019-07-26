@@ -54,6 +54,42 @@ class ias_hmi_reg : public global_wl2 {
 				const char *name,
 				uint32_t pid,
 				const char *pname);
+		static void ias_hmi_surface_sharing_info(void *data,
+					     struct ias_hmi *ias_hmi,
+					     uint32_t id,
+					     const char *title,
+					     uint32_t shareable,
+					     uint32_t pid,
+					     const char *pname);
+		static void ias_hmi_raw_buffer_handle(void *data,
+					  struct ias_hmi *ias_hmi,
+					  int32_t handle,
+					  uint32_t timestamp,
+					  uint32_t frame_number,
+					  uint32_t stride0,
+					  uint32_t stride1,
+					  uint32_t stride2,
+					  uint32_t format,
+					  uint32_t out_width,
+					  uint32_t out_height,
+					  uint32_t shm_surf_id,
+					  uint32_t buf_id,
+					  uint32_t image_id);
+		static void ias_hmi_raw_buffer_fd(void *data,
+				      struct ias_hmi *ias_hmi,
+				      int32_t prime_fd,
+				      uint32_t timestamp,
+				      uint32_t frame_number,
+				      uint32_t stride0,
+				      uint32_t stride1,
+				      uint32_t stride2,
+				      uint32_t format,
+				      uint32_t out_width,
+				      uint32_t out_height);
+		static void ias_hmi_capture_error(void *data,
+				      struct ias_hmi *ias_hmi,
+				      int32_t pid,
+				      int32_t error);
 };
 
 #endif

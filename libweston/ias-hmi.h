@@ -44,8 +44,21 @@ struct hmi_callback {
 	struct wl_list link;
 };
 
+struct soc_node {
+	uint32_t pid;
+	uint32_t soc;
+	struct wl_list link;
+};
+
 void
 bind_ias_hmi(struct wl_client *client,
 		void *data, uint32_t version, uint32_t id);
 
+void
+bind_ias_metrics(struct wl_client *client,
+		void *data, uint32_t version, uint32_t id);
+
+bool global_filter_func(const struct wl_client *client,
+						const struct wl_global *global,
+						void *data);
 #endif

@@ -260,6 +260,7 @@ struct ias_crtc {
 	char *name;
 	uint32_t crtc_id;
 	uint32_t connector_id;
+	uint32_t connector_type;
 	drmModeCrtcPtr original_crtc;
 	drmModeSubPixel subpixel;
 
@@ -335,6 +336,9 @@ struct ias_crtc {
 	struct wl_event_source *cp_timer;
 	int cp_timer_index;
 	int disable_cursor_once;
+
+	/* Timer used to emulate pageflip event for virtual connectors */
+	struct wl_event_source *pageflip_timer;
 };
 
 enum ias_fb_type {

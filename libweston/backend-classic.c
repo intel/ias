@@ -145,6 +145,10 @@ create_sprites_for_crtc(struct ias_crtc *ias_crtc)
 	struct drm_i915_get_pipe_from_crtc_id pipeinfo;
 	uint32_t have_first_overlay_plane = 0;
 
+	/* Virtual connectors does not have sprites */
+	if (ias_crtc->connector_type == DRM_MODE_CONNECTOR_VIRTUAL)
+		return;
+
 	/* plane_res = drmModeGetPlaneResources(backend->drm.fd); */
 	plane_res = DRM_GET_PLANE_RESOURCES(backend, backend->drm.fd);
 	if (!plane_res) {
@@ -647,6 +651,9 @@ flip_handler_classic(struct ias_crtc *ias_crtc,
 	/* Increment the flip count for this output */
 	ias_output->flip_count++;
 
+	if (ias_crtc->page_flip_pending != FLIP_STATE_PENDING)
+		return;
+
 	/* If obj_id == 0, then legacy pageflip code is being used */
 	if ((obj_id == ias_crtc->crtc_id) || (obj_id == 0)) {
 		if (scanout->current) {
@@ -795,10 +802,12 @@ flip_classic(int drm_fd, struct ias_crtc *ias_crtc, int output_num)
 			}
 
 			update_primary_plane(ias_crtc, scanout);
-			ret = drmModeAtomicCommit(drm_fd, ias_crtc->prop_set, flags, ias_crtc);
-			if (ret) {
-				IAS_ERROR("Queueing atomic pageflip failed: %m");
-				return;
+			if (ias_crtc->connector_type != DRM_MODE_CONNECTOR_VIRTUAL) {
+				ret = drmModeAtomicCommit(drm_fd, ias_crtc->prop_set, flags, ias_crtc);
+				if (ret) {
+					IAS_ERROR("Queueing atomic pageflip failed: %m");
+					return;
+				}
 			}
 
 			/* Free and re-allocate the property set so it's always clean */

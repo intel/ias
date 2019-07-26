@@ -42,6 +42,9 @@
 #include "../shared/helpers.h"
 
 #include "transport_plugin.h"
+#include "debug.h"
+
+int debug_level = DBG_OFF;
 
 #define BENCHMARK_INTERVAL 1
 #define TO_Mb(bytes) ((bytes)/1024/1024*8)
@@ -61,17 +64,19 @@ struct private_data {
 	uint32_t max_frames;
 };
 
+struct private_data *private_data = NULL;
 
-WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbose)
+
+WL_EXPORT int init(int *argc, char **argv, int verbose)
 {
-	printf("Using file remote display transport plugin...\n");
-	struct private_data *private_data = calloc(1, sizeof(*private_data));
-	*plugin_private_data = (void *)private_data;
-	if (private_data) {
-		private_data->verbose = verbose;
-	} else {
+	debug_level = verbose;
+	private_data = calloc(1, sizeof(*private_data));
+
+	if (!private_data) {
 		return(-ENOMEM);
 	}
+
+	INFO("Using file remote display transport plugin...\n");
 
 	const struct weston_option options[] = {
 		{ WESTON_OPTION_STRING,  "file_path", 0, &private_data->file_path},
@@ -90,25 +95,24 @@ WL_EXPORT int init(int *argc, char **argv, void **plugin_private_data, int verbo
 
 WL_EXPORT void help(void)
 {
-	printf("\tThe file plugin uses the following parameters:\n");
-	printf("\t--file_path=<file_path>\t\tset path for saving the captured image stream to a file\n");
-	printf("\t--file=1\t\t\tappend video frames to <file_path>\n");
-	printf("\t--file_flush=<0/1>\t\tflush after each frame\n");
-	printf("\t--file_mode=<mode>\t\tfile mode: 0: rewrite 1: append\n");
-	printf("\t--frame_path=<frame_path>\tset path to a folder for capture of frames into separate files\n");
-	printf("\t--frame_files=1\t\t\tdump each frame to a separate numbered file in <frame_path>\n");
-	printf("\t--max_frames=<max frames>\tStop recording after <max frames>\n");
-	printf("\n\tNote that if file_path does not include a filename then it will default to 'capture.mp4'.\n");
-	printf("\n\tFile can be played back using (for example):\n");
-	printf("\t\"gst-launch-1.0 filesrc location=/var/cap.h264 ! h264parse ! mfxdecode ! mfxsink\"\n");
+	PRINT("\tThe file plugin uses the following parameters:\n");
+	PRINT("\t--file_path=<file_path>\t\tset path for saving the captured image stream to a file\n");
+	PRINT("\t--file=1\t\t\tappend video frames to <file_path>\n");
+	PRINT("\t--file_flush=<0/1>\t\tflush after each frame\n");
+	PRINT("\t--file_mode=<mode>\t\tfile mode: 0: rewrite 1: append\n");
+	PRINT("\t--frame_path=<frame_path>\tset path to a folder for capture of frames into separate files\n");
+	PRINT("\t--frame_files=1\t\t\tdump each frame to a separate numbered file in <frame_path>\n");
+	PRINT("\t--max_frames=<max frames>\tStop recording after <max frames>\n");
+	PRINT("\n\tNote that if file_path does not include a filename then it will default to 'capture.mp4'.\n");
+	PRINT("\n\tFile can be played back using (for example):\n");
+	PRINT("\t\"gst-launch-1.0 filesrc location=/var/cap.h264 ! h264parse ! mfxdecode ! mfxsink\"\n");
 }
 
 
-WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo, int32_t stream_size, uint32_t timestamp)
+WL_EXPORT int send_frame(drm_intel_bo *drm_bo, int32_t stream_size, uint32_t timestamp)
 {
-	struct private_data *private_data = (struct private_data *)plugin_private_data;
 	if (private_data == NULL) {
-		fprintf(stderr, "Invalid pointer to file plugin private data.\n");
+		ERROR("Invalid pointer to file plugin private data.\n");
 		return (-EFAULT);
 	}
 	if (private_data->verbose) {
@@ -119,7 +123,7 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo, int32_
 		if (private_data->frames == 0)
 			private_data->benchmark_time = time;
 		if (time - private_data->benchmark_time >= (BENCHMARK_INTERVAL * 1000)) {
-			printf("%d frames in %d seconds: %f fps, %f Mb written\n",
+			INFO("%d frames in %d seconds: %f fps, %f Mb written\n",
 					private_data->frames,
 					BENCHMARK_INTERVAL,
 					(float) private_data->frames / BENCHMARK_INTERVAL,
@@ -137,12 +141,10 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo, int32_
 		char filepath[PATH_MAX] = {0};
 		char last_char;
 		if (!private_data->fp) {
-			if (private_data->verbose) {
-				printf("Processing frame in file plugin...\n");
-			}
+			DBG("Processing frame in file plugin...\n");
 
 			if ((private_data->file_path == 0) || (private_data->file_path[0] == 0)) {
-				fprintf(stderr, "No file path provided.\n");
+				ERROR("No file path provided.\n");
 				return (-EINVAL);
 			}
 
@@ -161,10 +163,10 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo, int32_
 			private_data->fp = fopen(filepath, private_data->file_mode?"ab":"wb");
 			if (!private_data->fp) {
 				int err = errno;
-				fprintf(stderr, "Failed to open video output file: %s.\n", filepath);
+				ERROR("Failed to open video output file: %s.\n", filepath);
 				return err;
 			}
-			printf("Writing to %s (mode:%s / flush:%s)\n",
+			INFO("Writing to %s (mode:%s / flush:%s)\n",
 					filepath,
 					private_data->file_mode?"ab":"wb",
 					private_data->file_flush?"on":"off");
@@ -172,7 +174,7 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo, int32_
 
 		count = fwrite(drm_bo->virtual, 1, stream_size, private_data->fp);
 		if (count != stream_size) {
-			fprintf(stderr, "Error dumping frame to file. Tried to write "
+			ERROR("dumping frame to file. Tried to write "
 					"%d bytes, %d bytes actually written.\n", stream_size, count);
 		}
 		if (private_data->file_flush) {
@@ -187,7 +189,7 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo, int32_
 		char filename[256] = {0};
 
 		if ((private_data->frame_path == 0) || (private_data->frame_path[0] == 0)) {
-			fprintf(stderr, "No frame path provided.\n");
+			ERROR("No frame path provided.\n");
 			return (-EINVAL);
 		}
 
@@ -195,13 +197,13 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo, int32_
 		fp = fopen(filename, "wb");
 		if (!fp) {
 			int err = errno;
-			fprintf(stderr, "Failed to open frames output file: %s\n", filename);
+			ERROR("Failed to open frames output file: %s\n", filename);
 			return err;
 		}
 
 		count = fwrite(drm_bo->virtual, 1, stream_size, fp);
 		if (count != stream_size) {
-			fprintf(stderr, "Error dumping single frame to file. Tried to "
+			ERROR("dumping single frame to file. Tried to "
 					"write %d bytes, %d bytes actually written.\n",
 					stream_size, count);
 		}
@@ -210,23 +212,20 @@ WL_EXPORT int send_frame(void *plugin_private_data, drm_intel_bo *drm_bo, int32_
 	if (private_data->max_frames) {
 		private_data->frames_cnt++;
 		if (private_data->frames_cnt >= private_data->max_frames) {
-			printf("force stop after %u frames\n", private_data->frames_cnt);
+			PRINT("force stop after %u frames\n", private_data->frames_cnt);
 			raise(SIGTERM);
 		}
 	}
 	return 0;
 }
 
-WL_EXPORT void destroy(void **plugin_private_data)
+WL_EXPORT void destroy()
 {
-	struct private_data *private_data = (struct private_data *)*plugin_private_data;
-
-	if (private_data && private_data->verbose) {
-		printf("Freeing file plugin private data...\n");
+	if (private_data) {
+		DBG("Freeing file plugin private data...\n");
 	}
 	if (private_data->fp) {
 		fclose(private_data->fp);
 	}
 	free(private_data);
-	*plugin_private_data = NULL;
 }

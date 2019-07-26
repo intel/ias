@@ -467,6 +467,59 @@ ias_hmi_release_buffer_handle(struct wl_client *client,
 #endif
 }
 
+static void
+ias_hmi_set_soc(struct wl_client *client,
+		struct wl_resource *shell_resource,
+		uint32_t id,
+		uint32_t soc)
+{
+	struct ias_shell *shell = shell_resource->data;
+	struct ias_surface *child_shsurf;
+	struct ias_surface *shsurf;
+
+	/* Walk the surface list looking for the requested surface.  */
+	wl_list_for_each(shsurf, &shell->client_surfaces, surface_link) {
+		if (SURFPTR2ID(shsurf) == id) {
+
+			shsurf->soc = soc;
+			/*
+			 * If this surface is not supposed to be shown on the local SoC,
+			 * then we skip rendering for it. This way, the client app can
+			 * continue to provide its buffers to the compositor and continue
+			 * rendering. However, the compositor just won't use them for
+			 * presenting on the local screen.
+			 */
+			if (!(soc & 1)) {
+				if (weston_surface_set_role(shsurf->surface, "remote_soc",
+						shell_resource, IAS_SHELL_ERROR_ROLE) < 0) {
+					return;
+				}
+				weston_compositor_damage_all(shell->compositor);
+			}
+
+			 /* Set the soc flag for child and descendant surfaces. */
+			 wl_list_for_each(child_shsurf, &shsurf->child_list, child_link) {
+				 ias_hmi_set_soc(client, shell_resource,
+						SURFPTR2ID(child_shsurf), soc);
+			}
+			return;
+		}
+	}
+}
+
+static void
+ias_hmi_client_created(struct wl_client *client,
+		struct wl_resource *shell_resource,
+		uint32_t pid,
+		uint32_t soc)
+{
+	struct ias_shell *shell = shell_resource->data;
+	struct soc_node *node = calloc(1, sizeof(struct soc_node));
+	node->pid = pid;
+	node->soc = soc;
+	wl_list_insert(&shell->soc_list, &node->link);
+}
+
 
 static void
 ias_hmi_set_shareable(struct wl_client *client,
@@ -538,6 +591,8 @@ static const struct ias_hmi_interface ias_hmi_implementation = {
 	ias_hmi_start_capture,
 	ias_hmi_stop_capture,
 	ias_hmi_release_buffer_handle,
+	ias_hmi_set_soc,
+	ias_hmi_client_created,
 };
 
 
@@ -589,4 +644,97 @@ bind_ias_hmi(struct wl_client *client,
 							shsurf->view->output ? shsurf->view->output->id : 0,
 							ias_surface_is_flipped(shsurf));
 	}
+}
+
+static void
+destroy_ias_metrics_resource(struct wl_resource *resource)
+{
+	struct hmi_callback *hmi, *next;
+	struct ias_shell *shell = resource->data;
+	wl_list_for_each_safe(hmi, next, &shell->ias_metrics_callbacks, link) {
+		if (resource == hmi->resource) {
+			wl_list_remove(&hmi->link);
+			free(hmi);
+			return;
+		}
+	}
+}
+
+
+
+void
+bind_ias_metrics(struct wl_client *client,
+		void *data, uint32_t version, uint32_t id)
+{
+	struct ias_shell *shell = data;
+	struct hmi_callback *cb;
+	cb = calloc(1, sizeof *cb);
+	if (!cb) {
+		IAS_ERROR("Failed to allocate layout callback.");
+		return;
+	}
+	cb->resource = wl_resource_create(client,
+			&ias_metrics_interface, 1, id);
+	wl_resource_set_implementation(cb->resource,
+			NULL,
+			shell, destroy_ias_metrics_resource);
+	wl_list_insert(&shell->ias_metrics_callbacks, &cb->link);
+}
+
+bool global_filter_func(const struct wl_client *client,
+						const struct wl_global *global,
+						void *data)
+{
+	pid_t pid;
+	const struct wl_interface *interface = wl_global_get_interface(global);
+	struct ias_shell *shell = data;
+	struct ias_output *ias_output = NULL;
+	struct soc_node *node;
+	char *p1;
+	int soc_num;
+	struct weston_head *head = NULL;
+
+	wl_client_get_credentials((struct wl_client *)client, &pid, NULL, NULL);
+
+	if(!strcmp(interface->name, "wl_output")) {
+		head = wl_global_get_user_data(global);
+		ias_output = (struct ias_output*)head->output;
+	} else if(!strcmp(interface->name, "ias_output")) {
+		ias_output = wl_global_get_user_data(global);
+	}
+
+	if(ias_output && ias_output->name) {
+
+		wl_list_for_each(node, &shell->soc_list, link) {
+			if(pid == (int32_t) node->pid) {
+				if(!strncmp(ias_output->name, "SOC", 3)) {
+
+					/*
+					 * This is a remote display, skip the first 3 letters and
+					 * get the remaining
+					 */
+					p1 = strtok(&(ias_output->name[3]), " ");
+					if(!p1) {
+						return true;
+					}
+					soc_num = atoi(p1);
+					if(!(node->soc & 1 << (soc_num -1))) {
+						return false;
+					}
+				} else {
+					/*
+					 * This is a local display so let's see if the remote
+					 * display app told us that the SoC for this pid is local
+					 * or not
+					 */
+					if(!(node->soc & 1)) {
+						return false;
+					}
+				}
+				break;
+			}
+		}
+	}
+
+	return true;
 }

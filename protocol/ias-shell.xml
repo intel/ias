@@ -365,6 +365,47 @@
 			<arg name="output_number" type="uint"/>
 		</request>
 
+		<request name="set_soc">
+			<description summary="Sets the SoCs for a surface">
+				Sets which SoCs should a surface be display upon.
+
+				The soc parameter is a bit field where each bit informs the
+				compositor whether a surface should be displayed on that SoC
+				or not. Bit 0 is for local SoC, Bit 1 for remote SoC #1 and so
+				on. So for example, if bit 0 is set to 1, then this surface
+				should be displayed on the local SoC and vice versa.
+				Note that this particular request will determine further
+				behavior of the compositor and HMI. If a particular surface
+				shouldn't be displayed on the local SoC, the HMI must not
+				try to manipulate it by changing its position/size etc.
+				Also, the compositor will present different (fake) Wayland
+				outputs to the the surface's process.
+			</description>
+
+			<arg name="id" type="uint" />
+			<arg name="soc" type="uint" />
+		</request>
+
+		<request name="client_created">
+			<description summary="Notify the compositor of a new client">
+				In remote display use cases, the remote display library needs
+				to notify the compositor of an upcoming process that it has
+				just launched, along with the SoC that this process is for.
+				This way, the compositor can hide certain wl_globals (like
+				wl_output) from that newly launched client. 
+
+				The soc parameter is a bit field where each bit informs the
+				compositor whether this process should be displayed on that SoC
+				or not. Bit 0 is for local SoC, Bit 1 for remote SoC #1 and so
+				on. So for example, if bit 0 is set to 1, then this process's
+				surfaces should be displayed on the local SoC and vice versa.
+			</description>
+			
+			<arg name="pid" type="uint" />
+			<arg name="soc" type="uint" />
+		</request>
+
+
 		<event name="surface_info">
 			<description summary="Notifies listeners of surface changes">
 				Notifies clients listening on the ias_hmi interface that a
@@ -552,6 +593,31 @@
 			<arg name="time" type="uint"/>
 		</request>
 
+	</interface>
+
+	<interface name="ias_metrics" version="1">
+		<event name="output_info">
+			<description summary="Metrics per output">
+			Provide per output flips event count
+			</description>
+			<arg name="time" type="uint" />
+			<arg name="output" type="string" />
+			<arg name="output_id" type="uint" />
+			<arg name="flips" type="uint" />
+		</event>
+		<event name="process_info">
+			<description summary="Metrics per process">
+			Provide per process frames info
+			</description>
+			<arg name="surf_id" type="uint" />
+			<arg name="title" type="string" />
+			<arg name="pid" type="uint" />
+			<arg name="pname" type="string" />
+			<arg name="output_id" type="uint" />
+			<arg name="time" type="uint" />
+			<arg name="frames" type="uint" />
+			<arg name="flip" type="uint" />
+		</event>
 	</interface>
 
 </protocol>

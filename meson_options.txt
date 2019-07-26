@@ -223,17 +223,17 @@ option(
 	'enable-shadergen',
 	type: 'boolean',
 	value: true,
-	description: 'Compile GLSL shaders online, but save resulting binaries for
-	later use by release builds'
+	description: '''Compile GLSL shaders online, but save resulting binaries for
+	later use by release builds'''
 )
 
 option(
 	'disable-xkbcommon',
 	type: 'boolean',
 	value: true,
-	description: 'This is only useful in environments where you do not have
+	description: '''This is only useful in environments where you do not have
 	a hardware keyboard. If libxkbcommon support is disabled clients will not
-	be sent a keymap and must know how to interpret the keycode sent for any key event.'
+	be sent a keymap and must know how to interpret the keycode sent for any key event.'''
 )
 
 option(
@@ -247,8 +247,8 @@ option(
 	'enable-remote-display',
 	type: 'boolean',
 	value: true,
-	description: 'Enables encoding of local surfaces/outputs and transport
-	via AVB/UDP to a remote SoC in a 0 copy and low latency manner'
+	description: '''Enables encoding of local surfaces/outputs and transport
+	via AVB/UDP to a remote SoC in a 0 copy and low latency manner'''
 )
 
 option(

@@ -1566,19 +1566,6 @@ spug_global_destroy(spug_global_id global)
 	_spug_global_destroy((gpointer)global);
 }
 
-WL_EXPORT uint32_t
-spug_client_add_resource(spug_client_id client_id, spug_resource *resource)
-{
-	struct spug_client *sclient = renderer_interface.get_client_from_id(client_id);
-
-	if(!sclient) {
-		IAS_ERROR("invalid client\n");
-		return 0;
-	}
-
-	return wl_client_add_resource(sclient->client, (struct wl_resource*)resource);
-}
-
 WL_EXPORT void
 spug_draw(	spug_view_list view_list,
 			spug_view_draw_fn view_draw,

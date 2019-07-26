@@ -105,7 +105,7 @@ private:
 	int current_buf_len;
 
 	int domid;
-	char socket_path[255];
+	char socket_path[100];
 	struct output_data outputs[VM_MAX_OUTPUTS];
 };
 
@@ -272,7 +272,7 @@ int VMDisplayServer::init(int domid,
 		return -1;
 	}
 
-	snprintf(socket_path, 255, "%s/vmdisplay-%d", runtime_dir, domid);
+	snprintf(socket_path, 100, "%s/vmdisplay-%d", runtime_dir, domid);
 
 	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);

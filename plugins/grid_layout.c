@@ -383,7 +383,7 @@ gray_box_draw(void)
 	glUniform1i(gray_uniform, 1);
 	glUniform1i(timedout_uniform, 0);
 	glUniform1f(opacity_uniform, (current_tile++ == selected_tile) ?
-			abs(60.0 - (float)(frame%120)) / 60.0 :
+			abs((int) (60.0 - (float)(frame%120) / 60.0)) :
 			1.0);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
@@ -403,7 +403,7 @@ view_draw(	struct spug_view_draw_info *view_draw_info,
 	glUniform1i(timedout_uniform,
 			spug_has_surface_timedout(view_draw_info->id));
 	glUniform1f(opacity_uniform, (current_tile++ == selected_tile) ?
-			abs(60.0 - (float)(frame%120)) / 60.0 :
+			abs((int)(60.0 - (float)(frame%120) / 60.0)) :
 			1.0);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -1114,20 +1114,24 @@ ias_plugin_init(struct ias_plugin_info *info,
 	switch(spug_get_output_transform(output)) {
 		case SPUG_OUTPUT_TRANSFORM_FLIPPED:
 			weston_matrix_scale(&projmat, -1.0f, 1.0f, 1.0f);
+			__attribute__ ((fallthrough));
 		case SPUG_OUTPUT_TRANSFORM_NORMAL:
 			break;
 		case SPUG_OUTPUT_TRANSFORM_FLIPPED_90:
 			weston_matrix_scale(&projmat, -1.0f, 1.0f, 1.0f);
+			__attribute__ ((fallthrough));
 		case SPUG_OUTPUT_TRANSFORM_90:
 			spug_matrix_rotate_xy(&projmat, 0.0f, 1.0f);
 			break;
 		case SPUG_OUTPUT_TRANSFORM_FLIPPED_180:
 			weston_matrix_scale(&projmat, -1.0f, 1.0f, 1.0f);
+			__attribute__ ((fallthrough));
 		case SPUG_OUTPUT_TRANSFORM_180:
 			spug_matrix_rotate_xy(&projmat, -1.0f, 0.0f);
 			break;
 		case SPUG_OUTPUT_TRANSFORM_FLIPPED_270:
 			weston_matrix_scale(&projmat, -1.0f, 1.0f, 1.0f);
+			__attribute__ ((fallthrough));
 		case SPUG_OUTPUT_TRANSFORM_270:
 			spug_matrix_rotate_xy(&projmat, 0.0f, -1.0f);
 			break;
