@@ -48,6 +48,7 @@
 #include <wayland-client.h>
 #include "shared/zalloc.h"
 #include "xdg-shell-client-protocol.h"
+#include "ias-shell-client-protocol.h"
 #include "fullscreen-shell-unstable-v1-client-protocol.h"
 #include "linux-dmabuf-unstable-v1-client-protocol.h"
 
@@ -101,6 +102,7 @@ struct display {
 	struct wl_seat *seat;
 	struct wl_keyboard *keyboard;
 	struct xdg_wm_base *wm_base;
+	struct ias_shell *ias_shell;
 	struct zwp_fullscreen_shell_v1 *fshell;
 	struct zwp_linux_dmabuf_v1 *dmabuf;
 	bool requested_format_found;
@@ -125,6 +127,7 @@ struct buffer {
 struct window {
 	struct display *display;
 	struct wl_surface *surface;
+	struct ias_surface *shell_surface;
 	struct xdg_surface *xdg_surface;
 	struct xdg_toplevel *xdg_toplevel;
 	struct buffer buffers[NUM_BUFFERS];
@@ -570,6 +573,36 @@ static const struct xdg_toplevel_listener xdg_toplevel_listener = {
 	xdg_toplevel_handle_close,
 };
 
+static void
+ias_handle_ping(void *data, struct ias_surface *ias_surface,
+	    uint32_t serial)
+{
+	ias_surface_pong(ias_surface, serial);
+}
+
+static void
+ias_handle_configure(void *data, struct ias_surface *ias_surface,
+		 int32_t width, int32_t height)
+{
+
+}
+
+static struct ias_surface_listener ias_surface_listener = {
+	ias_handle_ping,
+	ias_handle_configure,
+};
+
+static void
+create_ias_surface(struct window *window, struct display *display)
+{
+	window->shell_surface = ias_shell_get_ias_surface(display->ias_shell,
+			window->surface, "simple-dmabuf-egl");
+	ias_surface_add_listener(window->shell_surface,
+			&ias_surface_listener, window);
+
+	wl_surface_commit(window->surface);
+}
+
 static struct window *
 create_window(struct display *display)
 {
@@ -610,6 +643,8 @@ create_window(struct display *display)
 		                                        window->surface,
 		                                        ZWP_FULLSCREEN_SHELL_V1_PRESENT_METHOD_DEFAULT,
 		                                        NULL);
+	} else if (display->ias_shell) {
+		create_ias_surface(window, display);
 	} else {
 		assert(0);
 	}
@@ -630,6 +665,8 @@ destroy_window(struct window *window)
 		xdg_toplevel_destroy(window->xdg_toplevel);
 	if (window->xdg_surface)
 		xdg_surface_destroy(window->xdg_surface);
+	if (window->display->ias_shell) 
+		ias_surface_destroy(window->shell_surface);
 	wl_surface_destroy(window->surface);
 
 	for (i = 0; i < NUM_BUFFERS; i++) {
@@ -807,6 +844,9 @@ registry_handle_global(void *data, struct wl_registry *registry,
 		d->wm_base = wl_registry_bind(registry,
 					      id, &xdg_wm_base_interface, 1);
 		xdg_wm_base_add_listener(d->wm_base, &wm_base_listener, d);
+	} else if (strcmp(interface, "ias_shell") == 0) {
+		d->ias_shell = wl_registry_bind(registry, id,
+				&ias_shell_interface, 1);
 	} else if (strcmp(interface, "zwp_fullscreen_shell_v1") == 0) {
 		d->fshell = wl_registry_bind(registry,
 		                             id, &zwp_fullscreen_shell_v1_interface,
@@ -876,6 +916,9 @@ destroy_display(struct display *display)
 
 	if (display->wm_base)
 		xdg_wm_base_destroy(display->wm_base);
+
+	if (display->ias_shell)
+		ias_shell_destroy(display->ias_shell);
 
 	if (display->fshell)
 		zwp_fullscreen_shell_v1_release(display->fshell);
