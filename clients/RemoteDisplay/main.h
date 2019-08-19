@@ -62,6 +62,7 @@ struct app_state {
 	enum encoder_state encoder_state;
 	char *transport_plugin;
 	char *plugin_fullname;
+	int surface_destroyed;
 	struct rd_encoder *rd_encoder;
 	struct input_receiver_private_data *ir_priv;
 

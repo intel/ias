@@ -269,6 +269,14 @@ struct ias_surface {
 	 * 1.
 	 */
 	uint32_t soc;
+
+#ifdef BUILD_REMOTE_DISPLAY
+	/*
+	 * Flag to indicate if the surface is being captured.
+	 * This is used for client side destruction.
+	 */
+	int captured;
+#endif
 };
 
 // whether surface is directly flipped or composited
