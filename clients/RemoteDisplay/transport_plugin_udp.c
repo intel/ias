@@ -19,6 +19,8 @@
  * IN THE SOFTWARE.
  */
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <wayland-util.h>
 #include <libdrm/intel_bufmgr.h>
 #include <unistd.h>
