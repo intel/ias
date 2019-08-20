@@ -1280,6 +1280,15 @@ ias_surface_destructor(struct ias_surface *shsurf)
 	struct ias_surface *child;
 	struct hmi_callback *cb;
 	struct frame_data *fd, *fd_tmp;
+#ifdef BUILD_REMOTE_DISPLAY
+	struct ias_backend *ias_backend =
+		(struct ias_backend *)shell->compositor->backend;
+	int ret = 0;
+	uint32_t output_number = 0;
+	pid_t pid;
+	uid_t uid;
+	gid_t gid;
+#endif
 
 	/* remove destroyed surface from prev_focus_list */
 	surface_remove_prev_focus_list(shsurf, shell);
@@ -1305,6 +1314,31 @@ ias_surface_destructor(struct ias_surface *shsurf)
 		wl_event_source_remove(shsurf->ping_info.source);
 		shsurf->ping_info.source = NULL;
 	}
+
+#ifdef BUILD_REMOTE_DISPLAY
+	/* Before removing from surface lists, check if being captured.
+	 * Stop capture if the surface is part of capture proxy list.
+	 * output_number is sent 0, only if the surface capture is enabled
+	 * then it is stopped.
+	 */
+	if (shsurf->captured) {
+		/* Only allow root to stop the recorder... */
+		wl_client_get_credentials(shsurf->client, &pid, &uid, &gid);
+		if (gid != 0) {
+			wl_resource_post_error(shsurf->shell_resource,
+					WL_SHELL_ERROR_ROLE, "Frame capture requires root access");
+			return;
+		}
+
+		ret = ias_backend->stop_capture(shsurf->client, ias_backend,
+				shsurf->shell_resource, shsurf->surface, output_number);
+		if (ret) {
+			IAS_ERROR("Failed to stop capturing of the killed application surface.");
+			ias_hmi_send_capture_error(shsurf->shell_resource, (int32_t)pid, ret);
+		}
+		shsurf->captured = 0;
+	}
+#endif
 
 	/* Remove surface from surface lists */
 	wl_list_remove(&shsurf->surface_link);
@@ -1468,6 +1502,11 @@ ias_surface_constructor(void *shellptr,
 	 */
 	shsurf->title = strdup("\0");
 	shsurf->pname = strdup("\0");
+
+#ifdef BUILD_REMOTE_DISPLAY
+	/* Explicit set as not captured currently */
+	shsurf->captured = 0;
+#endif
 
 	return shsurf;
 }

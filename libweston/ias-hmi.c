@@ -352,6 +352,9 @@ ias_hmi_start_capture(struct wl_client *client,
 		IAS_ERROR("Failed to start capture.");
 		ias_hmi_send_capture_error(shell_resource, (int32_t)pid, ret);
 	}
+
+	/* Set the flag, this is used for the client side destruction */
+	shsurf->captured = 1;
 #else
 	wl_resource_post_error(shell_resource,
 			WL_SHELL_ERROR_ROLE, "Frame capture not compiled in, to use frame capture configure with --enable-frame-capture");
@@ -407,6 +410,7 @@ ias_hmi_stop_capture(struct wl_client *client,
 		IAS_ERROR("Failed to stop capture.");
 		ias_hmi_send_capture_error(shell_resource, (int32_t)pid, ret);
 	}
+	shsurf->captured = 0;
 #else
 	wl_resource_post_error(shell_resource,
 			WL_SHELL_ERROR_ROLE, "Frame capture not compiled in, to use frame capture configure with --enable-frame-capture");

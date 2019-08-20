@@ -174,6 +174,8 @@ handle_surface_destroyed(void *data,
 	struct app_state *app_state = data;
 	struct surf_list *s, *tmp;
 
+	app_state->surface_destroyed = 1;
+
 	/* Find the surface and remove it from our surface list */
 	wl_list_for_each_safe(s, tmp, &app_state->surface_list, link) {
 		if (s->surf_id == id) {
@@ -702,11 +704,13 @@ destroy(struct app_state *app_state)
 	struct surf_list *s, *tmp;
 	struct output *output, *temp_output;
 
-	DBG("Flushing...\n");
-	wl_display_flush(app_state->display);
+	if (!app_state->surface_destroyed) {
+		DBG("Flushing...\n");
+		wl_display_flush(app_state->display);
 
-	DBG("Waiting for completion...\n");
-	wl_display_roundtrip(app_state->display);
+		DBG("Waiting for completion...\n");
+		wl_display_roundtrip(app_state->display);
+	}
 
 	if (app_state->rd_encoder) {
 		DBG("Destroying encoder...\n");
@@ -717,8 +721,10 @@ destroy(struct app_state *app_state)
 		free(app_state->plugin_fullname);
 	}
 
-	DBG("Disconnecting...\n");
-	wl_display_disconnect(app_state->display);
+	if (!app_state->surface_destroyed) {
+		DBG("Disconnecting...\n");
+		wl_display_disconnect(app_state->display);
+	}
 
 	DBG("Freeing surface list...\n");
 	wl_list_for_each_safe(s, tmp, &app_state->surface_list, link) {
