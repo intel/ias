@@ -164,7 +164,7 @@ main(int argc, char *argv[])
 		EGL_NONE
 	};
 
-	EGLConfig conf;
+	EGLConfig conf = NULL;
 	EGLContext ctx;
 	EGLSurface egl_surface;
 

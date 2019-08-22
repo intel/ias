@@ -633,7 +633,12 @@ int vmdisplay_socket_init(vmdisplay_socket * vmsocket, int domid)
 	struct sockaddr_un addr;
 	struct vmdisplay_msg msg;
 	const char *runtime_dir;
-	char socket_path[255];
+	/*
+	 * Limited to 107 bytes to match addr.sun_path limit set by Linux
+	 * or else the compiler complains that we may be truncating a 255
+	 * char array into a smaller one
+	 */
+	char socket_path[107];
 	uint32_t i;
 
 	runtime_dir = getenv("XDG_RUNTIME_DIR");
@@ -652,7 +657,7 @@ int vmdisplay_socket_init(vmdisplay_socket * vmsocket, int domid)
 
 	addr.sun_family = AF_UNIX;
 
-	snprintf(socket_path, 255, "%s/vmdisplay-%d", runtime_dir, domid);
+	snprintf(socket_path, 107, "%s/vmdisplay-%d", runtime_dir, domid);
 	strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
 
 	if (connect(vmsocket->socket_fd, (struct sockaddr *)&addr, sizeof(addr))
