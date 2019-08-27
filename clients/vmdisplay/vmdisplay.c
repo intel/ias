@@ -49,7 +49,6 @@
 #include <assert.h>
 #include <sys/time.h>
 #include <errno.h>
-#include <stropts.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 
