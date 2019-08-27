@@ -3,7 +3,7 @@ if get_option('enable-hyper-dmabuf')
 	srcs_vmdisplaylib = [
 		'vmdisplay.c',
 		'vmdisplay-parser.c',
-		'wayland-drm-protocol.c',
+		'../cmn/wayland-drm-protocol.c',
 		linux_dmabuf_unstable_v1_client_protocol_h,
 		linux_dmabuf_unstable_v1_protocol_c,
 	]
@@ -16,7 +16,7 @@ if get_option('enable-hyper-dmabuf')
 	lib_vmdisplaylib = static_library(
 		'vmdisplay',
 		srcs_vmdisplaylib,
-		include_directories: include_directories('../..', '../../shared', '../../libweston'),
+		include_directories: include_directories('../..', '../../shared', '../../libweston', '../cmn'),
 		dependencies: deps_vmdisplaylib,
 		install: false,
 	)
@@ -49,7 +49,7 @@ if get_option('enable-hyper-dmabuf')
 		'vmdisplay-wayland.c',
 		ias_shell_client_protocol_h,
 		ias_shell_protocol_c,
-		include_directories: include_directories('../..', '../../libweston'),
+		include_directories: include_directories('../..', '../../libweston', '../cmn'),
 		dependencies: dep_vmdisplay_wayland,
 		link_args: '-lm',
 		install: true,
