@@ -496,7 +496,7 @@ if get_option('shell-desktop')
 	env_modmap += 'weston-keyboard=@0@;'.format(exe_keyboard.full_path())
 
 	exe_shooter = executable(
-		'weston-screenshooter',
+		'ias-weston-screenshooter',
 		'screenshot.c',
 		weston_screenshooter_client_protocol_h,
 		weston_screenshooter_protocol_c,
