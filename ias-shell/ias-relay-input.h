@@ -1,6 +1,6 @@
 /*
  *-----------------------------------------------------------------------------
- * Filename: ias-hmi.h
+ * Filename: ias-relay-input.h
  *-----------------------------------------------------------------------------
  * Copyright 2012-2018 Intel Corporation
  *
@@ -26,39 +26,20 @@
  * SOFTWARE.
  *-----------------------------------------------------------------------------
  * Description:
- *   Intel Automotive Solutions hmi interface for the shell module for Weston.
+ *   Intel Automotive Solutions relay input interface for the shell module for
+ *   Weston.
  *   This is a private header used internally by the IAS shell.
  *-----------------------------------------------------------------------------
  */
 
-#ifndef __IAS_HMI_H__
-#define __IAS_HMI_H__
+#ifndef __IAS_RELAY_INPUT_H__
+#define __IAS_RELAY_INPUT_H__
 
-#include "ias-common.h"
+#include <ias-common.h>
 
-/*
- * HMI changed client callback list node
- */
-struct hmi_callback {
-	struct wl_resource *resource;
-	struct wl_list link;
-};
-
-struct soc_node {
-	uint32_t pid;
-	uint32_t soc;
-	struct wl_list link;
-};
 
 void
-bind_ias_hmi(struct wl_client *client,
+bind_ias_relay_input(struct wl_client *client,
 		void *data, uint32_t version, uint32_t id);
 
-void
-bind_ias_metrics(struct wl_client *client,
-		void *data, uint32_t version, uint32_t id);
-
-bool global_filter_func(const struct wl_client *client,
-						const struct wl_global *global,
-						void *data);
 #endif

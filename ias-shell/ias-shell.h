@@ -37,10 +37,8 @@
 #define __IAS_SHELL_H__
 
 #include "config.h"
-#include "ias-common.h"
-#include "ias-shell-server-protocol.h"
-
-#define CFG_FILENAME "ias.conf"
+#include <ias-common.h>
+#include <ias-shell-server-protocol.h>
 
 #ifndef IAS_SHELL_ERROR_ENUM
 #define IAS_SHELL_ERROR_ENUM

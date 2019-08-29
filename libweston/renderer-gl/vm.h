@@ -15,7 +15,7 @@
 
 #include "vm-shared.h"
 #include "gl-renderer.h"
-#include "ias-backend.h"
+#include <ias-backend.h>
 #include "vm_comm.h"
 
 #define VM_INIT(gr, res)            if(gl_renderer_interface.vm_exec) \

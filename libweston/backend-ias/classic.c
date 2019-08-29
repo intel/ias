@@ -32,7 +32,7 @@
  */
 
 #include "ias-backend.h"
-#include "ias-common.h"
+#include <ias-common.h>
 
 #define DRM_ROTATE_0 (1 << 0)
 #define DRM_ROTATE_90 (1 << 1)

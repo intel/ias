@@ -11,7 +11,7 @@ if get_option('ias-plugin-framework')
 	plugin_thumbnail = shared_library(
 		'thumbnail',
 		srcs_thumbnail,
-		include_directories: include_directories('..', '../../shared'),
+		include_directories: include_directories('..', '../../shared', '../../include/libias'),
 		dependencies: deps_thumbnail,
 		name_prefix: '',
 		install: true,

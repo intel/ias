@@ -143,10 +143,24 @@ dep_libdrm = dependency('libdrm', version: '>= 2.4.68')
 dep_libdrm_headers = dep_libdrm.partial_dependency(compile_args: true)
 dep_threads = dependency('threads')
 
+# XXX: We should be able to use dep_libweston.partial_dependency() instead
+# of this, but a Meson bug makes it not work. It will be fixed with
+# https://github.com/mesonbuild/meson/pull/5167
+# in hopefully Meson 0.51.
+dep_libweston_h = declare_dependency(
+	include_directories: [ include_directories('.'), public_inc ],
+	dependencies: [
+		dep_pixman.partial_dependency(compile_args: true),
+		dep_xkbcommon.partial_dependency(compile_args: true),
+		dep_wayland_server.partial_dependency(compile_args: true)
+	]
+)
 subdir('include')
 subdir('protocol')
 subdir('shared')
+subdir('ias-common')
 subdir('libweston')
+subdir('ias-shell')
 subdir('libweston-desktop')
 subdir('xwayland')
 subdir('compositor')

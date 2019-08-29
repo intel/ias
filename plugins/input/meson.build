@@ -11,7 +11,7 @@ if get_option('ias-plugin-framework')
 	plugin_input = shared_library(
 		'input',
 		srcs_input,
-		include_directories: include_directories('..', '../../shared'),
+		include_directories: include_directories('..', '../../shared', '../../include/libias'),
 		dependencies: deps_input,
 		name_prefix: '',
 		install: true,

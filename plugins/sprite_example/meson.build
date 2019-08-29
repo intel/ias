@@ -11,7 +11,7 @@ if get_option('ias-plugin-framework')
 	plugin_sprite_example = shared_library(
 		'sprite_example',
 		srcs_sprite_example,
-		include_directories: include_directories('..', '../../shared'),
+		include_directories: include_directories('..', '../../shared', '../../include/libias'),
 		dependencies: deps_sprite_example,
 		name_prefix: '',
 		install: true,

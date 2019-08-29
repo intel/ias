@@ -43,6 +43,8 @@
 #include "ias-plugin-framework-definitions.h"
 #include "ias-spug.h"
 
+#define CFG_FILENAME "ias.conf"
+
 /***
  *** Debugging functionality
  ***/

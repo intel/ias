@@ -11,7 +11,7 @@ if get_option('ias-plugin-framework')
 	plugin_gamma_example = shared_library(
 		'gamma_example',
 		srcs_gamma_example,
-		include_directories: include_directories('..', '../../shared'),
+		include_directories: include_directories('..', '../../shared', '../../include/libias'),
 		dependencies: deps_gamma_example,
 		name_prefix: '',
 		install: true,

@@ -12,7 +12,7 @@ if get_option('ias-plugin-framework')
 	plugin_grid_layout = shared_library(
 		'grid-layout',
 		srcs_grid_layout,
-		include_directories: include_directories('..', '../shared'),
+		include_directories: include_directories('..', '../shared', '../libweston/backend-ias', '../include/libias'),
 		dependencies: deps_grid_layout,
 		name_prefix: '',
 		install: true,

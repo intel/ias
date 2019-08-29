@@ -53,10 +53,9 @@
 
 #include "renderer-gl/gl-renderer.h"
 #include <libweston/libweston.h>
-#include "ias-shell.h"
 #include "ias-sprite.h"
-#include "ias-common.h"
-#include "ias-backend-server-protocol.h"
+#include <ias-common.h>
+#include <ias-backend-server-protocol.h>
 #include "presentation-time-server-protocol.h"
 #include "launcher-util.h"
 #include <libweston/config-parser.h>

@@ -14,7 +14,7 @@ if get_option('ias-plugin-framework')
 	plugin_cpp_example = shared_library(
 		'cpp_example',
 		srcs_cpp_example,
-		include_directories: include_directories('..', '../../shared'),
+		include_directories: include_directories('..', '../../shared', '../../include/libias'),
 		dependencies: deps_cpp_example,
 		name_prefix: '',
 		install: true,

@@ -30,11 +30,12 @@
  *   layout and input plugins.
  *-----------------------------------------------------------------------------
  */
-#include "ias-common.h"
-#include "ias-plugin-framework-private.h"
+#include <ias-common.h>
 #include <string.h>
 #include <glib.h>
 #include <inttypes.h>
+
+#include "ias-plugin-framework-private.h"
 
 struct plugin_output_node {
 

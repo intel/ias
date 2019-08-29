@@ -62,7 +62,7 @@ if get_option('ias-plugin-framework')
 	plugin_extension_sample = shared_library(
 		'extension-sample',
 		srcs_extension_sample,
-		include_directories: include_directories('..', '../../shared'),
+		include_directories: include_directories('..', '../../shared', '../../include/libias'),
 		dependencies: deps_extension_sample,
 		name_prefix: '',
 		install: true,

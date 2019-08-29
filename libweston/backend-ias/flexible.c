@@ -34,7 +34,7 @@
 
 #include "config.h"
 #include "ias-backend.h"
-#include "ias-common.h"
+#include <ias-common.h>
 
 #define PLANE_0     0
 

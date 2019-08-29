@@ -30,7 +30,7 @@
  *-----------------------------------------------------------------------------
  */
 
-#include "ias-common.h"
+#include <ias-common.h>
 #include "ias-sprite.h"
 #include <string.h>
 #include <i915_drm.h>

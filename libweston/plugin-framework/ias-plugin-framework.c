@@ -37,11 +37,11 @@
 #include <linux/input.h>
 
 #include "config.h"
-#include "ias-common.h"
-#include "ias-shell.h"
 #include "ias-backend.h"
-#include "ias-layout-manager-server-protocol.h"
-#include "ias-input-manager-server-protocol.h"
+#include <ias-common.h>
+#include <ias-shell.h>
+#include <ias-layout-manager-server-protocol.h>
+#include <ias-input-manager-server-protocol.h>
 
 #include <wayland-server.h>
 
@@ -1427,8 +1427,8 @@ ias_activate_plugin(struct weston_output *output, ias_identifier id)
 		 * of this layout).
 		 */
 
-		wl_list_for_each(layout_callback_resource,
-					&framework->layout_change_callbacks, link) {
+		wl_resource_for_each(layout_callback_resource,
+					&framework->layout_change_callbacks) {
 
 			struct wl_client *client =
 				wl_resource_get_client(layout_callback_resource);
@@ -1552,7 +1552,7 @@ ias_deactivate_plugin(struct weston_output *output)
 	}
 
 	/* Broadcast layout change to interested clients */
-	wl_list_for_each(layout_callback_resource, &framework->layout_change_callbacks, link) {
+	wl_resource_for_each(layout_callback_resource, &framework->layout_change_callbacks) {
 		struct wl_client *client = wl_resource_get_client(layout_callback_resource);
 		/* get new layout */
 		resource = find_resource_for_client(&ias_output->head.resource_list, client);
@@ -1711,10 +1711,10 @@ destroy_ias_layout_resource(struct wl_resource *resource)
 {
 	struct wl_resource *node, *next;
 
-	wl_list_for_each_safe(node, next, &framework->layout_change_callbacks, link) {
-		if (resource->client == node->client) {
+	wl_resource_for_each_safe(node, next, &framework->layout_change_callbacks) {
+		if (wl_resource_get_client(resource) == wl_resource_get_client(node)) {
 			/* Remove ourselves from the layout's destructor list */
-			wl_list_remove(&node->link);
+			wl_list_remove(wl_resource_get_link(node));
 			break;
 		}
 	}
@@ -1788,7 +1788,8 @@ bind_ias_layout_manager(struct wl_client *client,
 			destroy_ias_layout_resource);
 
 	/* Add callback to shell's list */
-	wl_list_insert(&(framework->layout_change_callbacks), &(layout_callback_resource->link));
+	wl_list_insert(&(framework->layout_change_callbacks),
+			wl_resource_get_link(layout_callback_resource));
 
 
 	/* Send the list of layouts to this client only */

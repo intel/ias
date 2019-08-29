@@ -25,6 +25,7 @@ deps_renderer_gl = [
 	dep_pixman,
 	dep_libweston,
 	dep_libdrm_headers,
+	dep_ias_common,
 	dep_vertex_clipping
 ]
 
@@ -39,7 +40,7 @@ endforeach
 plugin_gl = shared_library(
 	'gl-renderer',
 	srcs_renderer_gl,
-	include_directories: include_directories('../..', '../../shared'),
+	include_directories: include_directories('../..', '../../shared', '../backend-ias', '../../include/libias'),
 	dependencies: deps_renderer_gl,
 	name_prefix: '',
 	install: true,

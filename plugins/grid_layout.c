@@ -35,8 +35,8 @@
 #include <linux/input.h>
 #include <string.h>
 #include <GLES2/gl2.h>
-#include "ias-plugin-framework.h"
-#include "ias-spug.h"
+#include <ias-plugin-framework.h>
+#include <ias-spug.h>
 
 #include "cursor_image.h"
 

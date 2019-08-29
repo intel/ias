@@ -59,10 +59,7 @@ srcs_libweston = [
 install_headers(
 	'../shared/platform.h',
 	'../shared/weston-egl-ext.h',
-	'ias-common.h',
-	'ias-plugin-framework-definitions.h',
-	'ias-spug.h',
-	subdir: dir_include_libweston
+	subdir: dir_include_libweston_install
 )
 
 if get_option('renderer-gl')
@@ -87,19 +84,6 @@ dep_libweston = declare_dependency(
 	link_with: lib_weston,
 	include_directories: [ include_directories('.'), public_inc ],
 	dependencies: deps_libweston
-)
-
-# XXX: We should be able to use dep_libweston.partial_dependency() instead
-# of this, but a Meson bug makes it not work. It will be fixed with
-# https://github.com/mesonbuild/meson/pull/5167
-# in hopefully Meson 0.51.
-dep_libweston_h = declare_dependency(
-	include_directories: [ include_directories('.'), public_inc ],
-	dependencies: [
-		dep_pixman.partial_dependency(compile_args: true),
-		dep_xkbcommon.partial_dependency(compile_args: true),
-		dep_wayland_server.partial_dependency(compile_args: true)
-	]
 )
 
 pkgconfig.generate(
@@ -198,100 +182,6 @@ dep_libinput_backend = declare_dependency(
 	include_directories: include_directories('.')
 )
 
-if get_option('backend-ias')
-	config_h.set('BUILD_IAS_COMPOSITOR', '1')
-
-	srcs_ias = [
-		'compositor-ias.c',
-		backend_ias_h,
-		'ias-plugin-framework-definitions.h',
-		'ias-spug.h',
-		'ias-config.c',
-		'ias-common.c',
-		'ias-common.h',
-		'ias-sprite.c',
-		'ias-sprite.h',
-		'ias-backend.h',
-		'backend-classic.c',
-		'backend-flexible.c',
-		'libinput-device.c',
-		'libinput-seat.c',
-		linux_dmabuf_unstable_v1_protocol_c,
-		linux_dmabuf_unstable_v1_server_protocol_h,
-		presentation_time_server_protocol_h,
-		ias_backend_server_protocol_h,
-		ias_backend_protocol_c,
-		ias_shell_server_protocol_h,
-		ias_shell_protocol_c,
-		xdg_shell_client_protocol_h,
-		xdg_shell_protocol_c,
-	]
-
-	deps_ias = [
-		dep_libweston,
-		dep_session_helper,
-		dep_libdrm,
-		dep_libinput,
-		dep_libshared,
-		dependency('libudev', version: '>= 136'),
-	]
-
-	if get_option('enable-remote-display')
-		srcs_ias += [
-			'capture-proxy.c',
-			'capture-proxy.h',
-		]
-
-		foreach name : [ 'libva', 'libva-drm' ]
-			d = dependency(name, version: '>= 0.34.0', required: false)
-			if not d.found()
-				error('remote-display requires @0@ >= 0.34.0 which was not found. Or, you can use \'-Denable-remote-display=false\'.'.format(name))
-			endif
-			deps_ias += d
-		endforeach		
-	endif
-
-	if get_option('renderer-gl')
-		dep_gbm = dependency('gbm', required: false)
-		if not dep_gbm.found()
-			error('ias-backend + gl-renderer requires gbm which was not found. Or, you can use \'-Dbackend-ias=false\' or \'-Drenderer-gl=false\'.')
-		endif
-		if dep_gbm.version().version_compare('>= 17.1')
-			config_h.set('HAVE_GBM_MODIFIERS', '1')
-		endif
-		if dep_gbm.version().version_compare('>= 17.2')
-			config_h.set('HAVE_GBM_FD_IMPORT', '1')
-		endif
-		deps_ias += dep_gbm
-	endif
-
-	if dep_libdrm.version().version_compare('>= 2.4.71')
-		config_h.set('HAVE_DRM_ADDFB2_MODIFIERS', '1')
-	endif
-
-	if dep_libdrm.version().version_compare('>= 2.4.78')
-		config_h.set('HAVE_DRM_ATOMIC', '1')
-	endif
-
-	if dep_libdrm.version().version_compare('>= 2.4.83')
-		config_h.set('HAVE_DRM_FORMATS_BLOB', '1')
-	endif
-
-	plugin_ias = shared_library(
-		'ias-backend',
-		srcs_ias,
-		include_directories: include_directories('..', '../shared'),
-		dependencies: deps_ias,
-		name_prefix: '',
-		install: true,
-		install_dir: dir_module_libweston
-	)
-	env_modmap += 'ias-backend.so=@0@;'.format(plugin_ias.full_path())
-
-	install_headers(backend_ias_h, subdir: dir_include_libweston)
-endif
-
-
 dep_vertex_clipping = declare_dependency(
 	sources: 'vertex-clipping.c',
 	include_directories: include_directories('.')
@@ -346,142 +236,12 @@ else
 	config_h.set('TRACE_BUFFER_SIZE', '1')
 endif
 
-if get_option('shell-ias')
-
-	srcs_shell_ias = [
-		'ias-shell.c',
-		'ias-relay-input.h',
-		'ias-relay-input.c',
-		'ias-hmi.c',
-		'ias-shell-config.c',
-		'ias-shell.h',
-		'ias-hmi.h',
-		'ias-common.h',
-		'ias-common.c',
-		'ias-config.c',
-		ias_shell_server_protocol_h,
-		ias_shell_protocol_c,
-	]
-
-	deps_shell_ias = [
-		dep_libshared,
-		dep_libweston,
-	]
-
-	plugin_shell_ias = shared_library(
-		'ias-shell',
-		srcs_shell_ias,
-		include_directories: include_directories('..', '../shared'),
-		dependencies: deps_shell_ias,
-		name_prefix: '',
-		install: true,
-		install_dir: dir_module_weston
-	)
-	env_modmap += 'ias-shell.so=@0@;'.format(plugin_shell_ias.full_path())
-
-	srcs_ias_shell_protocol = [
-		ias_shell_client_protocol_h,
-		ias_shell_protocol_c,
-	]
-
-	plugin_ias_shell_protocol = shared_library(
-		'ias-shell-protocol',
-		srcs_ias_shell_protocol,
-		include_directories: include_directories('..', '../shared'),
-		dependencies: deps_shell_ias,
-		name_prefix: '',
-		install: true,
-		install_dir: dir_module_weston
-	)
-	env_modmap += 'ias-shell-protocol.so=@0@;'.format(plugin_ias_shell_protocol.full_path())
-
-endif
-
-if get_option('ias-plugin-framework')
-
-	srcs_ias_plugin_framework = [
-		'ias-plugin-framework.c',
-		'ias-plugin-framework.h',
-		'ias-spug.c',
-		'ias-config.c',
-		ias_layout_manager_protocol_c,
-		ias_layout_manager_server_protocol_h,
-		ias_input_manager_protocol_c,
-		ias_input_manager_server_protocol_h,
-	]
-
-	deps_ias_plugin_framework = [
-		dep_glib,
-		dep_libshared,
-		dep_libweston,
-	]
-
-	foreach name : [ 'egl', 'glesv2' ]
-		d = dependency(name, required: true)
-		if not d.found()
-			error('ias-plugin-framework requires @0@ which was not found.'.format(name))
-		endif
-		deps_ias_plugin_framework += d
-	endforeach
-
-	plugin_ias_plugin_framework = shared_library(
-		'ias_plugin_framework',
-		srcs_ias_plugin_framework,
-		include_directories: include_directories('..', '../shared'),
-		dependencies: deps_ias_plugin_framework,
-		name_prefix: '',
-		install: true,
-		install_dir: dir_module_weston
-	)
-	env_modmap += 'ias-plugin-framework.so=@0@;'.format(plugin_ias_plugin_framework.full_path())
-
-	install_headers('ias-plugin-framework.h', subdir: dir_include_libweston)
-endif
-
-if get_option('ivi-plugin-framework')
-
-	srcs_ivi_plugin_framework = [
-		'ivi-plugin-framework.c',
-		'ias-plugin-framework.h',
-		'ias-spug.c',
-		'ias-config.c',
-		ias_layout_manager_protocol_c,
-		ias_layout_manager_server_protocol_h,
-		ias_input_manager_protocol_c,
-		ias_input_manager_server_protocol_h,
-	]
-
-	deps_ivi_plugin_framework = [
-		dep_glib,
-		dep_libshared,
-		dep_libweston,
-	]
-
-	foreach name : [ 'egl', 'glesv2' ]
-		d = dependency(name, required: true)
-		if not d.found()
-			error('ivi-plugin-framework requires @0@ which was not found.'.format(name))
-		endif
-		deps_ivi_plugin_framework += d
-	endforeach
-
-
-	plugin_ivi_plugin_framework = shared_library(
-		'ivi_plugin_framework',
-		srcs_ivi_plugin_framework,
-		include_directories: include_directories('..', '../shared', '../ivi-shell'),
-		dependencies: deps_ivi_plugin_framework,
-		name_prefix: '',
-		install: true,
-		install_dir: dir_module_weston
-	)
-	env_modmap += 'ivi-plugin-framework.so=@0@;'.format(plugin_ivi_plugin_framework.full_path())
-endif
-
 subdir('renderer-gl')
+subdir('backend-ias')
 subdir('backend-drm')
 subdir('backend-fbdev')
 subdir('backend-headless')
 subdir('backend-rdp')
 subdir('backend-wayland')
 subdir('backend-x11')
+subdir('plugin-framework')
