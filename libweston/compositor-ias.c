@@ -88,6 +88,9 @@
 #define DRM_CAP_RENDER_COMPRESSION     0x11
 #endif
 
+#define VIRT_CON_PREFERRED_WIDTH   1920
+#define VIRT_CON_PREFERRED_HEIGHT  1080
+
 struct drm_parameters {
 	int connector;
 	int tty;
@@ -5726,12 +5729,23 @@ components_list_create(struct ias_backend *backend,
 		drmModeRes *resources,
 		struct components_list *components_list)
 {
-	int i, stop_searching;
+	int i, stop_searching, num_virt_connectors = 0;
 	char connector_name[32];
 	const char *type_name;
 	struct ias_configured_crtc *confcrtc;
+	drmModeConnector *connector;
+	drmModeModeInfo *mode;
 
-	components_list->count_connectors = resources->count_connectors;
+	/* Create virtual connectors if any */
+	wl_list_for_each_reverse(confcrtc, &configured_crtc_list, link) {
+
+		if (!strncasecmp(confcrtc->name, "Virtual", 7)) {
+			num_virt_connectors++;
+		}
+	}
+
+	components_list->count_connectors = resources->count_connectors +
+			num_virt_connectors;
 	components_list->num_conf_components = 0;
 	wl_list_init(&components_list->list);
 
@@ -5739,7 +5753,8 @@ components_list_create(struct ias_backend *backend,
 	 * later.
 	 */
 	components_list->connector =
-			(struct ias_connector **)calloc(resources->count_connectors,
+			(struct ias_connector **)calloc(resources->count_connectors +
+					num_virt_connectors,
 					sizeof(struct ias_connector *));
 	if (!components_list->connector) {
 		IAS_ERROR("Cannot allocate memory for connector.");
@@ -5805,6 +5820,69 @@ components_list_create(struct ias_backend *backend,
 		}
 	}
 
+	/*
+	 * We need to create virtual connectors
+	 */
+	i = resources->count_connectors;
+
+	wl_list_for_each_reverse(confcrtc, &configured_crtc_list, link) {
+		/*
+		 * We are only interested in virtual connectors so continue if we can't
+		 * find one
+		 */
+		if (strncasecmp(confcrtc->name, "Virtual", 7)) {
+			continue;
+		}
+
+		components_list->connector[i] =
+				calloc(1, sizeof *components_list->connector[i]);
+
+		if (!components_list->connector[i]) {
+			IAS_ERROR("Cannot allocate memory for connector.");
+
+			for(; i >= 0; i--) {
+				free(components_list->connector[i]);
+			}
+
+			free(components_list->connector);
+			return -1;
+		}
+
+		components_list->connector[i]->connector =
+				calloc(1, sizeof *components_list->connector[i]->connector);
+		connector = components_list->connector[i]->connector;
+		connector->connector_type = DRM_MODE_CONNECTOR_VIRTUAL;
+		connector->connector_type_id = 1;
+		connector->connection = DRM_MODE_CONNECTED;
+		/*
+		 * Virtual display only requires one mode, the one that was specified in
+		 * our config file.
+		 */
+		connector->count_modes = 1;
+		connector->modes = calloc(1, sizeof(drmModeModeInfo));
+		mode = &connector->modes[0];
+
+		/*
+		 * If the user didn't specify an exact mode, and instead chose preferred
+		 * then we need to select a default with/height which we have defined
+		 * above.
+		 */
+		if(confcrtc->config == CRTC_CONFIG_PREFERRED) {
+			confcrtc->width = VIRT_CON_PREFERRED_WIDTH;
+			confcrtc->height = VIRT_CON_PREFERRED_HEIGHT;
+		}
+
+		mode->hdisplay = mode->htotal = confcrtc->width;
+		mode->vdisplay = mode->vtotal = confcrtc->height;
+		/* We want 60 Hz refresh rate so calculating the clock accordingly */
+		mode->clock = (((unsigned long long) (mode->vtotal * 60000)
+				- mode->vtotal / 2) *
+				mode->htotal) / 1000000LL;
+		mode->type = DRM_MODE_TYPE_PREFERRED;
+
+		i++;
+	}
+
 	return 0;
 }
 
@@ -5816,8 +5894,15 @@ components_list_destroy(struct components_list *components_list)
 
 	for (i = 0; i < components_list->count_connectors; i++) {
 		if (components_list->connector[i]) {
-			drmModeFreeConnector(components_list->connector[i]->connector);
-			free(components_list->connector[i]);
+			if(components_list->connector[i]->connector->connector_type ==
+					DRM_MODE_CONNECTOR_VIRTUAL) {
+				free(components_list->connector[i]->connector->modes);
+				free(components_list->connector[i]->connector);
+				free(components_list->connector[i]);
+			} else {
+				drmModeFreeConnector(components_list->connector[i]->connector);
+				free(components_list->connector[i]);
+			}
 		}
 	}
 
@@ -5874,7 +5959,7 @@ components_list_build(struct ias_backend *backend,
 	backend->num_kms_crtcs = resources->count_crtcs;
 
 	wl_list_for_each_reverse(confcrtc, &configured_crtc_list, link) {
-		for(i = 0; i < resources->count_connectors; i++) {
+		for(i = 0; i < components_list->count_connectors; i++) {
 			/* Skip the connector if NULL or currently in use */
 			if (connector[i] == NULL || connector[i]->used) {
 				continue;
@@ -5922,7 +6007,7 @@ components_list_build(struct ias_backend *backend,
 			}
 		}
 
-		if (i == resources->count_connectors) {
+		if (i == components_list->count_connectors) {
 			IAS_DEBUG("Could not find a connector for this CRTC.");
 			continue;
 		}
