@@ -75,13 +75,24 @@ foreach proto: generated_protocols
 		endif
 
 		var_name = output_file.underscorify()
-		target = custom_target(
-			'@0@ @1@'.format(base_file, output_type),
-			command: [ prog_scanner, output_type, '@INPUT@', '@OUTPUT@' ],
-			input: xml_path,
-			output: output_file,
-		)
-
+		if output_file == 'ias-shell-client-protocol.h'
+			target = custom_target(
+				'@0@ @1@'.format(base_file, output_type),
+				command: [ prog_scanner, output_type, '@INPUT@', '@OUTPUT@' ],
+				input: xml_path,
+				output: output_file,
+				install: true,
+				install_dir: join_paths(dir_include, dir_include_libweston)
+			)
+		else 
+			target = custom_target(
+				'@0@ @1@'.format(base_file, output_type),
+				command: [ prog_scanner, output_type, '@INPUT@', '@OUTPUT@' ],
+				input: xml_path,
+				output: output_file,
+			)
+		endif
+		
 		set_variable(var_name, target)
 	endforeach
 endforeach

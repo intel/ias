@@ -666,6 +666,23 @@ if get_option('shell-ias')
 		install_dir: dir_module_weston
 	)
 	env_modmap += 'ias-shell.so=@0@;'.format(plugin_shell_ias.full_path())
+
+	srcs_ias_shell_protocol = [
+		ias_shell_client_protocol_h,
+		ias_shell_protocol_c,
+	]
+
+	plugin_ias_shell_protocol = shared_library(
+		'ias-shell-protocol',
+		srcs_ias_shell_protocol,
+		include_directories: include_directories('..', '../shared'),
+		dependencies: deps_shell_ias,
+		name_prefix: '',
+		install: true,
+		install_dir: dir_module_weston
+	)
+	env_modmap += 'ias-shell-protocol.so=@0@;'.format(plugin_ias_shell_protocol.full_path())
+
 endif
 
 if get_option('ias-plugin-framework')
@@ -705,6 +722,8 @@ if get_option('ias-plugin-framework')
 		install_dir: dir_module_weston
 	)
 	env_modmap += 'ias-plugin-framework.so=@0@;'.format(plugin_ias_plugin_framework.full_path())
+
+	install_headers('ias-plugin-framework.h', subdir: dir_include_libweston)
 endif
 
 if get_option('ivi-plugin-framework')
