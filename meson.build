@@ -1,6 +1,6 @@
 project('ias-weston',
 	'c', 'cpp',
-	version: '6.0.2',
+	version: '6.0.4',
 	default_options: [
 		'warning_level=2',
 		'c_std=gnu99',
