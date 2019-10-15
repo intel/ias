@@ -41,6 +41,14 @@ generated_protocols = [
 	[ 'xdg-shell', 'stable' ],
 ]
 
+install_header_list = [
+	'ias-shell-client-protocol.h',
+]
+
+public_code_output_type_list = [
+	'ias-shell',
+]
+
 if get_option('enable-tracing')
 	generated_protocols += [
 		[ 'trace-reporter', 'internal' ],
@@ -70,10 +78,13 @@ foreach proto: generated_protocols
 			if dep_scanner.version().version_compare('< 1.14.91')
 				output_type = 'code'
 			endif
+			if proto_name in public_code_output_type_list
+				output_type = 'public-code'
+			endif
 		endif
 
 		var_name = output_file.underscorify()
-		if output_file == 'ias-shell-client-protocol.h'
+		if output_file in install_header_list
 			target = custom_target(
 				'@0@ @1@'.format(base_file, output_type),
 				command: [ prog_scanner, output_type, '@INPUT@', '@OUTPUT@' ],
