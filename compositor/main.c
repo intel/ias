@@ -138,12 +138,16 @@ weston_log_timestamp(char *buf, size_t len)
 	struct tm *brokendown_time;
 	char datestr[128];
 	char timestr[128];
+	int ret;
 
 	gettimeofday(&tv, NULL);
 
 	brokendown_time = localtime(&tv.tv_sec);
 	if (brokendown_time == NULL) {
-		snprintf(buf, len, "%s", "[(NULL)localtime] ");
+		ret = snprintf(buf, len, "%s", "[(NULL)localtime] ");
+		if(ret < 0) {
+			return NULL;
+		}
 		return buf;
 	}
 
@@ -156,9 +160,11 @@ weston_log_timestamp(char *buf, size_t len)
 
 	strftime(timestr, sizeof(timestr), "%H:%M:%S", brokendown_time);
 	/* if datestr is empty it prints only timestr*/
-	snprintf(buf, len, "%s[%s.%03li]", datestr,
+	ret = snprintf(buf, len, "%s[%s.%03li]", datestr,
 		 timestr, (tv.tv_usec / 1000));
-
+	if(ret < 0) {
+		return NULL;
+	}
 	return buf;
 }
 
