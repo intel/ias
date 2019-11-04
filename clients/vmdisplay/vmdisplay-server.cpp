@@ -441,8 +441,9 @@ int VMDisplayServer::process_input()
 		i = 0;
 		for (it = client_sockets.begin();
 		     it != client_sockets.end() && i < 255; it++) {
-			fds[i++] = (pollfd) {
-			(*it), POLLIN, 0};
+			fds[i].fd = *it;
+			fds[i].events = POLLIN;
+			i++;
 		}
 		pthread_mutex_unlock(&mutex);
 
