@@ -1435,7 +1435,7 @@ ias_fb_get_from_bo(struct gbm_bo *bo, struct weston_buffer *buffer,
 		(struct ias_backend *) output->base.compositor->backend;
 	uint32_t width, height;
 	uint32_t format, strides[4] = {0}, handles[4] = {0}, offsets[4] = {0};
-	uint64_t modifiers[4] = {0};
+	uint64_t modifier, modifiers[4] = {0};
 	uint32_t stride, handle;
 	int ret;
 	int flags = 0;
@@ -1465,7 +1465,7 @@ ias_fb_get_from_bo(struct gbm_bo *bo, struct weston_buffer *buffer,
 	width = gbm_bo_get_width(bo);
 	height = gbm_bo_get_height(bo);
 	format = gbm_bo_get_format(bo);
-
+	modifier = gbm_bo_get_modifier(bo);
 	if ((!ias_crtc->sprites_are_broken && fb_type != IAS_FB_CURSOR) ||
 	    (!ias_crtc->cursors_are_broken && fb_type == IAS_FB_CURSOR)) {
 
@@ -1511,6 +1511,10 @@ ias_fb_get_from_bo(struct gbm_bo *bo, struct weston_buffer *buffer,
 				strides[0] = gbm_bo_get_stride(bo);
 				handles[0] = gbm_bo_get_handle(bo).u32;
 				offsets[0] = 0;
+			}
+			if (modifier && modifier != DRM_FORMAT_MOD_INVALID) {
+				modifiers[0] = modifier;
+				flags |= DRM_MODE_FB_MODIFIERS;
 			}
 		}
 
