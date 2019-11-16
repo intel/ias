@@ -308,7 +308,7 @@ EGLNativeDisplayType global_wl::init()
 void global_wl::add_reg()
 {
 	wl_registry_add_listener(registry, &registry_listener, this);
-	wl_display_roundtrip(display);
+	wl_display_dispatch(display);
 	wl_display_roundtrip(display);
 }
 
@@ -362,6 +362,7 @@ void global_wl::deinit()
 void global_wl::dispatch_pending()
 {
 	wl_display_dispatch_pending(display);
+	wl_display_roundtrip(display);
 }
 
 /*******************************************************************************
@@ -410,6 +411,7 @@ bool global_wl::set_content_protection(int crtc_id, int cp)
 	 */
 	if(cp) {
 		while(!retval && counter++ < MAX_ITER_TO_WAIT) {
+			dispatch_pending();
 			retval = content_protection_status(crtc_id);
 			/* If status is not set, wait for a VBlank and try again */
 			if(!retval) {
