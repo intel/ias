@@ -183,7 +183,7 @@ static void usage (void)
 {
 	g_printerr ("\nUsage:\n\t mediaplayer -f <Video filename> -r <x,y,w,h> -l <0:off, 1:loop> -a <0:w/o audio, 1:w/ audio> -t <0:off, 1:always, 2:blink>\n\n");
 	g_printerr ("This is a H264 content player that plays a content repeatedly "
-			"with the same surface id for 2019 CES demo.\n"
+			"with the same surface id.\n"
 			"ex) mediaplayer -f sample.mp4 -r 0,0,1920,1080 -l 1 -a 1 -t 1\n");
 	exit(-1);
 }
