@@ -3397,6 +3397,9 @@ ias_destroy(struct weston_compositor *compositor)
 	if (d->gbm)
 		gbm_device_destroy(d->gbm);
 
+	udev_monitor_unref(d->udev_monitor);
+	udev_unref(d->udev);
+
 	weston_launcher_destroy(compositor->launcher);
 
 	close(d->drm.fd);
