@@ -3523,15 +3523,6 @@ session_notify(struct wl_listener *listener, void *data)
 	}
 }
 
-static void
-switch_vt_binding(struct weston_keyboard *keyboard,
-		  const struct timespec * time,
-		  uint32_t key, void *data)
-{
-	struct weston_compositor *compositor = data;
-
-	weston_launcher_activate_vt(compositor->launcher, key - KEY_F1 + 1);
-}
 
 #ifdef HYPER_DMABUF
 static int
@@ -4462,7 +4453,6 @@ ias_compositor_create(struct weston_compositor *compositor,
 	struct udev_device *drm_device;
 	const char *path;
 	struct wl_event_loop *loop;
-	uint32_t key;
 	uint32_t counter = 0;
 	const char *seat_id = default_seat;
 
@@ -4587,10 +4577,7 @@ ias_compositor_create(struct weston_compositor *compositor,
 
 	backend->prev_state = WESTON_COMPOSITOR_ACTIVE;
 
-	for (key = KEY_F1; key < KEY_F9; key++)
-		weston_compositor_add_key_binding(compositor, key,
-				MODIFIER_CTRL | MODIFIER_ALT,
-				switch_vt_binding, compositor);
+	weston_setup_vt_switch_bindings(compositor);
 
 #ifdef BUILD_REMOTE_DISPLAY
 	wl_list_init(&backend->capture_proxy_list);
