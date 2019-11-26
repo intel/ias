@@ -1,4 +1,5 @@
 subdir('libweston')
+subdir('libias')
 
 install_headers(
 	'libweston-desktop/libweston-desktop.h',
