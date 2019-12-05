@@ -74,15 +74,15 @@ Running Instructions:
 Examples:
 
 To run HDMI:
-dma_test -d /dev/video16 -n 0 -I 1920,1080 -O 1920,1080 -b 3 -f RGB3 -r GL_DMA -E
+dma_test -d /dev/video16 -n 0 -I 1920,1080 -O 1920,1080 -b 3 -f RGB3 -r GL_DMA 
 
 To run camera:
-dma_test -d /dev/video16 -i -n 4 -I 720,480 -O 1920,1080 -b 3 -f UYVY -r GL_DMA -E 
+dma_test -d /dev/video16 -i -n 4 -I 720,480 -O 1920,1080 -b 3 -f UYVY -r GL_DMA 
 
 
 Example of output:
 
-dma_test -d /dev/video16 -n 0 -I 1920,1080 -O 1920,1080 -b 3 -f RGB3 -r GL_DMA -E
+dma_test -d /dev/video16 -n 0 -I 1920,1080 -O 1920,1080 -b 3 -f RGB3 -r GL_DMA 
 G_FMT(start): width = 1920, height = 1080, 4cc = XR24
 G_FMT(final): width = 1920, height = 1080, 4cc = XR24
 DMA TEST TIME STATS
