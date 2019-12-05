@@ -147,6 +147,13 @@ option(
 )
 
 option(
+	'dma_test',
+	type: 'boolean',
+	value: false,
+	description: 'An app to display IPU content on screen through dma_buf'
+)
+
+option(
 	'color-management-lcms',
 	type: 'boolean',
 	value: true,
