@@ -150,7 +150,8 @@ WL_EXPORT int send_frame(drm_intel_bo *drm_bo, int32_t stream_size, uint32_t tim
 
 			last_char = private_data->file_path[(int)strlen(private_data->file_path)-1];
 
-			strncpy(filepath, private_data->file_path, PATH_MAX);
+			strncpy(filepath, private_data->file_path, PATH_MAX-1);
+			filepath[PATH_MAX-1] = '\0';
 
 			if (last_char != '/') {
 				/* Filename included in path */

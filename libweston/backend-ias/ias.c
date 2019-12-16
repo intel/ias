@@ -4033,6 +4033,10 @@ start_capture(struct wl_client *client,
 		surface->keep_buffer = 1;
 
 		capture_proxy_item = calloc(1, sizeof(struct ias_surface_capture));
+		if (!capture_proxy_item) {
+			weston_log("Failed to allocate the memory for capture proxy item\n");
+			return IAS_HMI_FCAP_ERROR_INVALID;
+		}
 		capture_proxy_item->backend = ias_backend;
 		capture_proxy_item->capture_surface = surface;
 		capture_proxy_item->cp =

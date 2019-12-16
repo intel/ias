@@ -188,6 +188,17 @@ WL_EXPORT int init(int *argc, char **argv, int verbose)
 
 	if(!private_data->tp) {
 		private_data->tp = strdup("native");
+		if(private_data->tp == NULL) {
+			ERROR("strdup() failed...\n");
+			if(private_data->ipaddr) {
+				free(private_data->ipaddr);
+			}
+			if(private_data->tp) {
+				free(private_data->tp);
+			}
+			free(private_data);
+			return -1;
+		}
 	}
 
 	strcpy(copy, private_data->ipaddr);
@@ -685,7 +696,7 @@ static int send_frame_native(drm_intel_bo *drm_bo, int32_t stream_size, uint32_t
 			rd=read(private_data->fifo_handle, buffer, 255);
 			if(rd>0) {
 				char *arg = NULL;
-				buffer[rd] = 0;
+				buffer[rd-1] = 0;
 				char *ptr = buffer;
 				while (*ptr) {
 					if (*ptr == '\n') {

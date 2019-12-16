@@ -524,6 +524,10 @@ ias_hmi_client_created(struct wl_client *client,
 {
 	struct ias_shell *shell = shell_resource->data;
 	struct soc_node *node = calloc(1, sizeof(struct soc_node));
+	if (node == NULL) {
+		printf("soc_node memory allocation is failed...\n");
+		return;
+	}
 	node->pid = pid;
 	node->soc = soc;
 	wl_list_insert(&shell->soc_list, &node->link);

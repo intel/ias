@@ -591,4 +591,6 @@ int main(int argc, char *argv[])
 
 	server.run();
 	server.cleanup();
+
+	return 0;
 }

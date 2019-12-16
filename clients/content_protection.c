@@ -336,6 +336,7 @@ int main(int argc, char *argv[])
 	d = display_create(&argc, argv);
 	if (d == NULL) {
 		fprintf(stderr, "failed to create display: %m\n");
+		free(pc_player);
 		return -1;
 	}
 	pc_player->protection_type = WESTON_PROTECTED_SURFACE_TYPE_UNPROTECTED;

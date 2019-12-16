@@ -1920,6 +1920,9 @@ init_gl_shaders(struct window *window)
 
 			if (color_format == window->display->s->in_fourcc) {
 				shader_binary = malloc(shader_size);
+				if (shader_binary == NULL) {
+					BYE_ON(pf, "Failed to allocate memory for shader_binary\n");
+				}
 
 				size_t result_ss = fread(shader_binary, shader_size, 1, pf);
 				if(result_ss != 1) {
@@ -2238,6 +2241,7 @@ main(int argc, char **argv)
 
 	ret = init_gem(&display);
 	if(ret < 0) {
+		close(v4l2.fd);
 		return ret;
 	}
 
@@ -2246,12 +2250,16 @@ main(int argc, char **argv)
 			v4l2_expbuffer(&v4l2, i, &buffers[i]);
 			ret = drm_buffer_to_prime(&display, &buffers[i], src_size);
 			if(ret < 0) {
+				destroy_gem(&display);
+				close(v4l2.fd);
 				return ret;
+
 			}
 		} else {
 			ret = create_buffer(&display, &buffers[i], src_size);
 			if(ret < 0) {
 				destroy_gem(&display);
+				close(v4l2.fd);
 				return ret;
 			}
 		}

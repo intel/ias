@@ -642,6 +642,10 @@ start_event_listener(struct app_state *appstate, int *argc, char **argv)
 
 	data = calloc(1, sizeof(*data));
 
+	if(data == NULL) {
+		INFO("Memory allocation failed...\n");
+		return;
+	}
 	/* In case of udp transport, we should get the  */
 	if(!strcmp(appstate->transport_plugin, "udp") &&
 		appstate->get_sockaddr_fptr) {

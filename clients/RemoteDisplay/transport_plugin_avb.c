@@ -95,7 +95,8 @@ WL_EXPORT int init(int *argc, char **argv, int verbose)
 
 		if (tmp) {
 			unsigned int max_write = 0;
-			strncpy(tmp, private_data->packet_path, PATH_MAX);
+			strncpy(tmp, private_data->packet_path, PATH_MAX-1);
+			tmp[PATH_MAX-1] = '\0';
 			max_write = PATH_MAX - strlen(tmp) - 1;
 			strncat(tmp, "packets.rtp", max_write);
 		} else {

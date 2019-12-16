@@ -207,6 +207,10 @@ main(int argc, char *argv[])
 
 	configs = calloc(count, sizeof *configs);
 
+	if (configs == NULL) {
+		printf("Memory allocation failed ... \n");
+		return 1;
+	}
 	eglChooseConfig(d, config_attribs,
 			      configs, count, &n);
 

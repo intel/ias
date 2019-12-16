@@ -243,6 +243,7 @@ wet_module_init(struct weston_compositor *compositor,
 					launcher->exe,
 					sizeof launcher->exe) == 0) {
 		weston_log("test setup failure: WESTON_MODULE_MAP not set\n");
+		free(launcher);
 		return -1;
 	}
 
