@@ -284,7 +284,7 @@ int check_for_new_buffer(void)
 
 static void create_new_buffer_common(int dmabuf_fd)
 {
-	GLuint textureId[2];
+	GLuint textureId[2] = {0};
 	struct zwp_linux_buffer_params_v1 *params;
 	int i;
 
@@ -665,7 +665,11 @@ int vmdisplay_socket_init(vmdisplay_socket * vmsocket, int domid)
 		return -1;
 	}
 
-	recv(vmsocket->socket_fd, &msg, sizeof(msg), 0);
+	if(recv(vmsocket->socket_fd, &msg, sizeof(msg), 0) < 0)
+	{
+	    perror("Recieve error\n");
+	    return -1;
+	}
 	for (i = 0; i < msg.display_num; i++) {
 		vmsocket->outputs[i].mem_fd = recvfd(vmsocket->socket_fd);
 		vmsocket->outputs[i].mem_addr =

@@ -1486,6 +1486,11 @@ ias_surface_constructor(void *shellptr,
 
 	wl_list_for_each(output, &surface->compositor->output_list, link) {
 		fd = calloc(1, sizeof *fd);
+		if (fd == NULL)
+		{
+		    IAS_ERROR("Failed to allocate memory for frame data");
+		    return NULL;
+		}
 		fd->output_id = output->id;
 		wl_list_init(&fd->output_link);
 		wl_list_insert(&shsurf->output_list, &fd->output_link);
