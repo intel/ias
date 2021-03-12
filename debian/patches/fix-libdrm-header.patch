@@ -1,0 +1,64 @@
+Look for DRM headers under libdrm/
+--- a/clients/vmdisplay/vmdisplay-parser.h
++++ b/clients/vmdisplay/vmdisplay-parser.h
+@@ -36,7 +36,7 @@
+ #include <GLES2/gl2.h>
+ #include <EGL/egl.h>
+ #include <EGL/eglext.h>
+-#include <drm/i915_drm.h>
++#include <libdrm/i915_drm.h>
+ #include "vm-shared.h"
+ #include "vmdisplay.h"
+ 
+--- a/clients/vmdisplay/vmdisplay-wayland.c
++++ b/clients/vmdisplay/vmdisplay-wayland.c
+@@ -40,7 +40,7 @@
+ #include <signal.h>
+ 
+ #include <linux/input.h>
+-#include <drm/drm_fourcc.h>
++#include <libdrm/drm_fourcc.h>
+ 
+ #include <wayland-client.h>
+ #include <wayland-egl.h>
+--- a/clients/vmdisplay/vmdisplay.c
++++ b/clients/vmdisplay/vmdisplay.c
+@@ -55,10 +55,9 @@
+ #define PAGE_SIZE 0x1000
+ #define PAGE_SHIFT 12
+ 
+-#include <drm/drm.h>
+-#include <drm/drm_mode.h>
+-#include <drm/drm_fourcc.h>
+ #include <libdrm/drm.h>
++#include <libdrm/drm_mode.h>
++#include <libdrm/drm_fourcc.h>
+ #include <libdrm/i915_drm.h>
+ #include <intel_bufmgr.h>
+ #include "wayland-drm-client-protocol.h"
+--- a/clients/RemoteDisplay/remote-display-show.c
++++ b/clients/RemoteDisplay/remote-display-show.c
+@@ -59,7 +59,7 @@
+ #include <EGL/eglext.h>
+ #include <sys/mman.h>
+ #include <assert.h>
+-#include <drm/drm_fourcc.h>
++#include <libdrm/drm_fourcc.h>
+ #include <sys/poll.h>
+ #include "ias-shell-client-protocol.h"
+ #include <libweston/config-parser.h>
+--- a/clients/dma_test/dma_test.c
++++ b/clients/dma_test/dma_test.c
+@@ -40,9 +40,9 @@
+ #include <wayland-egl.h>
+ #include <wayland-client.h>
+ #include <wayland-cursor.h>
+-#include <drm/drm.h>
+-#include <drm/drm_mode.h>
+-#include <drm/drm_fourcc.h>
++#include <libdrm/drm.h>
++#include <libdrm/drm_mode.h>
++#include <libdrm/drm_fourcc.h>
+ #include <xf86drm.h>
+ #include <xf86drmMode.h>
+ #include <linux/videodev2.h>
