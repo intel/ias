@@ -1,0 +1,47 @@
+Source: ias
+Section: x11
+Priority: optional
+Maintainer: Francois Dugast <francois.dugast@intel.com>
+Build-Depends:
+ debhelper (>=11~),
+ quilt,
+ meson,
+ pkg-config,
+ wayland-protocols,
+ libxkbcommon-x11-dev,
+ libwayland-dev,
+ libpixman-1-dev,
+ libinput-dev,
+ libdrm-dev,
+ libcairo-dev,
+ libjpeg-dev,
+ libwebp-dev,
+ libegl1-mesa-dev,
+ libsystemd-dev,
+ libdbus-1-dev,
+ libpam-dev,
+ libgles2-mesa-dev,
+ libva-dev,
+ libgbm-dev,
+ freerdp2-dev,
+ libxcb-composite0-dev,
+ libxcursor-dev,
+ liblcms2-dev,
+ libcolord-dev,
+ libgstreamer1.0-dev,
+ libgstreamer-plugins-base1.0-dev,
+ libpipewire-0.2-dev,
+ libpango1.0-dev,
+ libxml2-dev
+Standards-Version: 4.1.4
+Vcs-Git: https://github.com/intel/ias/
+Vcs-Browser: https://github.com/intel/ias/
+Homepage: https://github.com/intel/ias/
+
+Package: ias
+Architecture: amd64
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends}
+Provides: ias-weston
+Description: Intel Automotive Solution compositor for Wayland

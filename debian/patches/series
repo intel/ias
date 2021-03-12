@@ -1,0 +1,2 @@
+revert-wayland-protocols-dependency-version.patch
+fix-libdrm-header.patch
