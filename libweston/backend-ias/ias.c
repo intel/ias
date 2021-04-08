@@ -4281,6 +4281,11 @@ init_drm(struct ias_backend *backend, struct udev_device *device)
 	else
 		backend->clock = CLOCK_REALTIME;
 
+	if (weston_compositor_set_presentation_clock(backend->compositor, backend->clock) < 0) {
+		weston_log("Error: failed to set presentation clock %d.\n", backend->clock);
+		return -1;
+	}
+
 	return 0;
 }
 
